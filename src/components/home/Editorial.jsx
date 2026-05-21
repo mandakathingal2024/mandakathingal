@@ -53,7 +53,7 @@ const Editorial = () => {
 
         <div className="row justify-content-center">
           {members.map((member, index) => (
-            <div key={index} className="col-lg-3 col-md-6 col-sm-6">
+            <div key={index} className="col-lg-3 col-md-4 col-6">
               <div className="icon-box">
                 <div className="icon">
                   <Image

@@ -44,46 +44,60 @@ const Executive = () => {
         <section id="features" className="features">
       <div className="container">
         <div className="row">
-          <div className="col-lg-2 col-md-6 icon-box">
-            <div className="icon-small"><Image width={120} height={165} src="/img-1.png" alt="" /></div>
-            <h4 className="title"><a href="">Hamza Mandakathingal</a></h4>
-            <p className="description">Patron , Convenor & Editor Suvaneer</p>
+          <div className="col-lg-2 col-md-4 col-6 member-col">
+            <div className="icon-box">
+              <div className="icon-small"><Image width={120} height={165} src="/img-1.png" alt="" /></div>
+              <h4 className="title"><a href="">Hamza Mandakathingal</a></h4>
+              <p className="description">Patron , Convenor & Editor Suvaneer</p>
+            </div>
           </div>
-          <div className="col-lg-2 col-md-6 icon-box">
-            <div className="icon-small"><Image width={110} height={155} src="/img-2.png" alt="" /></div>
-            <h4 className="title"><a href="">Abdul Mujeeb</a></h4>
-            <p className="description">Secretary & Sub Editor Suvaneer</p>
+          <div className="col-lg-2 col-md-4 col-6 member-col">
+            <div className="icon-box">
+              <div className="icon-small"><Image width={110} height={155} src="/img-2.png" alt="" /></div>
+              <h4 className="title"><a href="">Abdul Mujeeb</a></h4>
+              <p className="description">Secretary & Sub Editor Suvaneer</p>
+            </div>
           </div>
-          <div className="col-lg-2 col-md-6 icon-box">
-            <div className="icon-small"><Image width={120} height={155} src="/img-5.jpeg" alt="" /></div>
-            <h4 className="title"><a href="">Saleem Master</a></h4>
-            <p className="description">Secretary & Sub Editor Suvaneer</p>
+          <div className="col-lg-2 col-md-4 col-6 member-col">
+            <div className="icon-box">
+              <div className="icon-small"><Image width={120} height={155} src="/img-5.jpeg" alt="" /></div>
+              <h4 className="title"><a href="">Saleem Master</a></h4>
+              <p className="description">Secretary & Sub Editor Suvaneer</p>
+            </div>
           </div>
-          <div className="col-lg-2 col-md-6 icon-box">
-            <div className="icon-small"><Image width={155} height={155} src="/img-3.png" alt="" /></div>
-            <h4 className="title"><a href="">Saidu Mohamed</a></h4>
-            <p className="description">Chairman</p>
+          <div className="col-lg-2 col-md-4 col-6 member-col">
+            <div className="icon-box">
+              <div className="icon-small"><Image width={155} height={155} src="/img-3.png" alt="" /></div>
+              <h4 className="title"><a href="">Saidu Mohamed</a></h4>
+              <p className="description">Chairman</p>
+            </div>
           </div>
-          <div className="col-lg-2 col-md-6 icon-box">
-            <div className="icon-small"><Image width={145} height={145} src="/thajudheen.png" alt="" /></div>
-            <h4 className="title"><a href="">Thajudheen</a></h4>
-            <p className="description">Vice Chairman</p>
+          <div className="col-lg-2 col-md-4 col-6 member-col">
+            <div className="icon-box">
+              <div className="icon-small"><Image width={145} height={145} src="/thajudheen.png" alt="" /></div>
+              <h4 className="title"><a href="">Thajudheen</a></h4>
+              <p className="description">Vice Chairman</p>
+            </div>
           </div>
-          <div className="col-lg-2 col-md-6 icon-box">
-            <div className="icon-small"><Image width={120} height={145} src="/img-6.png" alt="" /></div>
-            <h4 className="title"><a href="">M A Rafeeque</a></h4>
-            <p className="description">General Secretary</p>
+          <div className="col-lg-2 col-md-4 col-6 member-col">
+            <div className="icon-box">
+              <div className="icon-small"><Image width={120} height={145} src="/img-6.png" alt="" /></div>
+              <h4 className="title"><a href="">M A Rafeeque</a></h4>
+              <p className="description">General Secretary</p>
+            </div>
           </div>
           {executives&&executives.map((executive)=>{
             return (
-              <div className="col-lg-2 col-md-6 icon-box" key={executive.id}>
-                <div className="icon-small">
-                  <Image width={120} height={145} src={executive?.executiveImgUrl || '/default-avatar.svg'} alt="" />
+              <div className="col-lg-2 col-md-4 col-6 member-col" key={executive.id}>
+                <div className="icon-box">
+                  <div className="icon-small">
+                    <Image width={120} height={145} src={executive?.executiveImgUrl || '/default-avatar.svg'} alt="" />
+                  </div>
+                  <h4 className="title">
+                    <a href="">{executive?.name}</a>
+                  </h4>
+                  <p className="description">{executive?.role}</p>
                 </div>
-                <h4 className="title">
-                  <a href="">{executive?.name}</a>
-                </h4>
-                <p className="description">{executive?.role}</p>
               </div>
             );
           })}

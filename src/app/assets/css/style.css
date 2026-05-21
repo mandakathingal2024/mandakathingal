@@ -1903,27 +1903,121 @@ section {
 
 @media (max-width: 768px) {
   .features .icon-box {
-    margin-bottom: 16px;
-    padding: 28px 16px 24px;
+    margin-bottom: 12px;
+    padding: 20px 10px 18px;
   }
   .features .icon {
-    width: 120px;
+    width: 90px;
+    height: 90px;
+  }
+  .features .icon-small {
+    width: 100px;
     height: 120px;
   }
   .features .title {
-    font-size: 15px;
+    font-size: 13px;
   }
   .features .description {
-    font-size: 9px;
-    padding: 4px 12px;
+    font-size: 8px;
+    padding: 3px 10px;
   }
   .features .section-title h2 {
-    font-size: 28px;
-    letter-spacing: 3px;
+    font-size: 24px;
+    letter-spacing: 2px;
   }
   .features .section-label {
-    font-size: 10px;
+    font-size: 9px;
     letter-spacing: 2px;
+  }
+  .features .section-subtitle {
+    font-size: 13px;
+  }
+  .features .team-footnote {
+    font-size: 11px;
+  }
+  .member-col {
+    padding: 0 6px;
+    margin-bottom: 12px;
+  }
+  .icon-box .btn-learn-more {
+    font-size: 11px;
+    padding: 6px 14px;
+  }
+  .member-search {
+    max-width: 100%;
+  }
+  .breadcrumbs {
+    padding: 12px 0;
+  }
+  .breadcrumbs h2 {
+    font-size: 22px !important;
+  }
+  .breadcrumbs ol {
+    font-size: 12px;
+  }
+  .breadcrumbs .d-flex {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 4px;
+  }
+  .auth-gate {
+    min-height: 350px;
+    padding: 30px 16px;
+  }
+  .auth-gate-card {
+    padding: 32px 20px 28px;
+  }
+  .auth-gate-icon {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 18px;
+  }
+  .auth-gate-title {
+    font-size: 20px;
+  }
+  .empty-state {
+    padding: 40px 16px;
+    min-height: 220px;
+  }
+  .empty-state-icon {
+    width: 64px;
+    height: 64px;
+  }
+  .empty-state h3 {
+    font-size: 17px;
+  }
+  .empty-state p {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .features .icon {
+    width: 76px;
+    height: 76px;
+    border-width: 2px;
+  }
+  .features .icon-small {
+    width: 85px;
+    height: 105px;
+  }
+  .features .icon-box {
+    padding: 16px 8px 14px;
+  }
+  .features .title {
+    font-size: 12px;
+  }
+  .features .description {
+    font-size: 7px;
+    padding: 3px 8px;
+  }
+  .features .section-title h2 {
+    font-size: 20px;
+    letter-spacing: 1px;
+  }
+  .member-col {
+    padding: 0 5px;
+    margin-bottom: 10px;
   }
 }
 
