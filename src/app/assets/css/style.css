@@ -450,10 +450,10 @@ h6 {
   position: fixed;
   overflow: hidden;
   top: 0;
-  right: 0;
   left: 0;
-  bottom: 0;
-  background: rgba(22, 30, 56, 0.9);
+  width: 100vw;
+  height: 100vh;
+  background: rgba(44, 24, 16, 0.92);
   transition: 0.3s;
   z-index: 999;
 }
