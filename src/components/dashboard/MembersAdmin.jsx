@@ -362,7 +362,7 @@ const MembersAdmin = () => {
                     <TableCell>{index + 1}</TableCell>
                     <TableCell>
                       <div style={{ maxWidth: '200px', maxHeight: '200px' }}>
-                        <Image src={row.memberImgUrl?row.memberImgUrl:'/profile.png'} width={100} height={100} alt='No Image' />
+                        <Image src={row.memberImgUrl?row.memberImgUrl:'/default-avatar.svg'} width={100} height={100} alt='No Image' />
                       </div>
                     </TableCell>
                     <TableCell>{row.name}</TableCell>

@@ -68,11 +68,13 @@ const Members = () => {
         <div className="row">
           {newBranchData&&newBranchData.length > 0 ? newBranchData.map((member)=>{
             return (
-              <div key={member.id} className="col-lg-2 col-md-6 icon-box">
-                <div className="icon-small"><Image width={120} height={155} src={member.memberImgUrl?member.memberImgUrl:'/profile.png'} alt="Image Not Available" /></div>
-                <h4 className="title"><a href="">{member.name}</a></h4>
-                <p>{member.place}</p>
-                <a href={`/members/${member.id}`} className="btn-learn-more" >View Family</a>
+              <div key={member.id} className="col-lg-2 col-md-4 col-sm-6 member-col">
+                <div className="icon-box">
+                  <div className="icon-small"><Image width={120} height={155} src={member.memberImgUrl?member.memberImgUrl:'/default-avatar.svg'} alt="Image Not Available" /></div>
+                  <h4 className="title"><a href="">{member.name}</a></h4>
+                  <p>{member.place}</p>
+                  <a href={`/members/${member.id}`} className="btn-learn-more" >View Family</a>
+                </div>
               </div>
             )
           }) : (

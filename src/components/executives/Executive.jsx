@@ -78,7 +78,7 @@ const Executive = () => {
             return (
               <div className="col-lg-2 col-md-6 icon-box" key={executive.id}>
                 <div className="icon-small">
-                  <Image width={120} height={145} src={executive?.executiveImgUrl || '/profile.png'} alt="" />
+                  <Image width={120} height={145} src={executive?.executiveImgUrl || '/default-avatar.svg'} alt="" />
                 </div>
                 <h4 className="title">
                   <a href="">{executive?.name}</a>

@@ -2,12 +2,13 @@
 import Image from 'next/image'
 import React, { useEffect, useState } from 'react'
 import { useStateContext } from '../../../context/stateContext'
-// import { useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 
 export const ViewFamily = ({ id }) => {
     const { viewFamilyData, getMembersByRelatedTo, memberObj, getMemberById ,isGmailAuthenticated} = useStateContext()
     const [isLoading, setIsLoading] = useState(true);
+    const router = useRouter();
 
     const [error, setError] = useState(null);
 
@@ -24,13 +25,21 @@ export const ViewFamily = ({ id }) => {
         };
         fetchData();
     }, []);
-    // const router=useRouter()
-    // useEffect(()=>{
-    //     if(isGmailAuthenticated){router.push('/members')}
-    //   },[])
-    // console.log(viewFamilyData);
 
     return (
+        <>
+        <section id="breadcrumbs" className="breadcrumbs">
+            <div className="container">
+                <div className="d-flex justify-content-between align-items-center">
+                    <h2>{memberObj?.name || 'Family'}</h2>
+                    <ol>
+                        <li><a href="/">Home</a></li>
+                        <li><a href="#" onClick={(e) => { e.preventDefault(); router.back(); }}>Members</a></li>
+                        <li>{memberObj?.name || 'Family'}</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
         <section id="about" className="about" style={{ padding: '20px 0px' }}>
             <div className="container">
                 <div className="section-title" style={{ paddingTop: '100px' }}>
@@ -42,7 +51,7 @@ export const ViewFamily = ({ id }) => {
                             <div className="container">
                                 <div className="row">
                                     <div className="col-lg-5 col-md-5 icon-box">
-                                        <div className="icon-small-1"><Image width={150} height={200} src={memberObj?.memberImgUrl ? memberObj?.memberImgUrl : '/profile.png'} alt="" /></div>
+                                        <div className="icon-small-1"><Image width={150} height={200} src={memberObj?.memberImgUrl ? memberObj?.memberImgUrl : '/default-avatar.svg'} alt="" /></div>
                                         <h4 className="title">{memberObj?.name}</h4>
                                         <p className="description">{memberObj?.place}</p>
                                     </div>
@@ -50,7 +59,7 @@ export const ViewFamily = ({ id }) => {
                                         if (member.relation === "Wife Of / Husband Of") {
                                             return (
                                                 <div className="col-lg-5 col-md-5 icon-box" key={member.id}>
-                                                    <div className="icon-small-1"> <Image width={150} height={200} src={member.memberImgUrl ? member.memberImgUrl : '/profile.png'} alt="image not available" /> </div>
+                                                    <div className="icon-small-1"> <Image width={150} height={200} src={member.memberImgUrl ? member.memberImgUrl : '/default-avatar.svg'} alt="image not available" /> </div>
                                                     <h4 className="title">{member.name}</h4>
                                                     <p className="description">{member.place}</p>
                                                 </div>
@@ -80,7 +89,7 @@ export const ViewFamily = ({ id }) => {
                                     if (member.relation === "Late Parent / Additional Member") {
                                         return (
                                             <div className="col-lg-3 col-md-6 icon-box" key={member.id}>
-                                                <div className="icon-small"><Image width={120} height={165} src={member.memberImgUrl ? member.memberImgUrl : '/profile.png'} alt="" /></div>
+                                                <div className="icon-small"><Image width={120} height={165} src={member.memberImgUrl ? member.memberImgUrl : '/default-avatar.svg'} alt="" /></div>
                                                 <h4 className="title">{member.name}</h4>
                                                 <p className="description">{member.place}</p>
                                                 <p className="description">{member.description}</p>
@@ -103,7 +112,7 @@ export const ViewFamily = ({ id }) => {
                                     if (member.relation === "Son Of / Dauhter Of") {
                                         return (
                                             <div className="col-lg-3 col-md-6 icon-box" key={member.id}>
-                                                <div className="icon-small"><Image width={120} height={165} src={member.memberImgUrl ? member.memberImgUrl : '/profile.png'} alt="" /></div>
+                                                <div className="icon-small"><Image width={120} height={165} src={member.memberImgUrl ? member.memberImgUrl : '/default-avatar.svg'} alt="" /></div>
                                                 <h4 className="title">{member.name}</h4>
                                                 <a href={`/members/${member.id}`} className="btn-learn-more" >View Family</a>
                                             </div>
@@ -116,5 +125,6 @@ export const ViewFamily = ({ id }) => {
                 </div>
             </div>
         </section>
+        </>
     )
 }
