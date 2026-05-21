@@ -2,9 +2,7 @@
 import Image from 'next/image'
 import React, { useEffect, useState } from 'react'
 import { useStateContext } from '../../../context/stateContext'
-import { Router } from 'next/router'
 import LockIcon from '@mui/icons-material/Lock';
-import Button from '@mui/material/Button';
 import GoogleIcon from '@mui/icons-material/Google';
 import { MembersSkeleton } from '../Skeleton'
 
@@ -68,7 +66,7 @@ const Members = () => {
             }} >gmail</button> */}
           </div>
         <div className="row">
-          {newBranchData&&newBranchData.map((member)=>{
+          {newBranchData&&newBranchData.length > 0 ? newBranchData.map((member)=>{
             return (
               <div key={member.id} className="col-lg-2 col-md-6 icon-box">
                 <div className="icon-small"><Image width={120} height={155} src={member.memberImgUrl?member.memberImgUrl:'/profile.png'} alt="Image Not Available" /></div>
@@ -77,21 +75,44 @@ const Members = () => {
                 <a href={`/members/${member.id}`} className="btn-learn-more" >View Family</a>
               </div>
             )
-          })}
+          }) : (
+            <div className="empty-state">
+              <div className="empty-state-icon">
+                <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+              </div>
+              <h3>No Members to Display</h3>
+              <p>The members directory is currently empty. Members will appear here once they are added.</p>
+            </div>
+          )}
         </div>
       </div>):(
-        <div >
-          <div className="card-member">
-            <h1 style={{color:'white'}}>{isAuthorised?'User Needs To Be Authenticated To View this page':'You Are Not Authorised to View This Page !!' }<LockIcon/></h1>
-                {isAuthorised&&<Button variant="outlined"
-                  startIcon={<GoogleIcon />}
-                  style={{ marginTop: '20px', minWidth: '300px',color:'white' ,borderBlockColor:'white',borderBlockEndWidth:'5px',borderBlockStartWidth:'5px',borderRadius:'10px'}}
-                  onClick={()=>{
-                    googleSignIn();
-                  }}
-                >
-                  Sign In With Google
-                </Button>}
+        <div className="auth-gate">
+          <div className="auth-gate-card">
+            <div className="auth-gate-icon">
+              <LockIcon style={{ fontSize: 40, color: 'var(--color-primary)' }} />
+            </div>
+            <h2 className="auth-gate-title">
+              {isAuthorised ? 'Members Only Area' : 'Access Restricted'}
+            </h2>
+            <p className="auth-gate-subtitle">
+              {isAuthorised
+                ? 'Please sign in with your registered Google account to view the family directory.'
+                : 'Your account is not authorised to access this page. Please contact the administrator.'}
+            </p>
+            {isAuthorised && (
+              <button
+                className="auth-gate-btn"
+                onClick={() => { googleSignIn(); }}
+              >
+                <GoogleIcon style={{ fontSize: 20 }} />
+                <span>Sign in with Google</span>
+              </button>
+            )}
+            <p className="auth-gate-note">
+              {isAuthorised
+                ? 'Only registered family members can access this section.'
+                : 'If you believe this is an error, please reach out to the family association.'}
+            </p>
           </div>
         </div>
       )}

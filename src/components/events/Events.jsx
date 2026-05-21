@@ -46,7 +46,7 @@ const Events = () => {
       <div className="container">
 
         <div className="row">
-          {events&&events.map((event)=>{
+          {events&&events.length > 0 ? events.map((event)=>{
             return (
               <div className="col-md-6 d-flex align-items-stretch" key={event.id}>
                 <div className="card">
@@ -63,15 +63,20 @@ const Events = () => {
                   </div>
                   <div className="card-body">
                     <h5 className="card-title">{event?.title}</h5>
-                    {/* <p className="fst-italic text-center">
-                      Sunday, September 26th at 7:00 pm
-                    </p> */}
                     <p className="card-text">{event?.description}</p>
                   </div>
                 </div>
               </div>
             );
-          })}
+          }) : (
+            <div className="empty-state">
+              <div className="empty-state-icon">
+                <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+              </div>
+              <h3>No Events to Display</h3>
+              <p>There are no events at the moment. New events will be posted here.</p>
+            </div>
+          )}
         </div>
 
       </div>

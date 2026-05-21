@@ -46,7 +46,7 @@ const Gallery = () => {
       <div className="container">
 
         <div className="row gallery-container">
-          {gallery&&gallery.map((image)=>{
+          {gallery&&gallery.length > 0 ? gallery.map((image)=>{
             return (
               <div className="col-lg-4 col-md-6 gallery-item " key={image.id}>
                 <div className="gallery-wrap">
@@ -67,7 +67,15 @@ const Gallery = () => {
                 </div>
               </div>
             );
-          })}
+          }) : (
+            <div className="empty-state">
+              <div className="empty-state-icon">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" /></svg>
+              </div>
+              <h3>No Photos to Display</h3>
+              <p>The gallery is currently empty. Photos will appear here once they are added.</p>
+            </div>
+          )}
 
           {/* <div className="col-lg-4 col-md-6 gallery-item filter-vacation">
             <div className="gallery-wrap">
