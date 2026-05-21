@@ -396,7 +396,24 @@ export const StateContext =({children})=>{
       }
       const googleSignOut=async()=>{
           signOut(auth)
+          setuser(null)
+          setIsGmailAuthenticated(false)
+          setIsAuthorised(true)
       }
+
+      // Persist auth: listen for Firebase auth state on mount
+      useEffect(()=>{
+        const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+          if(firebaseUser){
+            setuser({ gmail: firebaseUser.email })
+          } else {
+            setuser(null)
+            setIsGmailAuthenticated(false)
+          }
+        })
+        return () => unsubscribe()
+      },[])
+
       useEffect(()=>{
         if(user){
           getGmail(user.gmail)
