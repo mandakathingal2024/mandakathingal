@@ -1,5 +1,6 @@
 'use client'
 import * as React from 'react';
+import { DashboardSkeleton } from '../Skeleton';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
@@ -45,7 +46,7 @@ const GalleryAdmin = () => {
   },[]);
   
   if(isLoading){
-    return <h1 style={{marginTop:'200px', marginBottom:'100px'}}>Loading...</h1>
+    return <DashboardSkeleton />
   }
 
   const style = {

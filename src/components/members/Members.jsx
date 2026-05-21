@@ -6,10 +6,10 @@ import { Router } from 'next/router'
 import LockIcon from '@mui/icons-material/Lock';
 import Button from '@mui/material/Button';
 import GoogleIcon from '@mui/icons-material/Google';
-
+import { MembersSkeleton } from '../Skeleton'
 
 const Members = () => {
-  const [isLoading, setIsLoading] = useState(true); 
+  const [isLoading, setIsLoading] = useState(true);
   const {getMembersWithNewBranchRelation,newBranchData,isGmailAuthenticated,searchMembersByName,setNewBranchData,googleSignIn,isAuthorised} =useStateContext()
   const [search, setSearch] = React.useState('')
 
@@ -18,8 +18,7 @@ const Members = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        
-        const response = await getMembersWithNewBranchRelation();  
+        const response = await getMembersWithNewBranchRelation();
       } catch (error) {
         setError(error);
       } finally {
@@ -29,7 +28,7 @@ const Members = () => {
     fetchData();
   },[]);
   if(isLoading){
-    return <h1 style={{marginTop:'200px', marginBottom:'100px'}}>Loading...</h1>
+    return <MembersSkeleton />
   }
   
   return (

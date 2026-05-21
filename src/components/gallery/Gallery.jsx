@@ -2,9 +2,10 @@
 import React, { useEffect, useState } from 'react'
 import { useStateContext } from '../../../context/stateContext';
 import Image from 'next/image';
+import { GallerySkeleton } from '../Skeleton';
 
 const Gallery = () => {
-  const [isLoading, setIsLoading] = useState(true); 
+  const [isLoading, setIsLoading] = useState(true);
   const {fetchAllGallery,gallery} =useStateContext()
 
   const [error, setError] = useState(null);
@@ -12,7 +13,7 @@ const Gallery = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetchAllGallery();  
+        const response = await fetchAllGallery();
       } catch (error) {
         setError(error);
       } finally {
@@ -22,7 +23,7 @@ const Gallery = () => {
     fetchData();
   },[]);
   if(isLoading){
-    return <h1 style={{marginTop:'200px', marginBottom:'100px'}}>Loading...</h1>
+    return <GallerySkeleton />
   }
   return (
     <main id="main">

@@ -1,5 +1,6 @@
 'use client'
 import * as React from 'react';
+import { DashboardSkeleton } from '../Skeleton';
 // import Link from '@mui/material/Link';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -36,7 +37,7 @@ export default function Orders() {
   },[]);
   
   if(isLoading){
-    return <h1 style={{marginTop:'200px', marginBottom:'100px'}}>Loading...</h1>
+    return <DashboardSkeleton />
   }
   return (
     <React.Fragment>

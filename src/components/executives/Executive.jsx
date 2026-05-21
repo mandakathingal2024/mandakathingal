@@ -2,10 +2,10 @@
 import Image from 'next/image'
 import React, { useEffect, useState } from 'react'
 import { useStateContext } from '../../../context/stateContext'
-
+import { ExecutivesSkeleton } from '../Skeleton'
 
 const Executive = () => {
-  const [isLoading, setIsLoading] = useState(true); 
+  const [isLoading, setIsLoading] = useState(true);
   const {fetchAllExecutives,executives} =useStateContext()
 
   const [error, setError] = useState(null);
@@ -13,7 +13,7 @@ const Executive = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetchAllExecutives();  
+        const response = await fetchAllExecutives();
       } catch (error) {
         setError(error);
       } finally {
@@ -23,7 +23,7 @@ const Executive = () => {
     fetchData();
   },[]);
   if(isLoading){
-    return <h1 style={{marginTop:'200px', marginBottom:'100px'}}>Loading...</h1>
+    return <ExecutivesSkeleton />
   }
   return (
     <>

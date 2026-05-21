@@ -1,9 +1,10 @@
 'use client'
 import React, { useEffect, useState } from 'react'
 import { useStateContext } from '../../../context/stateContext';
+import { EventsSkeleton } from '../Skeleton';
 
 const Events = () => {
-  const [isLoading, setIsLoading] = useState(true); 
+  const [isLoading, setIsLoading] = useState(true);
   const {fetchAllEvents,events} =useStateContext()
 
   const [error, setError] = useState(null);
@@ -11,7 +12,7 @@ const Events = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetchAllEvents();  
+        const response = await fetchAllEvents();
       } catch (error) {
         setError(error);
       } finally {
@@ -21,7 +22,7 @@ const Events = () => {
     fetchData();
   },[]);
   if(isLoading){
-    return <h1 style={{marginTop:'200px', marginBottom:'100px'}}>Loading...</h1>
+    return <EventsSkeleton />
   }
   return (
       <>

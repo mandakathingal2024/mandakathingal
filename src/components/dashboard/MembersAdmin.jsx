@@ -3,6 +3,7 @@ import * as React from 'react';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
+import { DashboardSkeleton } from '../Skeleton';
 import Button from '@mui/material/Button';
 import GroupAddIcon from '@mui/icons-material/GroupAdd';
 import Modal from '@mui/material/Modal';
@@ -94,9 +95,9 @@ const MembersAdmin = () => {
   },[]);
   
   if(isLoading){
-    return <h1 style={{marginTop:'200px', marginBottom:'100px'}}>Loading...</h1>
+    return <DashboardSkeleton />
   }
-  
+
   const handleEdit=async(member)=>{
     setOpen(true)
     setIsEdit(true)
