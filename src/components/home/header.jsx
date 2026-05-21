@@ -35,7 +35,7 @@ export const Header = () => {
               alt="Mandakathingal Family Logo"
               className="img-fluid"
             />{" "}
-            <a href="/">{isEnglish?`Mandakathingal kudumbasamithi`:`മണ്ടകത്തിങ്ങൽ കുടുംബസമിതി`}</a>
+            <a href="/">{isEnglish?`Mandakathingal`:`മണ്ടകത്തിങ്ങൽ`}</a>
           </h1>
           <nav id="navbar" className={`navbar${mobileNavOpen ? ' navbar-mobile' : ''}`}>
             <ul>

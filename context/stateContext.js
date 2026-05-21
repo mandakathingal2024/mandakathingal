@@ -1,7 +1,7 @@
 'use client'
 import React, {  createContext, useContext,useEffect,useRef,useState } from "react"
 import { db,storage,auth } from "./firebaseConfig"
-import { signInWithPopup , GoogleAuthProvider ,onAuthStateChanged, signOut} from "firebase/auth";
+import { signInWithPopup, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, setDoc,getDoc, deleteDoc,addDoc,collection, getDocs, query, where, orderBy, startAt, endAt ,updateDoc  } from "firebase/firestore";
 // import { ref, deleteObject } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
@@ -377,10 +377,25 @@ export const StateContext =({children})=>{
         }
       }
 
-      const googleSignIn =async()=>{
-        const provider=new GoogleAuthProvider()
-        await signInWithPopup(auth,provider).then((res)=>{setuser({gmail:res.user.email})
-        })
+      const googleSignIn = async () => {
+        const provider = new GoogleAuthProvider()
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+        if (isMobile) {
+          // Use redirect on mobile (popups are blocked/unreliable)
+          await signInWithRedirect(auth, provider)
+        } else {
+          try {
+            const res = await signInWithPopup(auth, provider)
+            setuser({ gmail: res.user.email })
+          } catch (error) {
+            // Popup blocked on desktop — fall back to redirect
+            if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user') {
+              await signInWithRedirect(auth, provider)
+            } else {
+              console.error('Google sign-in error:', error)
+            }
+          }
+        }
       }
       async function getGmail(gmail) {
         const membersRef = collection(db, "gmail");
