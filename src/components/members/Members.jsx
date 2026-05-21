@@ -47,23 +47,20 @@ const Members = () => {
 
         <section id="features" className="features">
       {isGmailAuthenticated?(<div className="container">
-          <div className="InputContainer">
-            <input placeholder="Search Member" 
-            id="input" 
-            className="input" 
-            name='search' 
+          <div className="member-search">
+            <svg className="member-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input placeholder="Search by name..."
+            className="member-search-input"
+            name='search'
             type="search"
             value={search}
             onChange={async (e) => {
               setSearch(e.target.value)
-              
                 const results=await searchMembersByName(e.target.value)
                 if(results){setNewBranchData(results)}
-                
-
             }} />
-            {/* <button onClick={()=>{googleSignIn()
-            }} >gmail</button> */}
           </div>
         <div className="row">
           {newBranchData&&newBranchData.length > 0 ? newBranchData.map((member)=>{
