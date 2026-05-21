@@ -50,7 +50,15 @@ const Events = () => {
               <div className="col-md-6 d-flex align-items-stretch" key={event.id}>
                 <div className="card">
                   <div className="card-img">
-                    <img src={event?.eventImgUrl} alt="..." />
+                    <img
+                      src={event?.eventImgUrl || ''}
+                      alt={event?.title || ''}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.parentElement.style.cssText = 'width:100%;height:200px;background:#F5EDE4;display:flex;align-items:center;justify-content:center;color:#7A6355;font-size:14px;border-radius:8px 8px 0 0';
+                        e.target.parentElement.textContent = 'No Image Available';
+                      }}
+                    />
                   </div>
                   <div className="card-body">
                     <h5 className="card-title">{event?.title}</h5>
