@@ -24,8 +24,8 @@ export const Header = () => {
         <h1 className="logo">
           <Image
             src="/m.png"
-            width={60}
-            height={190}
+            width={40}
+            height={120}
             alt="Mandakathingal Family Logo"
             className="img-fluid"
           />{" "}

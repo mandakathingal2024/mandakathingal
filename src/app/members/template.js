@@ -3,16 +3,15 @@ import { Header } from "@/components/home/header"
 
 
 export default function Template({ children }) {
-    // console.log(key)
-    return <>
+    return <div style={{display: 'flex', flexDirection: 'column', minHeight: '100vh'}}>
         <header>
           <Header/>
         </header>
-        <main>
+        <main style={{flex: 1}}>
           {children}
         </main>
         <footer>
             <Footer/>
         </footer>
-    </>
+    </div>
   }

@@ -6,9 +6,7 @@ const Hero = () => {
   const { isEnglish } = useStateContext()
   return (
     <section id="hero">
-      <div id="heroCarousel" data-bs-interval="3000" className="carousel slide carousel-fade" data-bs-ride="carousel">
-
-        <ol className="carousel-indicators" id="hero-carousel-indicators"></ol>
+      <div id="heroCarousel" data-bs-interval="2000" className="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-touch="false" data-bs-pause="false">
 
         <div className="carousel-inner" role="listbox">
 
@@ -34,13 +32,6 @@ const Hero = () => {
           </div>
         </div>
 
-        <a className="carousel-control-prev" href="#heroCarousel" role="button" data-bs-slide="prev">
-          <span className="carousel-control-prev-icon bi bi-chevron-left" aria-hidden="true"></span>
-        </a>
-
-        <a className="carousel-control-next" href="#heroCarousel" role="button" data-bs-slide="next">
-          <span className="carousel-control-next-icon bi bi-chevron-right" aria-hidden="true"></span>
-        </a>
 
       </div>
     </section>

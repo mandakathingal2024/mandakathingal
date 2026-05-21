@@ -4,37 +4,71 @@ import React from 'react'
 import { useStateContext } from '../../../context/stateContext'
 
 const Editorial = () => {
-  const {isEnglish}=useStateContext()
+  const { isEnglish } = useStateContext()
+
+  const members = [
+    {
+      img: '/img-1.png',
+      nameEn: 'Hamza Mandakathingal',
+      nameMl: 'ഹംസ  മണ്ടകത്തിങ്ങൽ',
+      roleEn: 'Patron, Convenor & Editor',
+      roleMl: 'രക്ഷാധികാരി കൺവീനർ & എഡിറ്റർ',
+    },
+    {
+      img: '/img-2.png',
+      nameEn: 'Abdul Mujeeb',
+      nameMl: 'അബ്ദുൽ മുജീബ്',
+      roleEn: 'Secretary & Sub Editor',
+      roleMl: 'സെക്രട്ടറി & സബ് എഡിറ്റർ',
+    },
+    {
+      img: '/img-5.jpeg',
+      nameEn: 'Saleem Master',
+      nameMl: 'സലീം  മാസ്റ്റർ',
+      roleEn: 'Secretary & Sub Editor',
+      roleMl: 'സെക്രട്ടറി & സബ് എഡിറ്റർ',
+    },
+    {
+      img: '/img-7.png',
+      nameEn: 'Mohamed Shahin M',
+      nameMl: 'മുഹമ്മദ് ഷാഹിൻ  എം',
+      roleEn: 'Designer & Creator',
+      roleMl: 'ഡിസൈനർ & ക്രിയേറ്റർ',
+    },
+  ]
+
   return (
     <section id="editorial" className="features section-bg-warm">
       <div className="container">
-      <div className="section-title">
-          <h2>{isEnglish?`Editorial`:`എഡിറ്റോറിയൽ `}</h2>
-          
-          {/* <p>Magnam dolores commodi suscipit. Necessitatibus eius consequatur ex aliquid fuga eum quidem. Sit sint consectetur velit. Quisquam quos quisquam cupiditate. Et nemo qui impedit suscipit alias ea. Quia fugiat sit in iste officiis commodi quidem hic quas.</p> */}
+        <p className="section-label">
+          {isEnglish ? 'Editorial Board' : 'എഡിറ്റോറിയൽ ബോർഡ്'}
+        </p>
+        <div className="section-title">
+          <h2>{isEnglish ? 'Editorial' : 'എഡിറ്റോറിയൽ'}</h2>
         </div>
+        <p className="section-subtitle">
+          {isEnglish ? 'Suvaneer Editorial Team' : 'സുവനീർ എഡിറ്റോറിയൽ ടീം'}
+        </p>
+        <hr className="section-divider" />
 
-        <div className="row">
-          <div className="col-lg-3 col-md-6 icon-box">
-            <div className="icon"><Image width={120} height={165} src="/img-1.png" alt="" /></div>
-            <h4 className="title"><a href="">{isEnglish?`Hamza Mandakathingal`:`ഹംസ  മണ്ടകത്തിങ്ങൽ `}</a></h4>
-            <p className="description">{isEnglish?`Patron , Convenor & Editor Suvaneer` : `രക്ഷാധികാരി കൺവീനർ & എഡിറ്റർ സുവനീർ`}</p>
-          </div>
-          <div className="col-lg-3 col-md-6 icon-box">
-            <div className="icon"><Image width={110} height={155} src="/img-2.png" alt="" /></div>
-            <h4 className="title"><a href="">{isEnglish?`Abdul Mujeeb`:`അബ്ദുൽ മുജീബ് `}</a></h4>
-            <p className="description">{isEnglish?`Secretary & Sub Editor Suvaneer`: `സെക്രട്ടറി & സബ് എഡിറ്റർ സുവനീർ`}</p>
-          </div>
-          <div className="col-lg-3 col-md-6 icon-box">
-            <div className="icon"><Image width={120} height={155} src="/img-5.jpeg" alt="" /></div>
-            <h4 className="title"><a href="">{isEnglish?`Saleem Master`:`സലീം  മാസ്റ്റർ `}</a></h4>
-            <p className="description">{isEnglish?`Secretary & Sub Editor Suvaneer`: `സെക്രട്ടറി & സബ് എഡിറ്റർ സുവനീർ`}</p>
-          </div>
-          <div className="col-lg-3 col-md-6 icon-box">
-            <div className="icon"><Image width={155} height={155} src="/img-7.png" alt="" /></div>
-            <h4 className="title"><a href="">{isEnglish?`Mohamed Shahin M`:`മുഹമ്മദ് ഷാഹിൻ  എം `}</a></h4>
-            <p className="description">{isEnglish?`Designer Creator suvaneer`:`ഡിസൈനർ ക്രിയേറ്റർ സുവനീർ`}</p>
-          </div> 
+        <div className="row justify-content-center">
+          {members.map((member, index) => (
+            <div key={index} className="col-lg-3 col-md-6 col-sm-6">
+              <div className="icon-box">
+                <div className="icon">
+                  <Image
+                    src={member.img}
+                    alt={isEnglish ? member.nameEn : member.nameMl}
+                    width={200}
+                    height={200}
+                    style={{ objectFit: 'cover', objectPosition: 'center top', width: '100%', height: '100%' }}
+                  />
+                </div>
+                <h4 className="title">{isEnglish ? member.nameEn : member.nameMl}</h4>
+                <p className="description">{isEnglish ? member.roleEn : member.roleMl}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </section>
