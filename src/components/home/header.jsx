@@ -79,7 +79,7 @@ export const Header = () => {
                 checked={isEnglish}
                 onChange={handleChange}
                 inputProps={{ "aria-label": "controlled" }}
-                color="info"
+                color="warning"
               />
               English
             </div>

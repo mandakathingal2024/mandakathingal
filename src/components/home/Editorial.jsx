@@ -6,7 +6,7 @@ import { useStateContext } from '../../../context/stateContext'
 const Editorial = () => {
   const {isEnglish}=useStateContext()
   return (
-    <section id="features" className="features" style={{padding:'20px 0px'}}>
+    <section id="editorial" className="features section-bg-warm">
       <div className="container">
       <div className="section-title">
           <h2>{isEnglish?`Editorial`:`എഡിറ്റോറിയൽ `}</h2>

@@ -6,7 +6,7 @@ import { useStateContext } from '../../../context/stateContext'
 const AdvisoryBoard = () => {
   const {isEnglish}=useStateContext()
   return (
-    <section id="features" className="features" style={{padding:'20px 0px'}}>
+    <section id="advisory-board" className="features">
       <div className="container">
       <div className="section-title">
           <h2>{isEnglish?`Advisory Board`:`ഉപദേശക സമിതി `}</h2>

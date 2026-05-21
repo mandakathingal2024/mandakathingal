@@ -15,7 +15,7 @@ export default function Home() {
         <header>
           <Header/>
         </header>
-      {/* <Hero></Hero> */}
+      <Hero/>
       <main id="main">
         <About/>
         <Editorial/>

@@ -6,7 +6,7 @@ import { useStateContext } from '../../../context/stateContext'
 const Photos = () => {
   const {isEnglish}=useStateContext()
   return (
-    <section id="recent-photos" className="recent-photos" style={{padding:'20px 0px'}}>
+    <section id="recent-photos" className="recent-photos">
       <div className="container">
 
         <div className="section-title">
@@ -16,16 +16,16 @@ const Photos = () => {
 
         <div className="recent-photos-slider swiper">
           <div className="swiper-wrapper align-items-center">
-            <div className="swiper-slide" style={{maxHeight:'50px'}}><a href="/gallery/img-1.jpeg" className="glightbox "><Image width={400} height={300} layout='intrinsic' src="/gallery/img-1.jpeg" className="img-fluid" alt=""/></a></div>
-            <div className="swiper-slide" style={{maxHeight:'50px'}}><a href="/gallery/img-2.jpeg" className="glightbox "><Image width={400} height={300} layout='intrinsic' src="/gallery/img-2.jpeg" className="img-fluid" alt=""/></a></div>
-            <div className="swiper-slide" style={{maxHeight:'50px'}}><a href="/gallery/img-3.jpeg" className="glightbox "><Image width={400} height={300} layout='intrinsic' src="/gallery/img-3.jpeg" className="img-fluid" alt=""/></a></div>
-            <div className="swiper-slide" style={{maxHeight:'50px'}}><a href="/gallery/img-4.jpeg" className="glightbox "><Image width={400} height={300} layout='intrinsic' src="/gallery/img-4.jpeg" className="img-fluid" alt=""/></a></div>
-            <div className="swiper-slide" style={{maxHeight:'50px'}}><a href="/gallery/img-5.jpeg" className="glightbox "><Image width={400} height={300} layout='intrinsic' src="/gallery/img-5.jpeg" className="img-fluid" alt=""/></a></div>
-            <div className="swiper-slide" style={{maxHeight:'50px'}}><a href="/gallery/img-6.jpeg" className="glightbox "><Image width={400} height={300} layout='intrinsic' src="/gallery/img-6.jpeg" className="img-fluid" alt=""/></a></div>
-            <div className="swiper-slide" style={{maxHeight:'50px'}}><a href="/gallery/img-7.jpeg" className="glightbox "><Image width={400} height={300} layout='intrinsic' src="/gallery/img-7.jpeg" className="img-fluid" alt=""/></a></div>
-            <div className="swiper-slide" style={{maxHeight:'50px'}}><a href="/gallery/img-8.jpeg" className="glightbox "><Image width={400} height={300} layout='intrinsic' src="/gallery/img-8.jpeg" className="img-fluid" alt=""/></a></div>
+            <div className="swiper-slide"><a href="/gallery/img-1.jpeg" className="glightbox "><Image width={400} height={300} layout='intrinsic' src="/gallery/img-1.jpeg" className="img-fluid" alt=""/></a></div>
+            <div className="swiper-slide"><a href="/gallery/img-2.jpeg" className="glightbox "><Image width={400} height={300} layout='intrinsic' src="/gallery/img-2.jpeg" className="img-fluid" alt=""/></a></div>
+            <div className="swiper-slide"><a href="/gallery/img-3.jpeg" className="glightbox "><Image width={400} height={300} layout='intrinsic' src="/gallery/img-3.jpeg" className="img-fluid" alt=""/></a></div>
+            <div className="swiper-slide"><a href="/gallery/img-4.jpeg" className="glightbox "><Image width={400} height={300} layout='intrinsic' src="/gallery/img-4.jpeg" className="img-fluid" alt=""/></a></div>
+            <div className="swiper-slide"><a href="/gallery/img-5.jpeg" className="glightbox "><Image width={400} height={300} layout='intrinsic' src="/gallery/img-5.jpeg" className="img-fluid" alt=""/></a></div>
+            <div className="swiper-slide"><a href="/gallery/img-6.jpeg" className="glightbox "><Image width={400} height={300} layout='intrinsic' src="/gallery/img-6.jpeg" className="img-fluid" alt=""/></a></div>
+            <div className="swiper-slide"><a href="/gallery/img-7.jpeg" className="glightbox "><Image width={400} height={300} layout='intrinsic' src="/gallery/img-7.jpeg" className="img-fluid" alt=""/></a></div>
+            <div className="swiper-slide"><a href="/gallery/img-8.jpeg" className="glightbox "><Image width={400} height={300} layout='intrinsic' src="/gallery/img-8.jpeg" className="img-fluid" alt=""/></a></div>
           </div>
-          <div className="swiper-pagination" style={{marginTop:'100px'}}></div>
+          <div className="swiper-pagination"></div>
         </div>
       </div>
     </section>
