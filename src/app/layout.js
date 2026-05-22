@@ -19,13 +19,6 @@ export const metadata = {
   title: "Mandakathingal Family",
   description: "Mandakathingal Family Association",
   charset: "utf-8",
-  manifest: "/manifest.json",
-  themeColor: "#5C3D2E",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "Mandakathingal Admin",
-  },
 };
 
 export default function RootLayout({ children }) {
@@ -34,8 +27,6 @@ export default function RootLayout({ children }) {
       <head>
         <link rel="icon" href="/m.png" type="image/png" />
         <link rel="apple-touch-icon" href="/m.png" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className={`${inter.className} ${playfair.variable}`}>
         <StateContext>
