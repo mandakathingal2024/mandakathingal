@@ -49,12 +49,30 @@ export default function SignInSide() {
   const [showPassword, setShowPassword] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState('');
-  const { authenticateUser, isAuthenticated } = useStateContext();
+  const { authenticateUser, isAuthenticated, isAuthLoading } = useStateContext();
   const router = useRouter();
 
+  // Register service worker for PWA install
   React.useEffect(() => {
-    if (isAuthenticated) { router.push('/mkadminhamza/dashboard'); }
-  }, [isAuthenticated]);
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (!isAuthLoading && isAuthenticated) {
+      router.push('/mkadminhamza/dashboard');
+    }
+  }, [isAuthenticated, isAuthLoading]);
+
+  // Show loader while checking auth from localStorage (prevents login page flash)
+  if (isAuthLoading || isAuthenticated) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#F5F0EB' }}>
+        <CircularProgress sx={{ color: '#5C3D2E' }} />
+      </Box>
+    );
+  }
 
   const handleSubmit = async (event) => {
     event.preventDefault();

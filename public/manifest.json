@@ -1,6 +1,6 @@
 {
   "name": "Mandakathingal Admin",
-  "short_name": "MK Admin",
+  "short_name": "Mandakathingal Admin",
   "description": "Mandakathingal Family Association - Admin Panel",
   "start_url": "/mkadminhamza/dashboard",
   "scope": "/mkadminhamza",
