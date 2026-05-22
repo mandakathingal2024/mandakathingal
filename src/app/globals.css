@@ -34,6 +34,7 @@
   /* Typography */
   --font-heading: 'Raleway', sans-serif;
   --font-body: 'Open Sans', sans-serif;
+  --font-logo: 'Playfair Display', Georgia, serif;
 
   /* Transitions */
   --transition-smooth: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);

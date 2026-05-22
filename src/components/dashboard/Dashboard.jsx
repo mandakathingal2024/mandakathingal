@@ -171,7 +171,7 @@ export default function Dashboard() {
             >
               <MenuIcon />
             </IconButton>
-            <Typography component="h1" variant="h6" color="inherit" noWrap sx={{ flexGrow: 1, fontWeight: 700, letterSpacing: '0.5px' }}>
+            <Typography component="h1" variant="h6" color="inherit" noWrap sx={{ flexGrow: 1, fontFamily: 'var(--font-playfair), "Playfair Display", Georgia, serif', fontWeight: 800, letterSpacing: '3px', textTransform: 'uppercase', fontSize: { xs: '1rem', sm: '1.15rem' } }}>
               Mandakathingal
             </Typography>
             <Typography variant="body2" sx={{ color: 'text.secondary', display: { xs: 'none', sm: 'block' } }}>
