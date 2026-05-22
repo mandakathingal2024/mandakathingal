@@ -5,6 +5,7 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Divider from '@mui/material/Divider';
 import Box from '@mui/material/Box';
+import DashboardIcon from '@mui/icons-material/Dashboard';
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
 import PeopleIcon from '@mui/icons-material/People';
 import { useStateContext } from '../../../context/stateContext';
@@ -12,16 +13,17 @@ import EventNoteIcon from '@mui/icons-material/EventNote';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import EmailIcon from '@mui/icons-material/Email';
-
 const navItems = [
+  { label: 'Dashboard', icon: <DashboardIcon />, page: 0 },
   { label: 'Gallery', icon: <PhotoLibraryIcon />, page: 1 },
   { label: 'Members', icon: <PeopleIcon />, page: 2 },
   { label: 'Events', icon: <EventNoteIcon />, page: 3 },
   { label: 'Executives', icon: <AdminPanelSettingsIcon />, page: 4 },
 ];
 
-const ListItems = ({ onNavigate }) => {
-  const { setPageValue, handleLogOut, pageValue } = useStateContext();
+const ListItems = ({ onNavigate, onLogout }) => {
+  const { setPageValue, pageValue } = useStateContext();
+
   const navigate = (page) => {
     setPageValue(page);
     if (onNavigate) onNavigate();
@@ -83,7 +85,7 @@ const ListItems = ({ onNavigate }) => {
       <Divider sx={{ borderColor: 'rgba(255,255,255,0.08)', my: 1.5, mx: 2 }} />
 
       <ListItemButton
-        onClick={handleLogOut}
+        onClick={() => { if (onLogout) onLogout(); }}
         sx={{
           ...defaultStyle,
           '&:hover': { backgroundColor: 'rgba(211,47,47,0.15)' },
@@ -101,6 +103,7 @@ const ListItems = ({ onNavigate }) => {
           }}
         />
       </ListItemButton>
+
     </Box>
   );
 };

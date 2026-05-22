@@ -22,9 +22,11 @@ import GalleryAdmin from './GalleryAdmin';
 import EventsAdmin from './EventsAdmin';
 import MembersAdmin from './MembersAdmin';
 import ExecutiveAdmin from './ExecutiveAdmin';
+import DashboardHome from './DashboardHome';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import PersonAddAltIcon from '@mui/icons-material/PersonAddAlt';
+import ConfirmDialog from './ConfirmDialog';
 
 const adminTheme = createTheme({
   palette: {
@@ -151,8 +153,14 @@ export default function Dashboard() {
   const isMobile = useMediaQuery(adminTheme.breakpoints.down('md'));
   const [open, setOpen] = React.useState(false);
   const [gmail, setGmail] = React.useState('');
+  const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
   const toggleDrawer = () => setOpen(!open);
-  const { pageValue, addGmail } = useStateContext();
+  const { pageValue, addGmail, handleLogOut } = useStateContext();
+
+  const onLogout = () => {
+    if (isMobile) setOpen(false);
+    setShowLogoutConfirm(true);
+  };
 
   return (
     <ThemeProvider theme={adminTheme}>
@@ -188,7 +196,7 @@ export default function Dashboard() {
             </Box>
             <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
             <List component="nav">
-              <ListItems onNavigate={toggleDrawer} />
+              <ListItems onNavigate={toggleDrawer} onLogout={onLogout} />
             </List>
           </MuiDrawer>
         ) : (
@@ -201,13 +209,14 @@ export default function Dashboard() {
             </Box>
             <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
             <List component="nav">
-              <ListItems />
+              <ListItems onLogout={onLogout} />
             </List>
           </Drawer>
         )}
 
         <Box component="main" sx={{ backgroundColor: 'background.default', flexGrow: 1, height: '100vh', overflow: 'auto' }}>
           <Toolbar />
+          {pageValue === 0 && <DashboardHome />}
           {pageValue === 1 && <GalleryAdmin />}
           {pageValue === 2 && <MembersAdmin />}
           {pageValue === 3 && <EventsAdmin />}
@@ -255,6 +264,18 @@ export default function Dashboard() {
           )}
         </Box>
       </Box>
+
+      <ConfirmDialog
+        open={showLogoutConfirm}
+        title="Log Out"
+        message="Are you sure you want to log out of the admin panel?"
+        confirmText="Log Out"
+        onCancel={() => setShowLogoutConfirm(false)}
+        onConfirm={() => {
+          setShowLogoutConfirm(false);
+          handleLogOut();
+        }}
+      />
     </ThemeProvider>
   );
 }

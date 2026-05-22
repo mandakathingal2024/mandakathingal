@@ -12,8 +12,13 @@ export const useStateContext=()=>useContext(Context)
 
 export const StateContext =({children})=>{
     const [isEnglish, setIsEnglish] = useState(true)
-    const [isAuthenticated,setIsAuthenticated]=useState(false)
-    const [pageValue,setPageValue]=useState(1)
+    const [isAuthenticated,setIsAuthenticated]=useState(() => {
+      if (typeof window !== 'undefined') {
+        return sessionStorage.getItem('adminAuth') === 'true'
+      }
+      return false
+    })
+    const [pageValue,setPageValue]=useState(0)
     const [newBranchData, setNewBranchData] = useState([]);
     const [viewFamilyData,setViewFamilyData]= useState([]);
     const [memberObj,setMemberObj]= useState(null);
@@ -45,6 +50,9 @@ export const StateContext =({children})=>{
           }
           const responseData = await response.json();
           setIsAuthenticated(responseData.isAuthenticated)
+          if (responseData.isAuthenticated) {
+            sessionStorage.setItem('adminAuth', 'true')
+          }
         //   return responseData
         } catch (error) {
           console.error('Error:', error.message); // Handle errors
@@ -107,6 +115,7 @@ export const StateContext =({children})=>{
  
     const handleLogOut=()=>{
       setIsAuthenticated(false)
+      sessionStorage.removeItem('adminAuth')
     }
 
     async function searchMembersByName(inputString) {

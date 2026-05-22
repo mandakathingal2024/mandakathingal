@@ -9,7 +9,7 @@ import Button from '@mui/material/Button';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import Box from '@mui/material/Box';
 
-const ConfirmDialog = ({ open, title, message, onConfirm, onCancel }) => {
+const ConfirmDialog = ({ open, title, message, confirmText, onConfirm, onCancel }) => {
   return (
     <Dialog
       open={open}
@@ -60,7 +60,7 @@ const ConfirmDialog = ({ open, title, message, onConfirm, onCancel }) => {
             '&:hover': { backgroundColor: '#8B0000', boxShadow: '0 2px 8px rgba(183,28,28,0.3)' },
           }}
         >
-          Delete
+          {confirmText || 'Delete'}
         </Button>
       </DialogActions>
     </Dialog>
