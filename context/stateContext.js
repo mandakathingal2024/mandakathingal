@@ -12,12 +12,8 @@ export const useStateContext=()=>useContext(Context)
 
 export const StateContext =({children})=>{
     const [isEnglish, setIsEnglish] = useState(true)
-    const [isAuthenticated,setIsAuthenticated]=useState(() => {
-      if (typeof window !== 'undefined') {
-        return sessionStorage.getItem('adminAuth') === 'true'
-      }
-      return false
-    })
+    const [isAuthenticated,setIsAuthenticated]=useState(false)
+    const [isAuthLoading,setIsAuthLoading]=useState(true)
     const [pageValue,setPageValue]=useState(0)
     const [newBranchData, setNewBranchData] = useState([]);
     const [viewFamilyData,setViewFamilyData]= useState([]);
@@ -31,6 +27,22 @@ export const StateContext =({children})=>{
     const [isAuthorised,setIsAuthorised]=useState(true)
     const [gmail,setGmail]=useState(null)
 
+
+    // Hydrate auth and page state from sessionStorage after mount (avoids SSR flash)
+    useEffect(() => {
+      const savedAuth = sessionStorage.getItem('adminAuth') === 'true'
+      const savedPage = sessionStorage.getItem('adminPage')
+      if (savedAuth) setIsAuthenticated(true)
+      if (savedPage !== null) setPageValue(Number(savedPage))
+      setIsAuthLoading(false)
+    }, [])
+
+    // Persist pageValue to sessionStorage whenever it changes
+    useEffect(() => {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('adminPage', String(pageValue))
+      }
+    }, [pageValue])
 
     //fetch function for authenticate user
 
@@ -115,7 +127,9 @@ export const StateContext =({children})=>{
  
     const handleLogOut=()=>{
       setIsAuthenticated(false)
+      setPageValue(0)
       sessionStorage.removeItem('adminAuth')
+      sessionStorage.removeItem('adminPage')
     }
 
     async function searchMembersByName(inputString) {
@@ -449,6 +463,7 @@ export const StateContext =({children})=>{
         setIsEnglish,
         authenticateUser,
         isAuthenticated,
+        isAuthLoading,
         pageValue,
         setPageValue,
         addMember,
