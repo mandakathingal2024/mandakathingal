@@ -41,8 +41,8 @@ export default function SignInSide() {
   const router=useRouter()
 
   React.useEffect(()=>{
-    if(isAuthenticated){router.push('/admin/dashboard')}
-    else{router.push('/admin')}
+    if(isAuthenticated){router.push('/mkadminhamza/dashboard')}
+    else{router.push('/mkadminhamza')}
   },[isAuthenticated])
   const handleSubmit =async(event) => {
     event.preventDefault();
@@ -56,8 +56,8 @@ export default function SignInSide() {
     //   password: data.get('password'),
     // }
   await authenticateUser(credentials)
-  // if(isAuthenticated){router.push('/admin/dashboard')}
-  // else{router.push('/admin')}
+  // if(isAuthenticated){router.push('/mkadminhamza/dashboard')}
+  // else{router.push('/mkadminhamza')}
   };
 
   const handleChange = (event) => {

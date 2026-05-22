@@ -1,5 +1,5 @@
 const CACHE_NAME = 'mk-admin-v1';
-const OFFLINE_URL = '/admin/dashboard';
+const OFFLINE_URL = '/mkadminhamza/dashboard';
 
 // Install — cache the admin shell
 self.addEventListener('install', (event) => {
