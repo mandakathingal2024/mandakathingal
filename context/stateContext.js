@@ -440,16 +440,31 @@ export const StateContext =({children})=>{
         }
       }
       async function getGmail(gmail) {
-        const membersRef = collection(db, "gmail");
-        const querySnapshot = await getDocs(membersRef);
-        const match = querySnapshot.docs.find(
-          (doc) => doc.data().gmail?.toLowerCase() === gmail.toLowerCase()
-        );
+        try {
+          const membersRef = collection(db, "gmail");
+          // Try exact match first (works with strict Firestore rules)
+          const q = query(membersRef, where("gmail", "==", gmail.toLowerCase()));
+          const querySnapshot = await getDocs(q);
 
-        if (match) {
-          setIsGmailAuthenticated(true)
-          return match.data();
-        } else {
+          if (querySnapshot.size > 0) {
+            setIsGmailAuthenticated(true)
+            return querySnapshot.docs[0].data();
+          }
+
+          // Fallback: try original case (for old entries stored with mixed case)
+          if (gmail !== gmail.toLowerCase()) {
+            const q2 = query(membersRef, where("gmail", "==", gmail));
+            const querySnapshot2 = await getDocs(q2);
+            if (querySnapshot2.size > 0) {
+              setIsGmailAuthenticated(true)
+              return querySnapshot2.docs[0].data();
+            }
+          }
+
+          setIsAuthorised(false)
+          setDeniedEmail(gmail)
+        } catch (error) {
+          console.error('Gmail access check failed:', error)
           setIsAuthorised(false)
           setDeniedEmail(gmail)
         }
