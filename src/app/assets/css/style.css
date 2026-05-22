@@ -151,6 +151,15 @@ h6 {
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237A6355' stroke-width='2' stroke-linecap='round'%3E%3Cline x1='18' y1='6' x2='6' y2='18'/%3E%3Cline x1='6' y1='6' x2='18' y2='18'/%3E%3C/svg%3E") center/contain no-repeat;
   cursor: pointer;
 }
+
+.member-search-count {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 6px;
+  padding-left: 4px;
+}
 /* ---- Empty State ---- */
 .empty-state {
   display: flex;
@@ -292,6 +301,29 @@ h6 {
   }
   .auth-gate-title {
     font-size: 20px;
+  }
+}
+
+/* ---- View Family Title ---- */
+.view-family-title {
+  padding-top: 60px;
+}
+
+@media (max-width: 768px) {
+  .view-family-title {
+    padding-top: 30px;
+  }
+  .view-family-title h2 {
+    font-size: 22px;
+  }
+}
+
+@media (max-width: 480px) {
+  .view-family-title {
+    padding-top: 20px;
+  }
+  .view-family-title h2 {
+    font-size: 19px;
   }
 }
 
@@ -1895,6 +1927,10 @@ section {
     width: 100px;
     height: 120px;
   }
+  .features .icon-small-1 {
+    width: 160px;
+    height: 160px;
+  }
   .features .title {
     font-size: 13px;
   }
@@ -1927,6 +1963,10 @@ section {
   .member-search {
     max-width: 100%;
   }
+  .member-search-input {
+    height: 42px;
+    font-size: 14px;
+  }
   .breadcrumbs {
     padding: 12px 0;
   }
@@ -1956,6 +1996,18 @@ section {
   .auth-gate-title {
     font-size: 20px;
   }
+  .auth-gate-subtitle {
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+  .auth-gate-btn {
+    padding: 10px 24px;
+    font-size: 14px;
+  }
+  .auth-gate-note {
+    font-size: 11px;
+    margin-top: 18px;
+  }
   .empty-state {
     padding: 40px 16px;
     min-height: 220px;
@@ -1970,6 +2022,16 @@ section {
   .empty-state p {
     font-size: 13px;
   }
+  /* ViewFamily page mobile */
+  .about .section-title {
+    padding-top: 40px !important;
+  }
+  .about .section-title h2 {
+    font-size: 22px;
+  }
+  .about .about-img img {
+    border-radius: 12px !important;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1982,8 +2044,12 @@ section {
     width: 85px;
     height: 105px;
   }
+  .features .icon-small-1 {
+    width: 130px;
+    height: 130px;
+  }
   .features .icon-box {
-    padding: 16px 8px 14px;
+    padding: 14px 6px 12px;
   }
   .features .title {
     font-size: 12px;
@@ -1997,8 +2063,47 @@ section {
     letter-spacing: 1px;
   }
   .member-col {
-    padding: 0 5px;
-    margin-bottom: 10px;
+    padding: 0 4px;
+    margin-bottom: 8px;
+  }
+  .icon-box .btn-learn-more {
+    font-size: 10px;
+    padding: 5px 10px;
+    letter-spacing: 0.5px;
+  }
+  .member-search-input {
+    height: 40px;
+    font-size: 13px;
+    padding: 0 14px 0 38px;
+  }
+  .member-search-icon {
+    width: 16px;
+    height: 16px;
+    left: 12px;
+  }
+  /* ViewFamily page small mobile */
+  .about .section-title {
+    padding-top: 30px !important;
+  }
+  .about .section-title h2 {
+    font-size: 19px;
+  }
+}
+
+@media (max-width: 360px) {
+  .features .icon-small {
+    width: 72px;
+    height: 90px;
+  }
+  .features .icon-box {
+    padding: 12px 4px 10px;
+  }
+  .features .title {
+    font-size: 11px;
+  }
+  .icon-box .btn-learn-more {
+    font-size: 9px;
+    padding: 4px 8px;
   }
 }
 
