@@ -67,7 +67,7 @@ const GmailAccessAdmin = () => {
     if (newGmail && newGmail.includes('@')) {
       setIsSaving(true);
       try {
-        await addGmail({ gmail: newGmail });
+        await addGmail({ gmail: newGmail.trim().toLowerCase() });
         setNewGmail('');
         await fetchAllGmail();
         setToast({ open: true, message: 'Gmail registered successfully!' });

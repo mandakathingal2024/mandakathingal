@@ -25,6 +25,7 @@ export const StateContext =({children})=>{
     const [user,setuser]=useState(null)
     const [isGmailAuthenticated,setIsGmailAuthenticated]=useState(false)
     const [isAuthorised,setIsAuthorised]=useState(true)
+    const [deniedEmail,setDeniedEmail]=useState(null)
     const [gmail,setGmail]=useState(null)
 
 
@@ -440,21 +441,25 @@ export const StateContext =({children})=>{
       }
       async function getGmail(gmail) {
         const membersRef = collection(db, "gmail");
-        const q = query(membersRef, where("gmail", "==", gmail));
-        const querySnapshot = await getDocs(q);
-      
-        if (querySnapshot.size > 0) {
+        const querySnapshot = await getDocs(membersRef);
+        const match = querySnapshot.docs.find(
+          (doc) => doc.data().gmail?.toLowerCase() === gmail.toLowerCase()
+        );
+
+        if (match) {
           setIsGmailAuthenticated(true)
-          return querySnapshot.docs[0].data();
+          return match.data();
         } else {
           setIsAuthorised(false)
+          setDeniedEmail(gmail)
         }
       }
       const googleSignOut=async()=>{
-          signOut(auth)
+          await signOut(auth)
           setuser(null)
           setIsGmailAuthenticated(false)
           setIsAuthorised(true)
+          setDeniedEmail(null)
       }
 
       // Persist auth: listen for Firebase auth state on mount
@@ -521,6 +526,7 @@ export const StateContext =({children})=>{
         setIsGmailAuthenticated,
         isAuthorised,
         setIsAuthorised,
+        deniedEmail,
         gmail,
         fetchAllGmail
         }}>

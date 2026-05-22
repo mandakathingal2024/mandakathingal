@@ -8,7 +8,7 @@ import { MembersSkeleton } from '../Skeleton'
 
 const Members = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const { getMembersWithNewBranchRelation, newBranchData, isGmailAuthenticated, googleSignIn, isAuthorised } = useStateContext()
+  const { getMembersWithNewBranchRelation, newBranchData, isGmailAuthenticated, googleSignIn, googleSignOut, isAuthorised, deniedEmail } = useStateContext()
   const [search, setSearch] = useState('')
 
   const [error, setError] = useState(null);
@@ -120,23 +120,52 @@ const Members = () => {
           <div className="auth-gate">
             <div className="auth-gate-card">
               <div className="auth-gate-icon">
-                <LockIcon style={{ fontSize: 40, color: 'var(--color-primary)' }} />
+                <LockIcon style={{ fontSize: 40, color: isAuthorised ? 'var(--color-primary)' : '#D32F2F' }} />
               </div>
               <h2 className="auth-gate-title">
-                {isAuthorised ? 'Members Only Area' : 'Access Restricted'}
+                {isAuthorised ? 'Members Only Area' : 'Access Denied'}
               </h2>
+              {!isAuthorised && deniedEmail && (
+                <div style={{
+                  backgroundColor: 'rgba(211,47,47,0.08)',
+                  border: '1px solid rgba(211,47,47,0.25)',
+                  borderRadius: '8px',
+                  padding: '12px 16px',
+                  marginBottom: '16px',
+                  textAlign: 'center',
+                }}>
+                  <p style={{
+                    color: '#D32F2F',
+                    fontWeight: 600,
+                    fontSize: '0.9rem',
+                    margin: 0,
+                    lineHeight: 1.5,
+                  }}>
+                    Your selected Gmail <span style={{ fontWeight: 700 }}>({deniedEmail})</span> does not have access
+                  </p>
+                </div>
+              )}
               <p className="auth-gate-subtitle">
                 {isAuthorised
                   ? 'Please sign in with your registered Google account to view the family directory.'
-                  : 'Your account is not authorised to access this page. Please contact the administrator.'}
+                  : 'Please contact the administrator to get access.'}
               </p>
-              {isAuthorised && (
+              {isAuthorised ? (
                 <button
                   className="auth-gate-btn"
                   onClick={() => { googleSignIn(); }}
                 >
                   <GoogleIcon style={{ fontSize: 20 }} />
                   <span>Sign in with Google</span>
+                </button>
+              ) : (
+                <button
+                  className="auth-gate-btn"
+                  onClick={async () => { await googleSignOut(); }}
+                  style={{ backgroundColor: '#6B5B4E' }}
+                >
+                  <GoogleIcon style={{ fontSize: 20 }} />
+                  <span>Try Another Account</span>
                 </button>
               )}
               <p className="auth-gate-note">
