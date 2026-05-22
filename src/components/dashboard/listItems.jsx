@@ -13,6 +13,7 @@ import EventNoteIcon from '@mui/icons-material/EventNote';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import EmailIcon from '@mui/icons-material/Email';
+import InstallMobileIcon from '@mui/icons-material/InstallMobile';
 const navItems = [
   { label: 'Dashboard', icon: <DashboardIcon />, page: 0 },
   { label: 'Gallery', icon: <PhotoLibraryIcon />, page: 1 },
@@ -21,7 +22,7 @@ const navItems = [
   { label: 'Executives', icon: <AdminPanelSettingsIcon />, page: 4 },
 ];
 
-const ListItems = ({ onNavigate, onLogout }) => {
+const ListItems = ({ onNavigate, onLogout, installPrompt, onInstall }) => {
   const { setPageValue, pageValue } = useStateContext();
 
   const navigate = (page) => {
@@ -81,6 +82,31 @@ const ListItems = ({ onNavigate, onLogout }) => {
           }}
         />
       </ListItemButton>
+
+      {installPrompt && (
+        <>
+          <Divider sx={{ borderColor: 'rgba(255,255,255,0.08)', my: 1.5, mx: 2 }} />
+          <ListItemButton
+            onClick={() => { if (onInstall) onInstall(); if (onNavigate) onNavigate(); }}
+            sx={{
+              ...defaultStyle,
+              '&:hover': { backgroundColor: 'rgba(46,125,50,0.15)' },
+            }}
+          >
+            <ListItemIcon sx={{ color: '#81C784', minWidth: 40 }}>
+              <InstallMobileIcon />
+            </ListItemIcon>
+            <ListItemText
+              primary="Install App"
+              primaryTypographyProps={{
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                color: '#81C784',
+              }}
+            />
+          </ListItemButton>
+        </>
+      )}
 
       <Divider sx={{ borderColor: 'rgba(255,255,255,0.08)', my: 1.5, mx: 2 }} />
 

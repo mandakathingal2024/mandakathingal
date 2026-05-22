@@ -148,8 +148,28 @@ export default function Dashboard() {
   const isMobile = useMediaQuery(adminTheme.breakpoints.down('md'));
   const [open, setOpen] = React.useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
+  const [installPrompt, setInstallPrompt] = React.useState(null);
   const toggleDrawer = () => setOpen(!open);
   const { pageValue, handleLogOut } = useStateContext();
+
+  // Capture PWA install prompt
+  React.useEffect(() => {
+    const handler = (e) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstall = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const result = await installPrompt.userChoice;
+    if (result.outcome === 'accepted') {
+      setInstallPrompt(null);
+    }
+  };
 
   const onLogout = () => {
     if (isMobile) setOpen(false);
@@ -192,7 +212,7 @@ export default function Dashboard() {
             </Box>
             <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
             <List component="nav">
-              <ListItems onNavigate={toggleDrawer} onLogout={onLogout} />
+              <ListItems onNavigate={toggleDrawer} onLogout={onLogout} installPrompt={installPrompt} onInstall={handleInstall} />
             </List>
           </MuiDrawer>
         ) : (
@@ -205,7 +225,7 @@ export default function Dashboard() {
             </Box>
             <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
             <List component="nav">
-              <ListItems onLogout={onLogout} />
+              <ListItems onLogout={onLogout} installPrompt={installPrompt} onInstall={handleInstall} />
             </List>
           </Drawer>
         )}
