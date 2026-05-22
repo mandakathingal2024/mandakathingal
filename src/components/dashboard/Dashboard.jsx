@@ -171,12 +171,14 @@ export default function Dashboard() {
             >
               <MenuIcon />
             </IconButton>
-            <Typography component="h1" variant="h6" color="inherit" noWrap sx={{ flexGrow: 1, fontFamily: 'var(--font-playfair), "Playfair Display", Georgia, serif', fontWeight: 800, letterSpacing: '3px', textTransform: 'uppercase', fontSize: { xs: '1rem', sm: '1.15rem' } }}>
-              Mandakathingal
-            </Typography>
-            <Typography variant="body2" sx={{ color: 'text.secondary', display: { xs: 'none', sm: 'block' } }}>
-              Admin Panel
-            </Typography>
+            <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'baseline', gap: 1 }}>
+              <Typography component="h1" variant="h6" color="inherit" noWrap sx={{ fontFamily: 'var(--font-playfair), "Playfair Display", Georgia, serif', fontWeight: 800, letterSpacing: '3px', textTransform: 'uppercase', fontSize: { xs: '1rem', sm: '1.15rem' } }}>
+                Mandakathingal
+              </Typography>
+              <Typography component="span" sx={{ fontSize: { xs: '0.6rem', sm: '0.7rem' }, fontWeight: 600, color: '#D4A373', letterSpacing: '1.5px', textTransform: 'uppercase' }}>
+                Admin
+              </Typography>
+            </Box>
           </Toolbar>
         </AppBar>
 

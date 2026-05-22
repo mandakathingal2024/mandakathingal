@@ -1,5 +1,5 @@
 'use client'
-import React from 'react'
+import React, { useEffect } from 'react'
 import Dashboard from './Dashboard'
 import { useStateContext } from '../../../context/stateContext'
 import SignInSide from '../admin/Signin'
@@ -8,6 +8,13 @@ import CircularProgress from '@mui/material/CircularProgress'
 
 const Authorisation = () => {
     const { isAuthenticated, isAuthLoading } = useStateContext()
+
+  // Register service worker for PWA install
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+  }, [])
 
   if (isAuthLoading) {
     return (
