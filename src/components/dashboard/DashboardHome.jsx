@@ -11,7 +11,9 @@ import EventNoteIcon from '@mui/icons-material/EventNote';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import EmailIcon from '@mui/icons-material/Email';
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
+import CloudIcon from '@mui/icons-material/Cloud';
 import CircularProgress from '@mui/material/CircularProgress';
+import LinearProgress from '@mui/material/LinearProgress';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../../context/firebaseConfig';
 
@@ -63,6 +65,7 @@ const DashboardHome = () => {
     gmailAccounts: null,
     galleryImages: null,
   });
+  const [storageUsage, setStorageUsage] = React.useState(null);
 
   React.useEffect(() => {
     const fetchStats = async () => {
@@ -89,7 +92,20 @@ const DashboardHome = () => {
       }
     };
 
+    const fetchStorageUsage = async () => {
+      try {
+        const res = await fetch('/api/cloudinary-usage');
+        if (res.ok) {
+          const data = await res.json();
+          setStorageUsage(data);
+        }
+      } catch (error) {
+        console.error('Error fetching storage usage:', error);
+      }
+    };
+
     fetchStats();
+    fetchStorageUsage();
   }, []);
 
   return (
@@ -139,6 +155,94 @@ const DashboardHome = () => {
           color="rgba(212,163,115,0.15)"
         />
       </Grid>
+
+      {/* Storage Usage Card */}
+      <Paper sx={{ mt: 3, p: { xs: 2, sm: 3 }, border: '1px solid #F0E8E0' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+          <Box sx={{ width: 40, height: 40, borderRadius: 2, backgroundColor: 'rgba(3,169,244,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <CloudIcon sx={{ color: '#0288D1', fontSize: 22 }} />
+          </Box>
+          <Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>Cloud Storage</Typography>
+            <Typography variant="caption" color="text.secondary">Cloudinary — Image hosting</Typography>
+          </Box>
+        </Box>
+
+        {storageUsage ? (
+          <Grid container spacing={2}>
+            {/* Storage */}
+            <Grid item xs={12} sm={6}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.65rem', letterSpacing: '0.05em' }}>
+                Storage Used
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, mt: 0.5 }}>
+                <Typography variant="h6" sx={{ fontWeight: 700, color: '#2C1810' }}>
+                  {storageUsage.storage.usedFormatted}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  / {storageUsage.storage.limitFormatted}
+                </Typography>
+              </Box>
+              <LinearProgress
+                variant="determinate"
+                value={Math.min(storageUsage.storage.percentage, 100)}
+                sx={{
+                  mt: 1,
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: 'rgba(3,169,244,0.12)',
+                  '& .MuiLinearProgress-bar': {
+                    borderRadius: 4,
+                    backgroundColor: storageUsage.storage.percentage > 80 ? '#E65100' : '#0288D1',
+                  },
+                }}
+              />
+              <Typography variant="caption" sx={{ color: storageUsage.storage.percentage > 80 ? '#E65100' : 'text.secondary', mt: 0.5, display: 'block' }}>
+                {storageUsage.storage.percentage}% used
+              </Typography>
+            </Grid>
+
+            {/* Bandwidth */}
+            <Grid item xs={12} sm={6}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.65rem', letterSpacing: '0.05em' }}>
+                Bandwidth (This Month)
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, mt: 0.5 }}>
+                <Typography variant="h6" sx={{ fontWeight: 700, color: '#2C1810' }}>
+                  {storageUsage.bandwidth.usedFormatted}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  / {storageUsage.bandwidth.limitFormatted}
+                </Typography>
+              </Box>
+              <LinearProgress
+                variant="determinate"
+                value={Math.min(storageUsage.bandwidth.percentage, 100)}
+                sx={{
+                  mt: 1,
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: 'rgba(46,125,50,0.12)',
+                  '& .MuiLinearProgress-bar': {
+                    borderRadius: 4,
+                    backgroundColor: storageUsage.bandwidth.percentage > 80 ? '#E65100' : '#2E7D32',
+                  },
+                }}
+              />
+              <Typography variant="caption" sx={{ color: storageUsage.bandwidth.percentage > 80 ? '#E65100' : 'text.secondary', mt: 0.5, display: 'block' }}>
+                {storageUsage.bandwidth.percentage}% used
+              </Typography>
+            </Grid>
+          </Grid>
+        ) : (
+          <Box sx={{ textAlign: 'center', py: 2 }}>
+            <CircularProgress size={20} sx={{ color: '#D4A373' }} />
+            <Typography variant="caption" sx={{ display: 'block', mt: 1, color: 'text.secondary' }}>
+              Loading storage info...
+            </Typography>
+          </Box>
+        )}
+      </Paper>
     </Container>
   );
 };
