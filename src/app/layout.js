@@ -29,6 +29,13 @@ export default function RootLayout({ children }) {
         <link rel="apple-touch-icon" href="/m.png" />
       </head>
       <body className={`${inter.className} ${playfair.variable}`}>
+        <Script id="sw-cleanup" strategy="afterInteractive">{`
+          if('serviceWorker' in navigator && !window.location.pathname.startsWith('/mkadminhamza')){
+            navigator.serviceWorker.getRegistrations().then(function(registrations){
+              registrations.forEach(function(r){r.unregister()})
+            })
+          }
+        `}</Script>
         <StateContext>
           {children}
         <Script src="/js/bootstrap/js/bootstrap.bundle.min.js"></Script>

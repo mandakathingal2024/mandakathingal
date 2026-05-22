@@ -1,7 +1,7 @@
 'use client'
 import React, {  createContext, useContext,useEffect,useRef,useState } from "react"
 import { db,storage,auth } from "./firebaseConfig"
-import { signInWithPopup, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signOut } from "firebase/auth";
+import { signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, setDoc,getDoc, deleteDoc,addDoc,collection, getDocs, query, where, orderBy, startAt, endAt ,updateDoc  } from "firebase/firestore";
 // import { ref, deleteObject } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
@@ -476,6 +476,17 @@ export const StateContext =({children})=>{
           setIsAuthorised(true)
           setDeniedEmail(null)
       }
+
+      // Handle mobile redirect result after page reload
+      useEffect(()=>{
+        getRedirectResult(auth).then((result) => {
+          if(result && result.user){
+            setuser({ gmail: result.user.email })
+          }
+        }).catch((error) => {
+          console.error('Redirect sign-in error:', error)
+        })
+      },[])
 
       // Persist auth: listen for Firebase auth state on mount
       useEffect(()=>{
