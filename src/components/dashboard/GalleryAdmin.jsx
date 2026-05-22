@@ -2,16 +2,18 @@
 import * as React from 'react';
 import { DashboardSkeleton } from '../Skeleton';
 import Container from '@mui/material/Container';
-import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
-import GroupAddIcon from '@mui/icons-material/GroupAdd';
 import { useStateContext } from '../../../context/stateContext';
 import Button from '@mui/material/Button';
 import Modal from '@mui/material/Modal';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import DeleteIcon from '@mui/icons-material/Delete';
+import Typography from '@mui/material/Typography';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
+import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import CloseIcon from '@mui/icons-material/Close';
 import UploadImage from './UploadImage';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -20,22 +22,34 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Image from 'next/image';
 
+const modalStyle = {
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  width: { xs: '94vw', sm: 520 },
+  maxHeight: '90vh',
+  overflow: 'auto',
+  bgcolor: 'background.paper',
+  borderRadius: 2,
+  boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+  p: 0,
+};
+
 const GalleryAdmin = () => {
   const [open, setOpen] = React.useState(false);
-  const [galleryData,setGalleryData]=React.useState({
-    galleryImgUrl:'',
-    description:'',
-  })
-  const [message,setMessage]=React.useState('')
-  const {addGallery,fetchAllGallery,gallery,deleteDocument}=useStateContext()
-  const [isLoading, setIsLoading] = React.useState(true); 
-
+  const [galleryData, setGalleryData] = React.useState({
+    galleryImgUrl: '',
+    description: '',
+  });
+  const { addGallery, fetchAllGallery, gallery, deleteDocument } = useStateContext();
+  const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
 
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetchAllGallery();  
+        await fetchAllGallery();
       } catch (error) {
         setError(error);
       } finally {
@@ -43,152 +57,142 @@ const GalleryAdmin = () => {
       }
     };
     fetchData();
-  },[]);
-  
-  if(isLoading){
-    return <DashboardSkeleton />
+  }, []);
+
+  if (isLoading) {
+    return <DashboardSkeleton />;
   }
 
-  const style = {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    width: { xs: '95vw', sm: 400 },
-    bgcolor: 'background.paper',
-    border: '2px solid #000',
-    boxShadow: 24,
-    pt: 2,
-    px: { xs: 2, sm: 4 },
-    pb: 3,
-  };  
-
-  const handleOpen = () => {
-    setOpen(true);
-  };
+  const handleOpen = () => setOpen(true);
   const handleClose = () => {
     setOpen(false);
-    setGalleryData({
-      galleryImgUrl:'',
-      description:'',
-    })
+    setGalleryData({ galleryImgUrl: '', description: '' });
   };
+
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setGalleryData({ ...galleryData, [name]: value })
+    setGalleryData({ ...galleryData, [name]: value });
   };
 
   const handleSubmit = () => {
-    console.log(gallery);
-    
-    const {galleryImgUrl,description}=galleryData
-    if(galleryImgUrl&&description){
-      addGallery(galleryData)
-      handleClose()
+    const { galleryImgUrl, description } = galleryData;
+    if (galleryImgUrl && description) {
+      addGallery(galleryData);
+      handleClose();
     }
   };
+
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: { xs: 1, sm: 3 } }}>
-      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { sm: 'center' }, gap: 1, mb: 2 }}>
-        <h1 style={{ margin: 0 }}>Gallery</h1>
-        <Button variant="outlined" startIcon={<GroupAddIcon />} onClick={handleOpen} sx={{ minWidth: 'fit-content' }}>
-          Add Gallery Image
-        </Button>
-        <Modal
-          open={open}
-          onClose={handleClose}
-          aria-labelledby="child-modal-title"
-          aria-describedby="child-modal-description"
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3 } }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h5">Gallery</Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddPhotoAlternateIcon />}
+          onClick={handleOpen}
         >
-          <Box sx={{ ...style, width: { xs: '95vw', sm: '80vw' }, maxHeight: '90vh', overflow: 'auto' }}>
-            <Box
-              component="form"
-              sx={{
-                '& .MuiTextField-root': { m: 1, width: { xs: '100%', sm: '50ch' } },
-              }}
-              noValidate
-              autoComplete="off"
+          Add Image
+        </Button>
+      </Box>
+
+      <Modal open={open} onClose={handleClose}>
+        <Box sx={modalStyle}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 3, pb: 2, borderBottom: '1px solid #F0E8E0' }}>
+            <Typography variant="h6">Add Gallery Image</Typography>
+            <IconButton onClick={handleClose} size="small" sx={{ color: 'text.secondary' }}>
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Box>
+
+          <Box sx={{ p: 3 }}>
+            <Typography variant="subtitle2" sx={{ mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
+              Image
+            </Typography>
+            <UploadImage folderName="gallery" setGallery={setGalleryData} imageType="gallery" />
+
+            <Typography variant="subtitle2" sx={{ mt: 2.5, mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
+              Details
+            </Typography>
+            <TextField
+              fullWidth
+              required
+              label="Description"
+              name="description"
+              value={galleryData.description}
+              onChange={handleChange}
+              size="small"
+              multiline
+              rows={2}
+              sx={{ mt: 1 }}
+            />
+          </Box>
+
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, p: 3, pt: 1, borderTop: '1px solid #F0E8E0' }}>
+            <Button variant="outlined" onClick={handleClose} sx={{ color: 'text.secondary', borderColor: '#E0D6CC' }}>
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleSubmit}
+              disabled={!galleryData.galleryImgUrl || !galleryData.description}
             >
-              <h1>Gallery</h1>
-              <div>
-              <Button
-                  component="label"
-                  role={undefined}
-                  variant="contained"
-                  tabIndex={-1}
-                  startIcon={<CloudUploadIcon />}
-                  style={{ margin: '20px' }}
-                >
-                  Upload Image For gallery
-                  {/* <VisuallyHiddenInput type="file" /> */}
-                  <UploadImage folderName='gallery' setGallery={setGalleryData} imageType='gallery' />
-                </Button> 
-                <TextField
-                  id="outlined-number"
-                  label="Description"
-                  name='description'
-                  onChange={handleChange}
-                  value={galleryData.description}
-                  type="text"
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                />
-              </div>
-            </Box>
-            <Button variant="outlined" startIcon={<GroupAddIcon />} onClick={handleSubmit} style={{ marginTop: '60px' }}>
               Add Image
             </Button>
           </Box>
-        </Modal>
-      </Box>
-      <Grid container spacing={3}>
-        <Grid item xs={12}>
-          <Paper sx={{ p: { xs: 1, sm: 2 }, display: 'flex', flexDirection: 'column', maxHeight: '75vh', overflow: 'auto' }}>
-            <Box sx={{ overflowX: 'auto' }}>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Sl.No</TableCell>
-                  <TableCell>Image</TableCell>
-                  <TableCell>Description</TableCell>
-                  <TableCell>Action</TableCell>
-                  {/* <TableCell>Payment Method</TableCell>
-            <TableCell align="right">Sale Amount</TableCell> */}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {gallery.map((row, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{index+1}</TableCell>
-                    <TableCell>
-                      <div style={{maxWidth:'200px',maxHeight:'200px'}}>
-                       <Image src={row.galleryImgUrl}  width={100} height={100} alt='Gallery Image' />
-                      </div>
-                    </TableCell>
-                    <TableCell>{row.description}</TableCell>
-                    <TableCell>
-                      <Button variant="outlined" 
-                      startIcon={<DeleteIcon />} 
-                      style={{ marginTop: '60px' }} 
-                      onClick={async()=>{
-                        await deleteDocument('gallery',row.id)
-                      }}
+        </Box>
+      </Modal>
+
+      <Paper sx={{ overflow: 'hidden' }}>
+        <Box sx={{ overflowX: 'auto' }}>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ width: 60 }}>Sl No</TableCell>
+                <TableCell sx={{ width: 120 }}>Image</TableCell>
+                <TableCell>Description</TableCell>
+                <TableCell sx={{ width: 80 }} align="center">Action</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {gallery.map((row, index) => (
+                <TableRow key={row.id || index}>
+                  <TableCell>
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>{index + 1}</Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ width: 80, height: 80, borderRadius: 1, overflow: 'hidden', border: '1px solid #F0E8E0' }}>
+                      <Image src={row.galleryImgUrl} width={80} height={80} alt="Gallery" style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2">{row.description}</Typography>
+                  </TableCell>
+                  <TableCell align="center">
+                    <Tooltip title="Delete image">
+                      <IconButton
+                        size="small"
+                        onClick={async () => { await deleteDocument('gallery', row.id); }}
+                        sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' } }}
                       >
-                        Delete
-                      </Button>
-                    </TableCell>
-
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            </Box>
-          </Paper>
-        </Grid>
-      </Grid>
+                        <DeleteOutlineIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {gallery.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} sx={{ py: 4, textAlign: 'center' }}>
+                    <Typography variant="body2" color="text.secondary">No gallery images yet.</Typography>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Box>
+      </Paper>
     </Container>
-  )
-}
+  );
+};
 
-export default GalleryAdmin
+export default GalleryAdmin;

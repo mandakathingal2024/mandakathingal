@@ -2,16 +2,18 @@
 import * as React from 'react';
 import { DashboardSkeleton } from '../Skeleton';
 import Container from '@mui/material/Container';
-import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
-import GroupAddIcon from '@mui/icons-material/GroupAdd';
 import { useStateContext } from '../../../context/stateContext';
 import Button from '@mui/material/Button';
 import Modal from '@mui/material/Modal';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import DeleteIcon from '@mui/icons-material/Delete';
+import Typography from '@mui/material/Typography';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import CloseIcon from '@mui/icons-material/Close';
 import UploadImage from './UploadImage';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -20,23 +22,35 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Image from 'next/image';
 
+const modalStyle = {
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  width: { xs: '94vw', sm: 520 },
+  maxHeight: '90vh',
+  overflow: 'auto',
+  bgcolor: 'background.paper',
+  borderRadius: 2,
+  boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+  p: 0,
+};
+
 const EventsAdmin = () => {
   const [open, setOpen] = React.useState(false);
-  const [event,setEvent]=React.useState({
-    eventImgUrl:'',
-    title : '',
-    description:'',
-  })
-  const [message,setMessage]=React.useState('')
-  const {addEvent,fetchAllEvents,deleteDocument,events}=useStateContext()
-  const [isLoading, setIsLoading] = React.useState(true); 
-
+  const [event, setEvent] = React.useState({
+    eventImgUrl: '',
+    title: '',
+    description: '',
+  });
+  const { addEvent, fetchAllEvents, deleteDocument, events } = useStateContext();
+  const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
 
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetchAllEvents();  
+        await fetchAllEvents();
       } catch (error) {
         setError(error);
       } finally {
@@ -44,157 +58,153 @@ const EventsAdmin = () => {
       }
     };
     fetchData();
-  },[]);
-  
-  if(isLoading){
-    return <DashboardSkeleton />
+  }, []);
+
+  if (isLoading) {
+    return <DashboardSkeleton />;
   }
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setEvent({ ...event, [name]: value })
+    setEvent({ ...event, [name]: value });
   };
 
-  const style = {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    width: { xs: '95vw', sm: 400 },
-    bgcolor: 'background.paper',
-    border: '2px solid #000',
-    boxShadow: 24,
-    pt: 2,
-    px: { xs: 2, sm: 4 },
-    pb: 3,
-  };  
-
-  const handleOpen = () => {
-    setOpen(true);
-  };
+  const handleOpen = () => setOpen(true);
   const handleClose = () => {
     setOpen(false);
-    setEvent({
-      eventImgUrl:'',
-      title : '',
-      description:'',
-    })
+    setEvent({ eventImgUrl: '', title: '', description: '' });
   };
 
   const handleSubmit = () => {
-    // console.log(event);
-    
-    const {eventImgUrl,title,description}=event
-    if(eventImgUrl&&title&&description){
-      addEvent(event)
-      handleClose()
+    const { eventImgUrl, title, description } = event;
+    if (eventImgUrl && title && description) {
+      addEvent(event);
+      handleClose();
     }
   };
+
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: { xs: 1, sm: 3 } }}>
-     <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { sm: 'center' }, gap: 1, mb: 2 }}>
-        <h1 style={{ margin: 0 }}>Events</h1>
-        <Button variant="outlined" startIcon={<GroupAddIcon />} onClick={handleOpen} sx={{ minWidth: 'fit-content' }}>
-        Add Events
-      </Button>
-      <Modal
-        open={open}
-        onClose={handleClose}
-        aria-labelledby="child-modal-title"
-        aria-describedby="child-modal-description"
-      >
-        <Box sx={{ ...style, width: { xs: '95vw', sm: '80vw' }, maxHeight: '90vh', overflow: 'auto' }}>
-        <Box
-      component="form"
-      sx={{
-        '& .MuiTextField-root': { m: 1, width: { xs: '100%', sm: '50ch' } },
-      }}
-      noValidate
-      autoComplete="off"
-    >
-      <h1>Events</h1>
-      <Button
-        component="label"
-        role={undefined}
-        variant="contained"
-        tabIndex={-1}
-        startIcon={<CloudUploadIcon />}
-        style={{ margin: '20px' }}
-      >
-        Upload Image of Event
-        {/* <VisuallyHiddenInput type="file" /> */}
-        <UploadImage folderName='events' setEvent={setEvent} imageType='event' />
-      </Button>
-      <TextField
-        required
-        id="outlined-required"
-        label="Title"
-        name="title"
-        value={event.title}
-        onChange={handleChange}
-      />
-      <TextField
-        required
-        id="outlined-required"
-        label="Description"
-        name="description"
-        value={event.description  }
-        onChange={handleChange}
-      />
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3 } }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h5">Events</Typography>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpen}>
+          Add Event
+        </Button>
       </Box>
-      <Button variant="outlined" startIcon={<GroupAddIcon />} onClick={handleSubmit} style={{marginTop:'60px'}}>
-        Add Event
-      </Button>
+
+      <Modal open={open} onClose={handleClose}>
+        <Box sx={modalStyle}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 3, pb: 2, borderBottom: '1px solid #F0E8E0' }}>
+            <Typography variant="h6">Add Event</Typography>
+            <IconButton onClick={handleClose} size="small" sx={{ color: 'text.secondary' }}>
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Box>
+
+          <Box sx={{ p: 3 }}>
+            <Typography variant="subtitle2" sx={{ mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
+              Event Image
+            </Typography>
+            <UploadImage folderName="events" setEvent={setEvent} imageType="event" />
+
+            <Typography variant="subtitle2" sx={{ mt: 2.5, mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
+              Event Details
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+              <TextField
+                fullWidth
+                required
+                label="Title"
+                name="title"
+                value={event.title}
+                onChange={handleChange}
+                size="small"
+              />
+              <TextField
+                fullWidth
+                required
+                label="Description"
+                name="description"
+                value={event.description}
+                onChange={handleChange}
+                size="small"
+                multiline
+                rows={3}
+              />
+            </Box>
+          </Box>
+
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, p: 3, pt: 1, borderTop: '1px solid #F0E8E0' }}>
+            <Button variant="outlined" onClick={handleClose} sx={{ color: 'text.secondary', borderColor: '#E0D6CC' }}>
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleSubmit}
+              disabled={!event.eventImgUrl || !event.title || !event.description}
+            >
+              Add Event
+            </Button>
+          </Box>
         </Box>
       </Modal>
-      </Box>
-    <Grid container spacing={3}>
-      <Grid item xs={12}>
-        <Paper sx={{ p: { xs: 1, sm: 2 }, display: 'flex', flexDirection: 'column', maxHeight: '75vh', overflow: 'auto' }}>
-            <Box sx={{ overflowX: 'auto' }}>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Sl.No</TableCell>
-                  <TableCell>Image</TableCell>
-                  <TableCell>Event</TableCell>
-                  <TableCell>Action</TableCell>
-                  {/* <TableCell>Payment Method</TableCell>
-            <TableCell align="right">Sale Amount</TableCell> */}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {events.map((row, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{index + 1}</TableCell>
-                    <TableCell>
-                      <div style={{ maxWidth: '200px', maxHeight: '200px' }}>
-                        <Image src={row.eventImgUrl} width={100} height={100} alt='Gallery Image' />
-                      </div>
-                    </TableCell>
-                    <TableCell>{row.title}</TableCell>
-                    <TableCell>
-                      <Button variant="outlined"
-                        startIcon={<DeleteIcon />}
-                        style={{ marginTop: '60px' }}
-                        onClick={async () => {
-                          await deleteDocument('events', row.id)
-                        }}
+
+      <Paper sx={{ overflow: 'hidden' }}>
+        <Box sx={{ overflowX: 'auto' }}>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ width: 60 }}>Sl No</TableCell>
+                <TableCell sx={{ width: 120 }}>Image</TableCell>
+                <TableCell>Event</TableCell>
+                <TableCell sx={{ width: 80 }} align="center">Action</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {events.map((row, index) => (
+                <TableRow key={row.id || index}>
+                  <TableCell>
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>{index + 1}</Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ width: 80, height: 80, borderRadius: 1, overflow: 'hidden', border: '1px solid #F0E8E0' }}>
+                      <Image src={row.eventImgUrl} width={80} height={80} alt="Event" style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>{row.title}</Typography>
+                    {row.description && (
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
+                        {row.description}
+                      </Typography>
+                    )}
+                  </TableCell>
+                  <TableCell align="center">
+                    <Tooltip title="Delete event">
+                      <IconButton
+                        size="small"
+                        onClick={async () => { await deleteDocument('events', row.id); }}
+                        sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' } }}
                       >
-                        Delete
-                      </Button>
-                    </TableCell>
+                        <DeleteOutlineIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {events.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} sx={{ py: 4, textAlign: 'center' }}>
+                    <Typography variant="body2" color="text.secondary">No events yet.</Typography>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Box>
+      </Paper>
+    </Container>
+  );
+};
 
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            </Box>
-        </Paper>
-      </Grid>
-    </Grid>
-  </Container>
-  )
-}
-
-export default EventsAdmin
+export default EventsAdmin;
