@@ -7,6 +7,7 @@ import Typography from '@mui/material/Typography';
 import LinearProgress from '@mui/material/LinearProgress';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 
 // Compress image using Canvas API — no external library needed
@@ -265,28 +266,57 @@ const UploadImage = ({ folderName, setMember, imageType, setGallery, setEvent, s
             </Typography>
 
             {!isUploading && (
-              <label
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  padding: '6px 16px',
-                  fontSize: '0.8125rem',
-                  fontWeight: 600,
-                  borderRadius: 6,
-                  border: '1px solid #D4A373',
-                  color: '#5C3D2E',
-                  cursor: 'pointer',
-                  backgroundColor: 'transparent',
-                }}
-              >
-                Choose File
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileSelect}
-                  style={{ display: 'none' }}
-                />
-              </label>
+              <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', flexWrap: 'wrap' }}>
+                <label
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '6px 16px',
+                    fontSize: '0.8125rem',
+                    fontWeight: 600,
+                    borderRadius: 6,
+                    border: '1px solid #D4A373',
+                    color: '#5C3D2E',
+                    cursor: 'pointer',
+                    backgroundColor: 'transparent',
+                  }}
+                >
+                  <CloudUploadIcon style={{ fontSize: 16 }} />
+                  Choose File
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+                <label
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '6px 16px',
+                    fontSize: '0.8125rem',
+                    fontWeight: 600,
+                    borderRadius: 6,
+                    border: 'none',
+                    color: '#FFFFFF',
+                    cursor: 'pointer',
+                    backgroundColor: '#5C3D2E',
+                  }}
+                >
+                  <CameraAltIcon style={{ fontSize: 16 }} />
+                  Camera
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleFileSelect}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+              </Box>
             )}
 
             {isUploading && (

@@ -14,7 +14,9 @@ import Tooltip from '@mui/material/Tooltip';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import CloseIcon from '@mui/icons-material/Close';
+import CircularProgress from '@mui/material/CircularProgress';
 import ConfirmDialog from './ConfirmDialog';
+import SuccessToast from './SuccessToast';
 import UploadImage from './UploadImage';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -46,8 +48,10 @@ const ExecutiveAdmin = () => {
   });
   const { addExecutive, fetchAllExecutives, deleteDocument, executives } = useStateContext();
   const [isLoading, setIsLoading] = React.useState(true);
+  const [isSaving, setIsSaving] = React.useState(false);
   const [error, setError] = React.useState(null);
   const [deleteTarget, setDeleteTarget] = React.useState(null);
+  const [toast, setToast] = React.useState({ open: false, message: '' });
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -77,11 +81,20 @@ const ExecutiveAdmin = () => {
     setExecutive({ executiveImgUrl: '', name: '', role: '' });
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const { executiveImgUrl, name, role } = executive;
     if (executiveImgUrl && name && role) {
-      addExecutive(executive);
-      handleClose();
+      setIsSaving(true);
+      try {
+        await addExecutive(executive);
+        handleClose();
+        await fetchAllExecutives();
+        setToast({ open: true, message: 'Executive added successfully!' });
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsSaving(false);
+      }
     }
   };
 
@@ -142,9 +155,10 @@ const ExecutiveAdmin = () => {
             <Button
               variant="contained"
               onClick={handleSubmit}
-              disabled={!executive.executiveImgUrl || !executive.name || !executive.role}
+              disabled={!executive.executiveImgUrl || !executive.name || !executive.role || isSaving}
+              startIcon={isSaving ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : null}
             >
-              Add Executive
+              {isSaving ? 'Adding...' : 'Add Executive'}
             </Button>
           </Box>
         </Box>
@@ -212,7 +226,14 @@ const ExecutiveAdmin = () => {
         onConfirm={async () => {
           await deleteDocument('executives', deleteTarget.id);
           setDeleteTarget(null);
+          setToast({ open: true, message: 'Executive removed successfully.' });
         }}
+      />
+
+      <SuccessToast
+        open={toast.open}
+        message={toast.message}
+        onClose={() => setToast({ ...toast, open: false })}
       />
     </Container>
   );

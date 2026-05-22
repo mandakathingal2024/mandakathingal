@@ -24,8 +24,11 @@ import Chip from '@mui/material/Chip';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import CircularProgress from '@mui/material/CircularProgress';
 import ConfirmDialog from './ConfirmDialog';
+import SuccessToast from './SuccessToast';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import SortIcon from '@mui/icons-material/Sort';
 import SearchIcon from '@mui/icons-material/Search';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import CloseIcon from '@mui/icons-material/Close';
@@ -65,8 +68,11 @@ const MembersAdmin = () => {
   const [search, setSearch] = React.useState('');
   const [isEdit, setIsEdit] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [isSaving, setIsSaving] = React.useState(false);
   const [error, setError] = React.useState(null);
   const [deleteTarget, setDeleteTarget] = React.useState(null);
+  const [toast, setToast] = React.useState({ open: false, message: '' });
+  const [sortBy, setSortBy] = React.useState('default');
 
   const {
     addMember, searchMembersByName, getMembersWithNewBranchRelation,
@@ -97,8 +103,17 @@ const MembersAdmin = () => {
   };
 
   const handleUpdate = async () => {
-    handleClose();
-    await updateMember(member);
+    setIsSaving(true);
+    try {
+      await updateMember(member);
+      handleClose();
+      await getMembersWithNewBranchRelation();
+      setToast({ open: true, message: 'Member updated successfully!' });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleChange = (event) => {
@@ -108,19 +123,23 @@ const MembersAdmin = () => {
 
   const handleOpen = () => setOpen(true);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const { name, gender, relation, relatedTo } = member;
     if (name && gender && relation) {
-      if (relation === 'New Branch') {
-        addMember(member);
+      if (relation !== 'New Branch' && !relatedTo) {
+        setMessage('Please select a related member');
+        return;
+      }
+      setIsSaving(true);
+      try {
+        await addMember(member);
         handleClose();
-      } else {
-        if (relatedTo) {
-          addMember(member);
-          handleClose();
-        } else {
-          setMessage('Please select a related member');
-        }
+        await getMembersWithNewBranchRelation();
+        setToast({ open: true, message: 'Member added successfully!' });
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsSaving(false);
       }
     } else {
       setMessage('Please fill all required fields');
@@ -288,8 +307,13 @@ const MembersAdmin = () => {
             <Button variant="outlined" onClick={handleClose} sx={{ color: 'text.secondary', borderColor: '#E0D6CC' }}>
               Cancel
             </Button>
-            <Button variant="contained" onClick={isEdit ? handleUpdate : handleSubmit}>
-              {isEdit ? 'Save Changes' : 'Add Member'}
+            <Button
+              variant="contained"
+              onClick={isEdit ? handleUpdate : handleSubmit}
+              disabled={isSaving}
+              startIcon={isSaving ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : null}
+            >
+              {isSaving ? (isEdit ? 'Saving...' : 'Adding...') : (isEdit ? 'Save Changes' : 'Add Member')}
             </Button>
           </Box>
         </Box>
@@ -316,6 +340,21 @@ const MembersAdmin = () => {
               ),
             }}
           />
+          <FormControl size="small" sx={{ minWidth: 140 }}>
+            <Select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              displayEmpty
+              startAdornment={<SortIcon sx={{ fontSize: 18, color: 'text.secondary', mr: 0.5 }} />}
+              sx={{ fontSize: '0.8125rem' }}
+            >
+              <MenuItem value="default">Default</MenuItem>
+              <MenuItem value="az">A → Z</MenuItem>
+              <MenuItem value="za">Z → A</MenuItem>
+              <MenuItem value="newest">Newest First</MenuItem>
+              <MenuItem value="oldest">Oldest First</MenuItem>
+            </Select>
+          </FormControl>
           <Button
             variant="outlined"
             size="small"
@@ -323,6 +362,7 @@ const MembersAdmin = () => {
             onClick={async () => {
               await getMembersWithNewBranchRelation();
               setSearch('');
+              setSortBy('default');
             }}
             sx={{ color: 'text.secondary', borderColor: '#E0D6CC', minWidth: 'fit-content' }}
           >
@@ -342,7 +382,13 @@ const MembersAdmin = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {members && members.map((row, index) => (
+              {members && [...members].sort((a, b) => {
+                if (sortBy === 'az') return (a.name || '').localeCompare(b.name || '');
+                if (sortBy === 'za') return (b.name || '').localeCompare(a.name || '');
+                if (sortBy === 'newest') return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
+                if (sortBy === 'oldest') return (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0);
+                return 0;
+              }).map((row, index) => (
                 <TableRow key={row.id || index}>
                   <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
                     <Typography variant="body2" sx={{ fontWeight: 500 }}>{index + 1}</Typography>
@@ -418,7 +464,14 @@ const MembersAdmin = () => {
         onConfirm={async () => {
           await deleteDocument('members', deleteTarget.id);
           setDeleteTarget(null);
+          setToast({ open: true, message: 'Member deleted successfully.' });
         }}
+      />
+
+      <SuccessToast
+        open={toast.open}
+        message={toast.message}
+        onClose={() => setToast({ ...toast, open: false })}
       />
     </Container>
   );

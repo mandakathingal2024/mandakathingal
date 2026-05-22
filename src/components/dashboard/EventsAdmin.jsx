@@ -2,6 +2,7 @@
 import * as React from 'react';
 import { DashboardSkeleton } from '../Skeleton';
 import Container from '@mui/material/Container';
+import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
 import { useStateContext } from '../../../context/stateContext';
 import Button from '@mui/material/Button';
@@ -10,17 +11,14 @@ import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
+import CircularProgress from '@mui/material/CircularProgress';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import CloseIcon from '@mui/icons-material/Close';
+import EventNoteIcon from '@mui/icons-material/EventNote';
 import ConfirmDialog from './ConfirmDialog';
+import SuccessToast from './SuccessToast';
 import UploadImage from './UploadImage';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
 import Image from 'next/image';
 
 const modalStyle = {
@@ -46,8 +44,10 @@ const EventsAdmin = () => {
   });
   const { addEvent, fetchAllEvents, deleteDocument, events } = useStateContext();
   const [isLoading, setIsLoading] = React.useState(true);
+  const [isSaving, setIsSaving] = React.useState(false);
   const [error, setError] = React.useState(null);
   const [deleteTarget, setDeleteTarget] = React.useState(null);
+  const [toast, setToast] = React.useState({ open: false, message: '' });
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -77,11 +77,20 @@ const EventsAdmin = () => {
     setEvent({ eventImgUrl: '', title: '', description: '' });
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const { eventImgUrl, title, description } = event;
     if (eventImgUrl && title && description) {
-      addEvent(event);
-      handleClose();
+      setIsSaving(true);
+      try {
+        await addEvent(event);
+        handleClose();
+        await fetchAllEvents();
+        setToast({ open: true, message: 'Event added successfully!' });
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsSaving(false);
+      }
     }
   };
 
@@ -113,26 +122,8 @@ const EventsAdmin = () => {
               Event Details
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-              <TextField
-                fullWidth
-                required
-                label="Title"
-                name="title"
-                value={event.title}
-                onChange={handleChange}
-                size="small"
-              />
-              <TextField
-                fullWidth
-                required
-                label="Description"
-                name="description"
-                value={event.description}
-                onChange={handleChange}
-                size="small"
-                multiline
-                rows={3}
-              />
+              <TextField fullWidth required label="Title" name="title" value={event.title} onChange={handleChange} size="small" />
+              <TextField fullWidth required label="Description" name="description" value={event.description} onChange={handleChange} size="small" multiline rows={3} />
             </Box>
           </Box>
 
@@ -143,68 +134,65 @@ const EventsAdmin = () => {
             <Button
               variant="contained"
               onClick={handleSubmit}
-              disabled={!event.eventImgUrl || !event.title || !event.description}
+              disabled={!event.eventImgUrl || !event.title || !event.description || isSaving}
+              startIcon={isSaving ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : null}
             >
-              Add Event
+              {isSaving ? 'Adding...' : 'Add Event'}
             </Button>
           </Box>
         </Box>
       </Modal>
 
-      <Paper sx={{ overflow: 'hidden' }}>
-        <Box sx={{ overflowX: 'auto' }}>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ width: 60 }}>Sl No</TableCell>
-                <TableCell sx={{ width: 120 }}>Image</TableCell>
-                <TableCell>Event</TableCell>
-                <TableCell sx={{ width: 80 }} align="center">Action</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {events.map((row, index) => (
-                <TableRow key={row.id || index}>
-                  <TableCell>
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>{index + 1}</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Box sx={{ width: 80, height: 80, borderRadius: 1, overflow: 'hidden', border: '1px solid #F0E8E0' }}>
-                      <Image src={row.eventImgUrl} width={80} height={80} alt="Event" style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>{row.title}</Typography>
-                    {row.description && (
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
-                        {row.description}
-                      </Typography>
-                    )}
-                  </TableCell>
-                  <TableCell align="center">
-                    <Tooltip title="Delete event">
-                      <IconButton
-                        size="small"
-                        onClick={() => setDeleteTarget(row)}
-                        sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' } }}
-                      >
-                        <DeleteOutlineIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {events.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={4} sx={{ py: 4, textAlign: 'center' }}>
-                    <Typography variant="body2" color="text.secondary">No events yet.</Typography>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </Box>
-      </Paper>
+      {/* Card-based event list */}
+      {events.length === 0 ? (
+        <Paper sx={{ p: 6, textAlign: 'center' }}>
+          <EventNoteIcon sx={{ fontSize: 48, color: '#D4A373', mb: 1 }} />
+          <Typography variant="h6" sx={{ color: 'text.secondary', mb: 0.5 }}>No events yet</Typography>
+          <Typography variant="body2" color="text.secondary">Add your first event to get started.</Typography>
+        </Paper>
+      ) : (
+        <Grid container spacing={{ xs: 2, sm: 3 }}>
+          {events.map((row, index) => (
+            <Grid item xs={12} sm={6} md={4} key={row.id || index}>
+              <Paper sx={{ overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', transition: 'all 0.2s', '&:hover': { boxShadow: '0 4px 16px rgba(0,0,0,0.1)' } }}>
+                {/* Event Image */}
+                <Box sx={{ position: 'relative', width: '100%', height: 200, backgroundColor: '#F5F0EB' }}>
+                  <Image
+                    src={row.eventImgUrl}
+                    fill
+                    alt={row.title}
+                    style={{ objectFit: 'cover' }}
+                  />
+                  <IconButton
+                    size="small"
+                    onClick={() => setDeleteTarget(row)}
+                    sx={{
+                      position: 'absolute',
+                      top: 8,
+                      right: 8,
+                      backgroundColor: 'rgba(255,255,255,0.9)',
+                      color: '#B71C1C',
+                      '&:hover': { backgroundColor: '#fff' },
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
+                    }}
+                  >
+                    <DeleteOutlineIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+                {/* Event Info */}
+                <Box sx={{ p: 2, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5, lineHeight: 1.3 }}>
+                    {row.title}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {row.description}
+                  </Typography>
+                </Box>
+              </Paper>
+            </Grid>
+          ))}
+        </Grid>
+      )}
 
       <ConfirmDialog
         open={!!deleteTarget}
@@ -214,7 +202,14 @@ const EventsAdmin = () => {
         onConfirm={async () => {
           await deleteDocument('events', deleteTarget.id);
           setDeleteTarget(null);
+          setToast({ open: true, message: 'Event deleted successfully.' });
         }}
+      />
+
+      <SuccessToast
+        open={toast.open}
+        message={toast.message}
+        onClose={() => setToast({ ...toast, open: false })}
       />
     </Container>
   );

@@ -14,7 +14,9 @@ import Tooltip from '@mui/material/Tooltip';
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import CloseIcon from '@mui/icons-material/Close';
+import CircularProgress from '@mui/material/CircularProgress';
 import ConfirmDialog from './ConfirmDialog';
+import SuccessToast from './SuccessToast';
 import UploadImage from './UploadImage';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -45,8 +47,10 @@ const GalleryAdmin = () => {
   });
   const { addGallery, fetchAllGallery, gallery, deleteDocument } = useStateContext();
   const [isLoading, setIsLoading] = React.useState(true);
+  const [isSaving, setIsSaving] = React.useState(false);
   const [error, setError] = React.useState(null);
   const [deleteTarget, setDeleteTarget] = React.useState(null);
+  const [toast, setToast] = React.useState({ open: false, message: '' });
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -76,11 +80,20 @@ const GalleryAdmin = () => {
     setGalleryData({ ...galleryData, [name]: value });
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const { galleryImgUrl, description } = galleryData;
     if (galleryImgUrl && description) {
-      addGallery(galleryData);
-      handleClose();
+      setIsSaving(true);
+      try {
+        await addGallery(galleryData);
+        handleClose();
+        await fetchAllGallery();
+        setToast({ open: true, message: 'Image added successfully!' });
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsSaving(false);
+      }
     }
   };
 
@@ -136,9 +149,10 @@ const GalleryAdmin = () => {
             <Button
               variant="contained"
               onClick={handleSubmit}
-              disabled={!galleryData.galleryImgUrl || !galleryData.description}
+              disabled={!galleryData.galleryImgUrl || !galleryData.description || isSaving}
+              startIcon={isSaving ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : null}
             >
-              Add Image
+              {isSaving ? 'Adding...' : 'Add Image'}
             </Button>
           </Box>
         </Box>
@@ -202,7 +216,14 @@ const GalleryAdmin = () => {
         onConfirm={async () => {
           await deleteDocument('gallery', deleteTarget.id);
           setDeleteTarget(null);
+          setToast({ open: true, message: 'Image deleted successfully.' });
         }}
+      />
+
+      <SuccessToast
+        open={toast.open}
+        message={toast.message}
+        onClose={() => setToast({ ...toast, open: false })}
       />
     </Container>
   );
