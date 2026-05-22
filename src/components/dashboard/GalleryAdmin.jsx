@@ -15,6 +15,8 @@ import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import CloseIcon from '@mui/icons-material/Close';
+import SearchIcon from '@mui/icons-material/Search';
+import InputAdornment from '@mui/material/InputAdornment';
 import CircularProgress from '@mui/material/CircularProgress';
 import ConfirmDialog from './ConfirmDialog';
 import SuccessToast from './SuccessToast';
@@ -53,6 +55,18 @@ const GalleryAdmin = () => {
   const [error, setError] = React.useState(null);
   const [deleteTarget, setDeleteTarget] = React.useState(null);
   const [toast, setToast] = React.useState({ open: false, message: '' });
+  const [search, setSearch] = React.useState('');
+
+  // Client-side case-insensitive search
+  const filteredGallery = React.useMemo(() => {
+    if (!gallery) return [];
+    if (!search.trim()) return gallery;
+    const q = search.trim().toLowerCase();
+    return gallery.filter((item) => {
+      const description = (item.description || '').toLowerCase();
+      return description.includes(q);
+    });
+  }, [search, gallery]);
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -93,10 +107,25 @@ const GalleryAdmin = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3 } }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h5">Gallery</Typography>
         <Button variant="contained" startIcon={<AddPhotoAlternateIcon />} onClick={handleOpen}>Add Image</Button>
       </Box>
+
+      <TextField
+        placeholder="Search gallery..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        size="small"
+        sx={{ mb: 3, maxWidth: { xs: '100%', sm: 320 }, width: '100%' }}
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+            </InputAdornment>
+          ),
+        }}
+      />
 
       <Modal open={open} onClose={handleClose}>
         <Box sx={modalStyle}>
@@ -135,7 +164,7 @@ const GalleryAdmin = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {gallery.map((row, index) => (
+              {filteredGallery.map((row, index) => (
                 <TableRow key={row.id || index}>
                   <TableCell><Typography variant="body2" sx={{ fontWeight: 500 }}>{index + 1}</Typography></TableCell>
                   <TableCell>
@@ -160,8 +189,12 @@ const GalleryAdmin = () => {
                   </TableCell>
                 </TableRow>
               ))}
-              {gallery.length === 0 && (
-                <TableRow><TableCell colSpan={4} sx={{ py: 4, textAlign: 'center' }}><Typography variant="body2" color="text.secondary">No gallery images yet.</Typography></TableCell></TableRow>
+              {filteredGallery.length === 0 && (
+                <TableRow><TableCell colSpan={4} sx={{ py: 4, textAlign: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">
+                    {search ? `No images matching "${search}"` : 'No gallery images yet.'}
+                  </Typography>
+                </TableCell></TableRow>
               )}
             </TableBody>
           </Table>

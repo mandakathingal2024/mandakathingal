@@ -15,6 +15,8 @@ import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import CloseIcon from '@mui/icons-material/Close';
+import SearchIcon from '@mui/icons-material/Search';
+import InputAdornment from '@mui/material/InputAdornment';
 import CircularProgress from '@mui/material/CircularProgress';
 import ConfirmDialog from './ConfirmDialog';
 import SuccessToast from './SuccessToast';
@@ -54,6 +56,19 @@ const ExecutiveAdmin = () => {
   const [error, setError] = React.useState(null);
   const [deleteTarget, setDeleteTarget] = React.useState(null);
   const [toast, setToast] = React.useState({ open: false, message: '' });
+  const [search, setSearch] = React.useState('');
+
+  // Client-side case-insensitive search
+  const filteredExecutives = React.useMemo(() => {
+    if (!executives) return [];
+    if (!search.trim()) return executives;
+    const q = search.trim().toLowerCase();
+    return executives.filter((exec) => {
+      const name = (exec.name || '').toLowerCase();
+      const role = (exec.role || '').toLowerCase();
+      return name.includes(q) || role.includes(q);
+    });
+  }, [search, executives]);
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -109,12 +124,27 @@ const ExecutiveAdmin = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3 } }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h5">Executives</Typography>
         <Button variant="contained" startIcon={<PersonAddIcon />} onClick={handleOpen}>
           Add Executive
         </Button>
       </Box>
+
+      <TextField
+        placeholder="Search by name or role..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        size="small"
+        sx={{ mb: 3, maxWidth: { xs: '100%', sm: 320 }, width: '100%' }}
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+            </InputAdornment>
+          ),
+        }}
+      />
 
       <Modal open={open} onClose={handleClose}>
         <Box sx={modalStyle}>
@@ -186,7 +216,7 @@ const ExecutiveAdmin = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {executives && executives.map((row, index) => (
+              {filteredExecutives.map((row, index) => (
                 <TableRow key={row.id || index}>
                   <TableCell>
                     <Typography variant="body2" sx={{ fontWeight: 500 }}>{index + 1}</Typography>
@@ -218,10 +248,12 @@ const ExecutiveAdmin = () => {
                   </TableCell>
                 </TableRow>
               ))}
-              {(!executives || executives.length === 0) && (
+              {filteredExecutives.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5} sx={{ py: 4, textAlign: 'center' }}>
-                    <Typography variant="body2" color="text.secondary">No executives added yet.</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {search ? `No executives matching "${search}"` : 'No executives added yet.'}
+                    </Typography>
                   </TableCell>
                 </TableRow>
               )}

@@ -20,7 +20,6 @@ import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import InputAdornment from '@mui/material/InputAdornment';
 import Divider from '@mui/material/Divider';
-import Chip from '@mui/material/Chip';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
@@ -76,8 +75,21 @@ const MembersAdmin = () => {
 
   const {
     addMember, searchMembersByName, getMembersWithNewBranchRelation,
-    members, getMembersByRelatedTo, setMembers, deleteDocument, updateMember
+    members, getMembersByRelatedTo, deleteDocument, updateMember
   } = useStateContext();
+
+  // Client-side case-insensitive search
+  const filteredMembers = React.useMemo(() => {
+    if (!members) return [];
+    if (!search.trim()) return members;
+    const q = search.trim().toLowerCase();
+    return members.filter((m) => {
+      const name = (m.name || '').toLowerCase();
+      const place = (m.place || '').toLowerCase();
+      const uniqueText = (m.uniqueText || '').toLowerCase();
+      return name.includes(q) || place.includes(q) || uniqueText.includes(q);
+    });
+  }, [search, members]);
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -323,13 +335,9 @@ const MembersAdmin = () => {
       <Paper sx={{ overflow: 'hidden' }}>
         <Box sx={{ p: { xs: 2, sm: 3 }, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1.5, alignItems: { sm: 'center' }, borderBottom: '1px solid #F0E8E0' }}>
           <TextField
-            placeholder="Search members..."
+            placeholder="Search by name, place..."
             value={search}
-            onChange={async (e) => {
-              setSearch(e.target.value);
-              const results = await searchMembersByName(e.target.value);
-              if (results) setMembers(results);
-            }}
+            onChange={(e) => setSearch(e.target.value)}
             size="small"
             sx={{ maxWidth: { sm: 300 }, flexGrow: { xs: 1, sm: 0 } }}
             InputProps={{
@@ -359,8 +367,7 @@ const MembersAdmin = () => {
             variant="outlined"
             size="small"
             startIcon={<RestartAltIcon />}
-            onClick={async () => {
-              await getMembersWithNewBranchRelation();
+            onClick={() => {
               setSearch('');
               setSortBy('default');
             }}
@@ -382,7 +389,7 @@ const MembersAdmin = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {members && [...members].sort((a, b) => {
+              {filteredMembers.length > 0 && [...filteredMembers].sort((a, b) => {
                 if (sortBy === 'az') return (a.name || '').localeCompare(b.name || '');
                 if (sortBy === 'za') return (b.name || '').localeCompare(a.name || '');
                 if (sortBy === 'newest') return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
@@ -444,10 +451,12 @@ const MembersAdmin = () => {
                   </TableCell>
                 </TableRow>
               ))}
-              {(!members || members.length === 0) && (
+              {filteredMembers.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5} sx={{ py: 4, textAlign: 'center' }}>
-                    <Typography variant="body2" color="text.secondary">No members found.</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {search ? `No members matching "${search}"` : 'No members found.'}
+                    </Typography>
                   </TableCell>
                 </TableRow>
               )}

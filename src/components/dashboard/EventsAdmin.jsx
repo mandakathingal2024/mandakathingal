@@ -17,6 +17,8 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import EventNoteIcon from '@mui/icons-material/EventNote';
+import SearchIcon from '@mui/icons-material/Search';
+import InputAdornment from '@mui/material/InputAdornment';
 import ConfirmDialog from './ConfirmDialog';
 import SuccessToast from './SuccessToast';
 import UploadImage from './UploadImage';
@@ -50,6 +52,19 @@ const EventsAdmin = () => {
   const [error, setError] = React.useState(null);
   const [deleteTarget, setDeleteTarget] = React.useState(null);
   const [toast, setToast] = React.useState({ open: false, message: '' });
+  const [search, setSearch] = React.useState('');
+
+  // Client-side case-insensitive search
+  const filteredEvents = React.useMemo(() => {
+    if (!events) return [];
+    if (!search.trim()) return events;
+    const q = search.trim().toLowerCase();
+    return events.filter((e) => {
+      const title = (e.title || '').toLowerCase();
+      const description = (e.description || '').toLowerCase();
+      return title.includes(q) || description.includes(q);
+    });
+  }, [search, events]);
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -105,12 +120,27 @@ const EventsAdmin = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3 } }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h5">Events</Typography>
         <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpen}>
           Add Event
         </Button>
       </Box>
+
+      <TextField
+        placeholder="Search events..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        size="small"
+        sx={{ mb: 3, maxWidth: { xs: '100%', sm: 320 }, width: '100%' }}
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+            </InputAdornment>
+          ),
+        }}
+      />
 
       <Modal open={open} onClose={handleClose}>
         <Box sx={modalStyle}>
@@ -153,15 +183,19 @@ const EventsAdmin = () => {
       </Modal>
 
       {/* Card-based event list */}
-      {events.length === 0 ? (
+      {filteredEvents.length === 0 ? (
         <Paper sx={{ p: 6, textAlign: 'center' }}>
           <EventNoteIcon sx={{ fontSize: 48, color: '#D4A373', mb: 1 }} />
-          <Typography variant="h6" sx={{ color: 'text.secondary', mb: 0.5 }}>No events yet</Typography>
-          <Typography variant="body2" color="text.secondary">Add your first event to get started.</Typography>
+          <Typography variant="h6" sx={{ color: 'text.secondary', mb: 0.5 }}>
+            {search ? 'No matching events' : 'No events yet'}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {search ? `No events matching "${search}"` : 'Add your first event to get started.'}
+          </Typography>
         </Paper>
       ) : (
         <Grid container spacing={{ xs: 2, sm: 3 }}>
-          {events.map((row, index) => (
+          {filteredEvents.map((row, index) => (
             <Grid item xs={12} sm={6} md={4} key={row.id || index}>
               <Paper sx={{ overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', transition: 'all 0.2s', '&:hover': { boxShadow: '0 4px 16px rgba(0,0,0,0.1)' } }}>
                 {/* Event Image */}
