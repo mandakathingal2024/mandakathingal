@@ -55,12 +55,12 @@ const ExecutiveAdmin = () => {
     top: '50%',
     left: '50%',
     transform: 'translate(-50%, -50%)',
-    width: 400,
+    width: { xs: '95vw', sm: 400 },
     bgcolor: 'background.paper',
     border: '2px solid #000',
     boxShadow: 24,
     pt: 2,
-    px: 4,
+    px: { xs: 2, sm: 4 },
     pb: 3,
   };  
   const handleChange = (event) => {
@@ -89,10 +89,10 @@ const ExecutiveAdmin = () => {
     }
   };
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-     <div style={{display:'flex',flexDirection:'row', justifyContent:'space-between'}}>
-        <h1>Executives</h1>
-        <Button variant="outlined" startIcon={<GroupAddIcon />} onClick={handleOpen}>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: { xs: 1, sm: 3 } }}>
+     <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { sm: 'center' }, gap: 1, mb: 2 }}>
+        <h1 style={{ margin: 0 }}>Executives</h1>
+        <Button variant="outlined" startIcon={<GroupAddIcon />} onClick={handleOpen} sx={{ minWidth: 'fit-content' }}>
         Add Executives
       </Button>
       <Modal
@@ -101,11 +101,11 @@ const ExecutiveAdmin = () => {
         aria-labelledby="child-modal-title"
         aria-describedby="child-modal-description"
       >
-        <Box sx={{ ...style, width: '80vw', }}>
+        <Box sx={{ ...style, width: { xs: '95vw', sm: '80vw' }, maxHeight: '90vh', overflow: 'auto' }}>
         <Box
       component="form"
       sx={{
-        '& .MuiTextField-root': { m: 1, width: '50ch' },
+        '& .MuiTextField-root': { m: 1, width: { xs: '100%', sm: '50ch' } },
       }}
       noValidate
       autoComplete="off"
@@ -145,37 +145,11 @@ const ExecutiveAdmin = () => {
       </Button>
         </Box>
       </Modal>
-      </div>
+      </Box>
     <Grid container spacing={3}>
-      {/* Chart */}
-      {/* <Grid item xs={12} md={8} lg={9}>
-        <Paper
-          sx={{
-            p: 2,
-            display: 'flex',
-            flexDirection: 'column',
-            height: 240,
-          }}
-        >
-          <Chart />
-        </Paper>
-      </Grid> */}
-      {/* Recent Deposits */}
-      {/* <Grid item xs={12} md={4} lg={3}>
-        <Paper
-          sx={{
-            p: 2,
-            display: 'flex',
-            flexDirection: 'column',
-            height: 240,
-          }}
-        >
-          <Deposits />
-        </Paper>
-      </Grid> */}
-      {/* Recent Orders */}
       <Grid item xs={12}>
-        <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }} style={{ maxHeight: '75vh', overflow: 'scroll'}}>
+        <Paper sx={{ p: { xs: 1, sm: 2 }, display: 'flex', flexDirection: 'column', maxHeight: '75vh', overflow: 'auto' }}>
+            <Box sx={{ overflowX: 'auto' }}>
             <Table size="small">
               <TableHead>
                 <TableRow>
@@ -215,6 +189,7 @@ const ExecutiveAdmin = () => {
                 ))}
               </TableBody>
             </Table>
+            </Box>
         </Paper>
       </Grid>
     </Grid>

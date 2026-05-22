@@ -18,6 +18,7 @@ import Link from '@mui/material/Link';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import NotificationsIcon from '@mui/icons-material/Notifications';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import ListItems from './listItems';
 // import Chart from './Chart';
 import Deposits from './Deposits';
@@ -95,6 +96,7 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
 const defaultTheme = createTheme();
 
 export default function Dashboard() {
+  const isMobile = useMediaQuery(defaultTheme.breakpoints.down('md'));
   const [open, setOpen] = React.useState(false);
   const [gmail,setGmail]= React.useState('');
   const toggleDrawer = () => {
@@ -106,10 +108,10 @@ export default function Dashboard() {
     <ThemeProvider theme={defaultTheme}>
       <Box sx={{ display: 'flex' }}>
         <CssBaseline />
-        <AppBar position="absolute" open={open}>
+        <AppBar position="absolute" open={!isMobile && open}>
           <Toolbar
             sx={{
-              pr: '24px', // keep right padding when drawer closed
+              pr: '24px',
             }}
           >
             <IconButton
@@ -119,7 +121,7 @@ export default function Dashboard() {
               onClick={toggleDrawer}
               sx={{
                 marginRight: '36px',
-                ...(open && { display: 'none' }),
+                ...(!isMobile && open && { display: 'none' }),
               }}
             >
               <MenuIcon />
@@ -140,26 +142,37 @@ export default function Dashboard() {
             </IconButton> */}
           </Toolbar>
         </AppBar>
-        <Drawer variant="permanent" open={open}>
-          <Toolbar
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-              px: [1],
-            }}
+        {isMobile ? (
+          <MuiDrawer
+            variant="temporary"
+            open={open}
+            onClose={toggleDrawer}
+            ModalProps={{ keepMounted: true }}
+            sx={{ '& .MuiDrawer-paper': { width: drawerWidth, boxSizing: 'border-box' } }}
           >
-            <IconButton onClick={toggleDrawer}>
-              <ChevronLeftIcon />
-            </IconButton>
-          </Toolbar>
-          <Divider />
-          <List component="nav">
-            <ListItems/>
-            {/* <Divider sx={{ my: 1 }} />
-            {secondaryListItems} */}
-          </List>
-        </Drawer>
+            <Toolbar sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', px: [1] }}>
+              <IconButton onClick={toggleDrawer}>
+                <ChevronLeftIcon />
+              </IconButton>
+            </Toolbar>
+            <Divider />
+            <List component="nav">
+              <ListItems onNavigate={toggleDrawer}/>
+            </List>
+          </MuiDrawer>
+        ) : (
+          <Drawer variant="permanent" open={open}>
+            <Toolbar sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', px: [1] }}>
+              <IconButton onClick={toggleDrawer}>
+                <ChevronLeftIcon />
+              </IconButton>
+            </Toolbar>
+            <Divider />
+            <List component="nav">
+              <ListItems/>
+            </List>
+          </Drawer>
+        )}
         <Box
           component="main"
           sx={{
@@ -177,30 +190,34 @@ export default function Dashboard() {
           {pageValue===2 && <MembersAdmin/>}
           {pageValue===3 && <EventsAdmin/>}
           {pageValue===4 && <ExecutiveAdmin/>}
-          {pageValue===5 && <div className='container colomn' style={{marginTop: '100px'}}>
-            <TextField id="outlined-basic" 
-            label="Register a G-mail" 
-            variant="outlined" 
-            name='gmail' 
-            type='email'
-            value={gmail}
-            style={{width:'400px'}}
-            onChange={(e)=>{
-              setGmail(e.target.value)
-            }}/>
-            <Button variant="outlined" 
-            startIcon={<GroupAddIcon />}  
-            style={{ marginLeft: '20px', height:'55px'}}
-            onClick={async()=>{
-              if(gmail){
-               await addGmail({gmail})
-               setGmail('')
-              }
-            }}
-            >
-              Register
-            </Button>
-            <Orders />
+          {pageValue===5 && <div className='container colomn' style={{marginTop: '100px', padding: '0 16px'}}>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, alignItems: { sm: 'center' } }}>
+              <TextField id="outlined-basic"
+              label="Register a G-mail"
+              variant="outlined"
+              name='gmail'
+              type='email'
+              value={gmail}
+              sx={{ width: { xs: '100%', sm: '400px' } }}
+              onChange={(e)=>{
+                setGmail(e.target.value)
+              }}/>
+              <Button variant="outlined"
+              startIcon={<GroupAddIcon />}
+              sx={{ height: '55px', minWidth: 'fit-content' }}
+              onClick={async()=>{
+                if(gmail){
+                 await addGmail({gmail})
+                 setGmail('')
+                }
+              }}
+              >
+                Register
+              </Button>
+            </Box>
+            <Box sx={{ overflowX: 'auto' }}>
+              <Orders />
+            </Box>
             </div>}
 
         </Box>

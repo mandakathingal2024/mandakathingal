@@ -11,36 +11,40 @@ import LeaderboardIcon from '@mui/icons-material/Leaderboard';
 import LogoutIcon from '@mui/icons-material/Logout';
 import GoogleIcon from '@mui/icons-material/Google';
 
-const ListItems = () => {
+const ListItems = ({ onNavigate }) => {
   const {setPageValue,handleLogOut}=useStateContext()
+  const navigate = (page) => {
+    setPageValue(page)
+    if (onNavigate) onNavigate()
+  }
   return (
     <React.Fragment>
-      <ListItemButton onClick={()=>setPageValue(1)} name='Gallery'>
+      <ListItemButton onClick={()=>navigate(1)} name='Gallery'>
         <ListItemIcon>
           <DashboardIcon />
         </ListItemIcon>
         <ListItemText primary="Gallery" />
       </ListItemButton>
-      <ListItemButton onClick={()=>setPageValue(2)}>
+      <ListItemButton onClick={()=>navigate(2)}>
         <ListItemIcon>
           <PeopleIcon />
         </ListItemIcon>
         <ListItemText primary="Members" />
       </ListItemButton>
-      <ListItemButton onClick={()=>setPageValue(3)}>
+      <ListItemButton onClick={()=>navigate(3)}>
         <ListItemIcon>
           <EventNoteIcon />
         </ListItemIcon>
         <ListItemText primary="Events" />
       </ListItemButton>
-      <ListItemButton onClick={()=>setPageValue(4)}>
+      <ListItemButton onClick={()=>navigate(4)}>
         <ListItemIcon>
           <LeaderboardIcon />
         </ListItemIcon>
         <ListItemText primary="Executives" />
       </ListItemButton>
       <hr />
-      <ListItemButton onClick={()=>setPageValue(5)}>
+      <ListItemButton onClick={()=>navigate(5)}>
         <ListItemIcon>
           <GoogleIcon />
         </ListItemIcon>
