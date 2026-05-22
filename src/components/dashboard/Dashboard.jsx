@@ -10,22 +10,17 @@ import List from '@mui/material/List';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
-import Container from '@mui/material/Container';
-import Paper from '@mui/material/Paper';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import ListItems from './listItems';
-import Orders from './Orders';
 import { useStateContext } from '../../../context/stateContext';
 import GalleryAdmin from './GalleryAdmin';
 import EventsAdmin from './EventsAdmin';
 import MembersAdmin from './MembersAdmin';
 import ExecutiveAdmin from './ExecutiveAdmin';
+import GmailAccessAdmin from './GmailAccessAdmin';
 import DashboardHome from './DashboardHome';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
-import PersonAddAltIcon from '@mui/icons-material/PersonAddAlt';
 import ConfirmDialog from './ConfirmDialog';
 
 const adminTheme = createTheme({
@@ -152,10 +147,9 @@ const drawerSx = {
 export default function Dashboard() {
   const isMobile = useMediaQuery(adminTheme.breakpoints.down('md'));
   const [open, setOpen] = React.useState(false);
-  const [gmail, setGmail] = React.useState('');
   const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
   const toggleDrawer = () => setOpen(!open);
-  const { pageValue, addGmail, handleLogOut } = useStateContext();
+  const { pageValue, handleLogOut } = useStateContext();
 
   const onLogout = () => {
     if (isMobile) setOpen(false);
@@ -221,47 +215,7 @@ export default function Dashboard() {
           {pageValue === 2 && <MembersAdmin />}
           {pageValue === 3 && <EventsAdmin />}
           {pageValue === 4 && <ExecutiveAdmin />}
-          {pageValue === 5 && (
-            <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3 } }}>
-              <Typography variant="h5" sx={{ mb: 3 }}>Gmail Access</Typography>
-              <Paper sx={{ p: { xs: 2, sm: 3 } }}>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  Register a Gmail address to grant access to the members section.
-                </Typography>
-                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 3 }}>
-                  <TextField
-                    label="Gmail Address"
-                    variant="outlined"
-                    name="gmail"
-                    type="email"
-                    size="small"
-                    value={gmail}
-                    sx={{ flexGrow: 1, maxWidth: { sm: '400px' } }}
-                    onChange={(e) => setGmail(e.target.value)}
-                  />
-                  <Button
-                    variant="contained"
-                    startIcon={<PersonAddAltIcon />}
-                    onClick={async () => {
-                      if (gmail) {
-                        await addGmail({ gmail });
-                        setGmail('');
-                      }
-                    }}
-                  >
-                    Register
-                  </Button>
-                </Box>
-                <Divider sx={{ my: 2 }} />
-                <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.75rem' }}>
-                  Registered Accounts
-                </Typography>
-                <Box sx={{ overflowX: 'auto' }}>
-                  <Orders />
-                </Box>
-              </Paper>
-            </Container>
-          )}
+          {pageValue === 5 && <GmailAccessAdmin />}
         </Box>
       </Box>
 
