@@ -14,6 +14,7 @@ import IconButton from '@mui/material/IconButton';
 import CircularProgress from '@mui/material/CircularProgress';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import EventNoteIcon from '@mui/icons-material/EventNote';
 import ConfirmDialog from './ConfirmDialog';
@@ -42,7 +43,8 @@ const EventsAdmin = () => {
     title: '',
     description: '',
   });
-  const { addEvent, fetchAllEvents, deleteDocument, events } = useStateContext();
+  const { addEvent, fetchAllEvents, deleteDocument, updateDocument, events } = useStateContext();
+  const [isEdit, setIsEdit] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
   const [error, setError] = React.useState(null);
@@ -71,9 +73,11 @@ const EventsAdmin = () => {
     setEvent({ ...event, [name]: value });
   };
 
-  const handleOpen = () => setOpen(true);
+  const handleOpen = () => { setIsEdit(false); setOpen(true); };
+  const handleEdit = (row) => { setEvent(row); setIsEdit(true); setOpen(true); };
   const handleClose = () => {
     setOpen(false);
+    setIsEdit(false);
     setEvent({ eventImgUrl: '', title: '', description: '' });
   };
 
@@ -82,10 +86,15 @@ const EventsAdmin = () => {
     if (eventImgUrl && title && description) {
       setIsSaving(true);
       try {
-        await addEvent(event);
+        if (isEdit) {
+          await updateDocument('events', event);
+          setToast({ open: true, message: 'Event updated successfully!' });
+        } else {
+          await addEvent(event);
+          setToast({ open: true, message: 'Event added successfully!' });
+        }
         handleClose();
         await fetchAllEvents();
-        setToast({ open: true, message: 'Event added successfully!' });
       } catch (err) {
         console.error(err);
       } finally {
@@ -106,7 +115,7 @@ const EventsAdmin = () => {
       <Modal open={open} onClose={handleClose}>
         <Box sx={modalStyle}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 3, pb: 2, borderBottom: '1px solid #F0E8E0' }}>
-            <Typography variant="h6">Add Event</Typography>
+            <Typography variant="h6">{isEdit ? 'Edit Event' : 'Add Event'}</Typography>
             <IconButton onClick={handleClose} size="small" sx={{ color: 'text.secondary' }}>
               <CloseIcon fontSize="small" />
             </IconButton>
@@ -116,7 +125,7 @@ const EventsAdmin = () => {
             <Typography variant="subtitle2" sx={{ mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
               Event Image
             </Typography>
-            <UploadImage folderName="events" setEvent={setEvent} imageType="event" />
+            <UploadImage folderName="events" setEvent={setEvent} imageType="event" existingUrl={isEdit ? event.eventImgUrl : ''} />
 
             <Typography variant="subtitle2" sx={{ mt: 2.5, mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
               Event Details
@@ -137,7 +146,7 @@ const EventsAdmin = () => {
               disabled={!event.eventImgUrl || !event.title || !event.description || isSaving}
               startIcon={isSaving ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : null}
             >
-              {isSaving ? 'Adding...' : 'Add Event'}
+              {isSaving ? 'Saving...' : isEdit ? 'Save Changes' : 'Add Event'}
             </Button>
           </Box>
         </Box>
@@ -163,21 +172,22 @@ const EventsAdmin = () => {
                     alt={row.title}
                     style={{ objectFit: 'cover' }}
                   />
-                  <IconButton
-                    size="small"
-                    onClick={() => setDeleteTarget(row)}
-                    sx={{
-                      position: 'absolute',
-                      top: 8,
-                      right: 8,
-                      backgroundColor: 'rgba(255,255,255,0.9)',
-                      color: '#B71C1C',
-                      '&:hover': { backgroundColor: '#fff' },
-                      boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
-                    }}
-                  >
-                    <DeleteOutlineIcon fontSize="small" />
-                  </IconButton>
+                  <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 0.5 }}>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleEdit(row)}
+                      sx={{ backgroundColor: 'rgba(255,255,255,0.9)', color: '#2E7D32', '&:hover': { backgroundColor: '#fff' }, boxShadow: '0 1px 4px rgba(0,0,0,0.15)' }}
+                    >
+                      <EditOutlinedIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() => setDeleteTarget(row)}
+                      sx={{ backgroundColor: 'rgba(255,255,255,0.9)', color: '#B71C1C', '&:hover': { backgroundColor: '#fff' }, boxShadow: '0 1px 4px rgba(0,0,0,0.15)' }}
+                    >
+                      <DeleteOutlineIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
                 </Box>
                 {/* Event Info */}
                 <Box sx={{ p: 2, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>

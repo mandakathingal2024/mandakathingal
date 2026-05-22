@@ -400,6 +400,24 @@ export const StateContext =({children})=>{
         }
       }
 
+      async function updateDocument(collectionName, updatedData) {
+        try {
+          const colRef = collection(db, collectionName);
+          const q = query(colRef, where("id", "==", updatedData.id));
+          const querySnapshot = await getDocs(q);
+
+          if (!querySnapshot.empty) {
+            const docRef = doc(db, querySnapshot.docs[0].ref.path);
+            await updateDoc(docRef, updatedData);
+            console.log(`${collectionName} document updated successfully!`);
+          } else {
+            console.log("Document not found.");
+          }
+        } catch (error) {
+          console.error("Error updating document:", error);
+        }
+      }
+
       const googleSignIn = async () => {
         const provider = new GoogleAuthProvider()
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
@@ -494,6 +512,7 @@ export const StateContext =({children})=>{
         members,
         setMembers,
         updateMember,
+        updateDocument,
         addGmail,
         googleSignIn,
         googleSignOut,

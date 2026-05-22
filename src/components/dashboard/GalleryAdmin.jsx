@@ -13,6 +13,7 @@ import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import CircularProgress from '@mui/material/CircularProgress';
 import ConfirmDialog from './ConfirmDialog';
@@ -41,11 +42,12 @@ const modalStyle = {
 
 const GalleryAdmin = () => {
   const [open, setOpen] = React.useState(false);
+  const [isEdit, setIsEdit] = React.useState(false);
   const [galleryData, setGalleryData] = React.useState({
     galleryImgUrl: '',
     description: '',
   });
-  const { addGallery, fetchAllGallery, gallery, deleteDocument } = useStateContext();
+  const { addGallery, fetchAllGallery, gallery, deleteDocument, updateDocument } = useStateContext();
   const [isLoading, setIsLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
   const [error, setError] = React.useState(null);
@@ -54,26 +56,16 @@ const GalleryAdmin = () => {
 
   React.useEffect(() => {
     const fetchData = async () => {
-      try {
-        await fetchAllGallery();
-      } catch (error) {
-        setError(error);
-      } finally {
-        setIsLoading(false);
-      }
+      try { await fetchAllGallery(); } catch (error) { setError(error); } finally { setIsLoading(false); }
     };
     fetchData();
   }, []);
 
-  if (isLoading) {
-    return <DashboardSkeleton />;
-  }
+  if (isLoading) return <DashboardSkeleton />;
 
-  const handleOpen = () => setOpen(true);
-  const handleClose = () => {
-    setOpen(false);
-    setGalleryData({ galleryImgUrl: '', description: '' });
-  };
+  const handleOpen = () => { setIsEdit(false); setOpen(true); };
+  const handleEdit = (row) => { setGalleryData(row); setIsEdit(true); setOpen(true); };
+  const handleClose = () => { setOpen(false); setIsEdit(false); setGalleryData({ galleryImgUrl: '', description: '' }); };
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -85,15 +77,17 @@ const GalleryAdmin = () => {
     if (galleryImgUrl && description) {
       setIsSaving(true);
       try {
-        await addGallery(galleryData);
+        if (isEdit) {
+          await updateDocument('gallery', galleryData);
+          setToast({ open: true, message: 'Image updated successfully!' });
+        } else {
+          await addGallery(galleryData);
+          setToast({ open: true, message: 'Image added successfully!' });
+        }
         handleClose();
         await fetchAllGallery();
-        setToast({ open: true, message: 'Image added successfully!' });
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setIsSaving(false);
-      }
+      } catch (err) { console.error(err); }
+      finally { setIsSaving(false); }
     }
   };
 
@@ -101,58 +95,29 @@ const GalleryAdmin = () => {
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3 } }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h5">Gallery</Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddPhotoAlternateIcon />}
-          onClick={handleOpen}
-        >
-          Add Image
-        </Button>
+        <Button variant="contained" startIcon={<AddPhotoAlternateIcon />} onClick={handleOpen}>Add Image</Button>
       </Box>
 
       <Modal open={open} onClose={handleClose}>
         <Box sx={modalStyle}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 3, pb: 2, borderBottom: '1px solid #F0E8E0' }}>
-            <Typography variant="h6">Add Gallery Image</Typography>
-            <IconButton onClick={handleClose} size="small" sx={{ color: 'text.secondary' }}>
-              <CloseIcon fontSize="small" />
-            </IconButton>
+            <Typography variant="h6">{isEdit ? 'Edit Gallery Image' : 'Add Gallery Image'}</Typography>
+            <IconButton onClick={handleClose} size="small" sx={{ color: 'text.secondary' }}><CloseIcon fontSize="small" /></IconButton>
           </Box>
 
           <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle2" sx={{ mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
-              Image
-            </Typography>
-            <UploadImage folderName="gallery" setGallery={setGalleryData} imageType="gallery" />
+            <Typography variant="subtitle2" sx={{ mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>Image</Typography>
+            <UploadImage folderName="gallery" setGallery={setGalleryData} imageType="gallery" existingUrl={isEdit ? galleryData.galleryImgUrl : ''} />
 
-            <Typography variant="subtitle2" sx={{ mt: 2.5, mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
-              Details
-            </Typography>
-            <TextField
-              fullWidth
-              required
-              label="Description"
-              name="description"
-              value={galleryData.description}
-              onChange={handleChange}
-              size="small"
-              multiline
-              rows={2}
-              sx={{ mt: 1 }}
-            />
+            <Typography variant="subtitle2" sx={{ mt: 2.5, mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>Details</Typography>
+            <TextField fullWidth required label="Description" name="description" value={galleryData.description} onChange={handleChange} size="small" multiline rows={2} sx={{ mt: 1 }} />
           </Box>
 
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, p: 3, pt: 1, borderTop: '1px solid #F0E8E0' }}>
-            <Button variant="outlined" onClick={handleClose} sx={{ color: 'text.secondary', borderColor: '#E0D6CC' }}>
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              onClick={handleSubmit}
-              disabled={!galleryData.galleryImgUrl || !galleryData.description || isSaving}
-              startIcon={isSaving ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : null}
-            >
-              {isSaving ? 'Adding...' : 'Add Image'}
+            <Button variant="outlined" onClick={handleClose} sx={{ color: 'text.secondary', borderColor: '#E0D6CC' }}>Cancel</Button>
+            <Button variant="contained" onClick={handleSubmit} disabled={!galleryData.galleryImgUrl || !galleryData.description || isSaving}
+              startIcon={isSaving ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : null}>
+              {isSaving ? 'Saving...' : isEdit ? 'Save Changes' : 'Add Image'}
             </Button>
           </Box>
         </Box>
@@ -166,65 +131,46 @@ const GalleryAdmin = () => {
                 <TableCell sx={{ width: 60 }}>Sl No</TableCell>
                 <TableCell sx={{ width: 120 }}>Image</TableCell>
                 <TableCell>Description</TableCell>
-                <TableCell sx={{ width: 80 }} align="center">Action</TableCell>
+                <TableCell sx={{ width: 110 }} align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {gallery.map((row, index) => (
                 <TableRow key={row.id || index}>
-                  <TableCell>
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>{index + 1}</Typography>
-                  </TableCell>
+                  <TableCell><Typography variant="body2" sx={{ fontWeight: 500 }}>{index + 1}</Typography></TableCell>
                   <TableCell>
                     <Box sx={{ width: 80, height: 80, borderRadius: 1, overflow: 'hidden', border: '1px solid #F0E8E0' }}>
                       <Image src={row.galleryImgUrl} width={80} height={80} alt="Gallery" style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
                     </Box>
                   </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">{row.description}</Typography>
-                  </TableCell>
+                  <TableCell><Typography variant="body2">{row.description}</Typography></TableCell>
                   <TableCell align="center">
-                    <Tooltip title="Delete image">
-                      <IconButton
-                        size="small"
-                        onClick={() => setDeleteTarget(row)}
-                        sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' } }}
-                      >
-                        <DeleteOutlineIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
+                    <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+                      <Tooltip title="Edit">
+                        <IconButton size="small" onClick={() => handleEdit(row)} sx={{ color: '#2E7D32', '&:hover': { backgroundColor: 'rgba(46,125,50,0.08)' } }}>
+                          <EditOutlinedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Delete">
+                        <IconButton size="small" onClick={() => setDeleteTarget(row)} sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' } }}>
+                          <DeleteOutlineIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
                   </TableCell>
                 </TableRow>
               ))}
               {gallery.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={4} sx={{ py: 4, textAlign: 'center' }}>
-                    <Typography variant="body2" color="text.secondary">No gallery images yet.</Typography>
-                  </TableCell>
-                </TableRow>
+                <TableRow><TableCell colSpan={4} sx={{ py: 4, textAlign: 'center' }}><Typography variant="body2" color="text.secondary">No gallery images yet.</Typography></TableCell></TableRow>
               )}
             </TableBody>
           </Table>
         </Box>
       </Paper>
 
-      <ConfirmDialog
-        open={!!deleteTarget}
-        title="Delete Image"
-        message="Are you sure you want to delete this gallery image? This action cannot be undone."
-        onCancel={() => setDeleteTarget(null)}
-        onConfirm={async () => {
-          await deleteDocument('gallery', deleteTarget.id);
-          setDeleteTarget(null);
-          setToast({ open: true, message: 'Image deleted successfully.' });
-        }}
-      />
-
-      <SuccessToast
-        open={toast.open}
-        message={toast.message}
-        onClose={() => setToast({ ...toast, open: false })}
-      />
+      <ConfirmDialog open={!!deleteTarget} title="Delete Image" message="Are you sure you want to delete this gallery image? This action cannot be undone."
+        onCancel={() => setDeleteTarget(null)} onConfirm={async () => { await deleteDocument('gallery', deleteTarget.id); setDeleteTarget(null); setToast({ open: true, message: 'Image deleted successfully.' }); }} />
+      <SuccessToast open={toast.open} message={toast.message} onClose={() => setToast({ ...toast, open: false })} />
     </Container>
   );
 };

@@ -13,6 +13,7 @@ import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import CircularProgress from '@mui/material/CircularProgress';
 import ConfirmDialog from './ConfirmDialog';
@@ -46,7 +47,8 @@ const ExecutiveAdmin = () => {
     name: '',
     role: '',
   });
-  const { addExecutive, fetchAllExecutives, deleteDocument, executives } = useStateContext();
+  const { addExecutive, fetchAllExecutives, deleteDocument, updateDocument, executives } = useStateContext();
+  const [isEdit, setIsEdit] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
   const [error, setError] = React.useState(null);
@@ -75,9 +77,11 @@ const ExecutiveAdmin = () => {
     setExecutive({ ...executive, [name]: value });
   };
 
-  const handleOpen = () => setOpen(true);
+  const handleOpen = () => { setIsEdit(false); setOpen(true); };
+  const handleEdit = (row) => { setExecutive(row); setIsEdit(true); setOpen(true); };
   const handleClose = () => {
     setOpen(false);
+    setIsEdit(false);
     setExecutive({ executiveImgUrl: '', name: '', role: '' });
   };
 
@@ -86,10 +90,15 @@ const ExecutiveAdmin = () => {
     if (executiveImgUrl && name && role) {
       setIsSaving(true);
       try {
-        await addExecutive(executive);
+        if (isEdit) {
+          await updateDocument('executives', executive);
+          setToast({ open: true, message: 'Executive updated successfully!' });
+        } else {
+          await addExecutive(executive);
+          setToast({ open: true, message: 'Executive added successfully!' });
+        }
         handleClose();
         await fetchAllExecutives();
-        setToast({ open: true, message: 'Executive added successfully!' });
       } catch (err) {
         console.error(err);
       } finally {
@@ -110,7 +119,7 @@ const ExecutiveAdmin = () => {
       <Modal open={open} onClose={handleClose}>
         <Box sx={modalStyle}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 3, pb: 2, borderBottom: '1px solid #F0E8E0' }}>
-            <Typography variant="h6">Add Executive</Typography>
+            <Typography variant="h6">{isEdit ? 'Edit Executive' : 'Add Executive'}</Typography>
             <IconButton onClick={handleClose} size="small" sx={{ color: 'text.secondary' }}>
               <CloseIcon fontSize="small" />
             </IconButton>
@@ -120,7 +129,7 @@ const ExecutiveAdmin = () => {
             <Typography variant="subtitle2" sx={{ mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
               Photo
             </Typography>
-            <UploadImage folderName="executives" setExecutive={setExecutive} imageType="executive" />
+            <UploadImage folderName="executives" setExecutive={setExecutive} imageType="executive" existingUrl={isEdit ? executive.executiveImgUrl : ''} />
 
             <Typography variant="subtitle2" sx={{ mt: 2.5, mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
               Details
@@ -158,7 +167,7 @@ const ExecutiveAdmin = () => {
               disabled={!executive.executiveImgUrl || !executive.name || !executive.role || isSaving}
               startIcon={isSaving ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : null}
             >
-              {isSaving ? 'Adding...' : 'Add Executive'}
+              {isSaving ? 'Saving...' : isEdit ? 'Save Changes' : 'Add Executive'}
             </Button>
           </Box>
         </Box>
@@ -173,7 +182,7 @@ const ExecutiveAdmin = () => {
                 <TableCell sx={{ width: 120 }}>Photo</TableCell>
                 <TableCell>Name</TableCell>
                 <TableCell>Role</TableCell>
-                <TableCell sx={{ width: 80 }} align="center">Action</TableCell>
+                <TableCell sx={{ width: 110 }} align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -194,15 +203,18 @@ const ExecutiveAdmin = () => {
                     <Typography variant="body2" color="text.secondary">{row.role}</Typography>
                   </TableCell>
                   <TableCell align="center">
-                    <Tooltip title="Remove executive">
-                      <IconButton
-                        size="small"
-                        onClick={() => setDeleteTarget(row)}
-                        sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' } }}
-                      >
-                        <DeleteOutlineIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
+                    <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+                      <Tooltip title="Edit">
+                        <IconButton size="small" onClick={() => handleEdit(row)} sx={{ color: '#2E7D32', '&:hover': { backgroundColor: 'rgba(46,125,50,0.08)' } }}>
+                          <EditOutlinedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Delete">
+                        <IconButton size="small" onClick={() => setDeleteTarget(row)} sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' } }}>
+                          <DeleteOutlineIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
                   </TableCell>
                 </TableRow>
               ))}

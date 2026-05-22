@@ -225,11 +225,11 @@ const MembersAdmin = () => {
             <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
               <Box sx={{ flex: 1 }}>
                 <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.primary', mb: 0.5, display: 'block' }}>Member Photo</Typography>
-                <UploadImage folderName="members" setMember={setMember} imageType="member" />
+                <UploadImage folderName="members" setMember={setMember} imageType="member" existingUrl={isEdit ? member.memberImgUrl : ''} />
               </Box>
               <Box sx={{ flex: 1 }}>
                 <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.primary', mb: 0.5, display: 'block' }}>House Photo</Typography>
-                <UploadImage folderName="members" setMember={setMember} imageType="house" />
+                <UploadImage folderName="members" setMember={setMember} imageType="house" existingUrl={isEdit ? member.houseImgUrl : ''} />
               </Box>
             </Box>
 
