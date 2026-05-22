@@ -126,7 +126,16 @@ const UploadImage = ({ folderName, setMember, imageType, setGallery, setEvent, s
         },
         (uploadError) => {
           console.error('Upload Error:', uploadError);
-          setError('Upload failed. Please try again.');
+          const code = uploadError.code || '';
+          let msg = 'Upload failed. Please try again.';
+          if (code === 'storage/quota-exceeded') {
+            msg = 'Storage quota exceeded. Please contact admin to free up space or upgrade the plan.';
+          } else if (code === 'storage/unauthorized') {
+            msg = 'Upload not authorized. Please check storage permissions.';
+          } else if (code === 'storage/canceled') {
+            msg = 'Upload was cancelled.';
+          }
+          setError(msg);
           setIsUploading(false);
           setStatus('');
         },
