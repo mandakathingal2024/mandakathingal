@@ -47,14 +47,13 @@ export const StateContext =({children})=>{
     //fetch function for authenticate user
 
     const authenticateUser=async(credentials)=>{
-        console.log(credentials);
-        const url = '/api/authentication'; // Replace with your API route path
+        const url = '/api/authentication';
         const options = {
-          method: 'POST', // Set the HTTP method to POST
-          headers: { 'Content-Type': 'application/json' }, // Set the content type
-          body: JSON.stringify(credentials), // Convert data to JSON string
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(credentials),
         };
-      
+
         try {
           const response = await fetch(url, options);
           if (!response.ok) {
@@ -65,9 +64,10 @@ export const StateContext =({children})=>{
           if (responseData.isAuthenticated) {
             localStorage.setItem('adminAuth', 'true')
           }
-        //   return responseData
+          return responseData.isAuthenticated;
         } catch (error) {
-          console.error('Error:', error.message); // Handle errors
+          console.error('Error:', error.message);
+          return false;
         }
     }
     async function addMember(obj) {
