@@ -1,7 +1,4 @@
 import React, { useState, useCallback } from 'react';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { storage } from '../../../context/firebaseConfig';
-import { v4 as uuidv4 } from 'uuid';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import LinearProgress from '@mui/material/LinearProgress';
@@ -10,10 +7,12 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 
+const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+
 // Compress image using Canvas API — no external library needed
 function compressImage(file, maxWidth = 1200, maxHeight = 1200, quality = 0.75) {
   return new Promise((resolve, reject) => {
-    // Skip non-image files
     if (!file.type.startsWith('image/')) {
       resolve(file);
       return;
@@ -25,7 +24,6 @@ function compressImage(file, maxWidth = 1200, maxHeight = 1200, quality = 0.75) 
       img.onload = () => {
         let { width, height } = img;
 
-        // Scale down if larger than max dimensions
         if (width > maxWidth || height > maxHeight) {
           const ratio = Math.min(maxWidth / width, maxHeight / height);
           width = Math.round(width * ratio);
@@ -45,7 +43,6 @@ function compressImage(file, maxWidth = 1200, maxHeight = 1200, quality = 0.75) 
               reject(new Error('Compression failed'));
               return;
             }
-            // Create a new file from the blob
             const compressedFile = new File([blob], file.name, {
               type: 'image/jpeg',
               lastModified: Date.now(),
@@ -76,7 +73,7 @@ const UploadImage = ({ folderName, setMember, imageType, setGallery, setEvent, s
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState(null);
   const [sizeInfo, setSizeInfo] = useState(null);
-  const [status, setStatus] = useState(''); // compressing, uploading
+  const [status, setStatus] = useState('');
 
   const setDownloadURL = useCallback((downloadURL) => {
     if (imageType === 'member') {
@@ -111,49 +108,55 @@ const UploadImage = ({ folderName, setMember, imageType, setGallery, setEvent, s
       const compressedSize = compressed.size;
       setSizeInfo({ original: originalSize, compressed: compressedSize });
 
-      // Step 2: Upload with unique filename
+      // Step 2: Upload to Cloudinary
       setStatus('Uploading...');
-      const ext = file.name.split('.').pop() || 'jpg';
-      const uniqueName = `${uuidv4()}.${ext}`;
-      const storageRef = ref(storage, `${folderName}/${uniqueName}`);
-      const uploadTask = uploadBytesResumable(storageRef, compressed);
+      const formData = new FormData();
+      formData.append('file', compressed);
+      formData.append('upload_preset', UPLOAD_PRESET);
+      formData.append('folder', folderName);
 
-      uploadTask.on(
-        'state_changed',
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`);
+
+      // Track upload progress
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const progress = (e.loaded / e.total) * 100;
           setUploadProgress(progress);
-        },
-        (uploadError) => {
-          console.error('Upload Error:', uploadError);
-          const code = uploadError.code || '';
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          const response = JSON.parse(xhr.responseText);
+          const downloadURL = response.secure_url;
+          setImageUrl(downloadURL);
+          setIsUploading(false);
+          setStatus('');
+          setDownloadURL(downloadURL);
+        } else {
+          console.error('Upload Error:', xhr.responseText);
           let msg = 'Upload failed. Please try again.';
-          if (code === 'storage/quota-exceeded') {
-            msg = 'Storage quota exceeded. Please contact admin to free up space or upgrade the plan.';
-          } else if (code === 'storage/unauthorized') {
-            msg = 'Upload not authorized. Please check storage permissions.';
-          } else if (code === 'storage/canceled') {
-            msg = 'Upload was cancelled.';
-          }
+          try {
+            const errData = JSON.parse(xhr.responseText);
+            if (errData.error?.message) {
+              msg = errData.error.message;
+            }
+          } catch (_) {}
           setError(msg);
           setIsUploading(false);
           setStatus('');
-        },
-        async () => {
-          try {
-            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            setImageUrl(downloadURL);
-            setIsUploading(false);
-            setStatus('');
-            setDownloadURL(downloadURL);
-          } catch (urlError) {
-            console.error('Get URL Error:', urlError);
-            setError('Failed to get image URL. Please try again.');
-            setIsUploading(false);
-            setStatus('');
-          }
         }
-      );
+      };
+
+      xhr.onerror = () => {
+        console.error('Upload network error');
+        setError('Network error. Please check your connection and try again.');
+        setIsUploading(false);
+        setStatus('');
+      };
+
+      xhr.send(formData);
     } catch (compressError) {
       console.error('Compress Error:', compressError);
       setError('Failed to process image. Please try a different file.');
