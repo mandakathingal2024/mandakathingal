@@ -12,11 +12,13 @@ import Tooltip from '@mui/material/Tooltip';
 import Box from '@mui/material/Box';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { useStateContext } from '../../../context/stateContext';
+import ConfirmDialog from './ConfirmDialog';
 
 export default function Orders() {
   const { gmail, fetchAllGmail, deleteDocument } = useStateContext();
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
+  const [deleteTarget, setDeleteTarget] = React.useState(null);
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -46,6 +48,7 @@ export default function Orders() {
   }
 
   return (
+    <>
     <Table size="small">
       <TableHead>
         <TableRow>
@@ -67,9 +70,7 @@ export default function Orders() {
               <Tooltip title="Remove access">
                 <IconButton
                   size="small"
-                  onClick={async () => {
-                    await deleteDocument('gmail', row.id);
-                  }}
+                  onClick={() => setDeleteTarget(row)}
                   sx={{
                     color: '#B71C1C',
                     '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' },
@@ -83,5 +84,17 @@ export default function Orders() {
         ))}
       </TableBody>
     </Table>
+
+    <ConfirmDialog
+      open={!!deleteTarget}
+      title="Remove Access"
+      message={`Are you sure you want to remove access for "${deleteTarget?.gmail}"? This action cannot be undone.`}
+      onCancel={() => setDeleteTarget(null)}
+      onConfirm={async () => {
+        await deleteDocument('gmail', deleteTarget.id);
+        setDeleteTarget(null);
+      }}
+    />
+    </>
   );
 }

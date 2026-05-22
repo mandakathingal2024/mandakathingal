@@ -14,6 +14,7 @@ import Tooltip from '@mui/material/Tooltip';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import CloseIcon from '@mui/icons-material/Close';
+import ConfirmDialog from './ConfirmDialog';
 import UploadImage from './UploadImage';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -46,6 +47,7 @@ const ExecutiveAdmin = () => {
   const { addExecutive, fetchAllExecutives, deleteDocument, executives } = useStateContext();
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
+  const [deleteTarget, setDeleteTarget] = React.useState(null);
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -181,7 +183,7 @@ const ExecutiveAdmin = () => {
                     <Tooltip title="Remove executive">
                       <IconButton
                         size="small"
-                        onClick={async () => { await deleteDocument('executives', row.id); }}
+                        onClick={() => setDeleteTarget(row)}
                         sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' } }}
                       >
                         <DeleteOutlineIcon fontSize="small" />
@@ -201,6 +203,17 @@ const ExecutiveAdmin = () => {
           </Table>
         </Box>
       </Paper>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Remove Executive"
+        message={`Are you sure you want to remove "${deleteTarget?.name}"? This action cannot be undone.`}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          await deleteDocument('executives', deleteTarget.id);
+          setDeleteTarget(null);
+        }}
+      />
     </Container>
   );
 };

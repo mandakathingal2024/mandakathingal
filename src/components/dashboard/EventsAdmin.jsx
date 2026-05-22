@@ -14,6 +14,7 @@ import Tooltip from '@mui/material/Tooltip';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import CloseIcon from '@mui/icons-material/Close';
+import ConfirmDialog from './ConfirmDialog';
 import UploadImage from './UploadImage';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -46,6 +47,7 @@ const EventsAdmin = () => {
   const { addEvent, fetchAllEvents, deleteDocument, events } = useStateContext();
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
+  const [deleteTarget, setDeleteTarget] = React.useState(null);
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -183,7 +185,7 @@ const EventsAdmin = () => {
                     <Tooltip title="Delete event">
                       <IconButton
                         size="small"
-                        onClick={async () => { await deleteDocument('events', row.id); }}
+                        onClick={() => setDeleteTarget(row)}
                         sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' } }}
                       >
                         <DeleteOutlineIcon fontSize="small" />
@@ -203,6 +205,17 @@ const EventsAdmin = () => {
           </Table>
         </Box>
       </Paper>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete Event"
+        message={`Are you sure you want to delete "${deleteTarget?.title}"? This action cannot be undone.`}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          await deleteDocument('events', deleteTarget.id);
+          setDeleteTarget(null);
+        }}
+      />
     </Container>
   );
 };

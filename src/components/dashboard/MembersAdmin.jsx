@@ -24,6 +24,7 @@ import Chip from '@mui/material/Chip';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import ConfirmDialog from './ConfirmDialog';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import SearchIcon from '@mui/icons-material/Search';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
@@ -65,6 +66,7 @@ const MembersAdmin = () => {
   const [isEdit, setIsEdit] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
+  const [deleteTarget, setDeleteTarget] = React.useState(null);
 
   const {
     addMember, searchMembersByName, getMembersWithNewBranchRelation,
@@ -386,7 +388,7 @@ const MembersAdmin = () => {
                       <Tooltip title="Delete">
                         <IconButton
                           size="small"
-                          onClick={async () => { await deleteDocument('members', row.id); }}
+                          onClick={() => setDeleteTarget(row)}
                           sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' } }}
                         >
                           <DeleteOutlineIcon fontSize="small" />
@@ -407,6 +409,17 @@ const MembersAdmin = () => {
           </Table>
         </Box>
       </Paper>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete Member"
+        message={`Are you sure you want to delete "${deleteTarget?.name}"? This action cannot be undone.`}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          await deleteDocument('members', deleteTarget.id);
+          setDeleteTarget(null);
+        }}
+      />
     </Container>
   );
 };

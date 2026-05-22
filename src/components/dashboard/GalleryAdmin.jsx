@@ -14,6 +14,7 @@ import Tooltip from '@mui/material/Tooltip';
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import CloseIcon from '@mui/icons-material/Close';
+import ConfirmDialog from './ConfirmDialog';
 import UploadImage from './UploadImage';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -45,6 +46,7 @@ const GalleryAdmin = () => {
   const { addGallery, fetchAllGallery, gallery, deleteDocument } = useStateContext();
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
+  const [deleteTarget, setDeleteTarget] = React.useState(null);
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -171,7 +173,7 @@ const GalleryAdmin = () => {
                     <Tooltip title="Delete image">
                       <IconButton
                         size="small"
-                        onClick={async () => { await deleteDocument('gallery', row.id); }}
+                        onClick={() => setDeleteTarget(row)}
                         sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' } }}
                       >
                         <DeleteOutlineIcon fontSize="small" />
@@ -191,6 +193,17 @@ const GalleryAdmin = () => {
           </Table>
         </Box>
       </Paper>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete Image"
+        message="Are you sure you want to delete this gallery image? This action cannot be undone."
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          await deleteDocument('gallery', deleteTarget.id);
+          setDeleteTarget(null);
+        }}
+      />
     </Container>
   );
 };
