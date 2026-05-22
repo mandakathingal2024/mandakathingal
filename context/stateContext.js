@@ -28,19 +28,19 @@ export const StateContext =({children})=>{
     const [gmail,setGmail]=useState(null)
 
 
-    // Hydrate auth and page state from sessionStorage after mount (avoids SSR flash)
+    // Hydrate auth and page state from localStorage after mount (avoids SSR flash)
     useEffect(() => {
-      const savedAuth = sessionStorage.getItem('adminAuth') === 'true'
-      const savedPage = sessionStorage.getItem('adminPage')
+      const savedAuth = localStorage.getItem('adminAuth') === 'true'
+      const savedPage = localStorage.getItem('adminPage')
       if (savedAuth) setIsAuthenticated(true)
       if (savedPage !== null) setPageValue(Number(savedPage))
       setIsAuthLoading(false)
     }, [])
 
-    // Persist pageValue to sessionStorage whenever it changes
+    // Persist pageValue to localStorage whenever it changes
     useEffect(() => {
       if (typeof window !== 'undefined') {
-        sessionStorage.setItem('adminPage', String(pageValue))
+        localStorage.setItem('adminPage', String(pageValue))
       }
     }, [pageValue])
 
@@ -63,7 +63,7 @@ export const StateContext =({children})=>{
           const responseData = await response.json();
           setIsAuthenticated(responseData.isAuthenticated)
           if (responseData.isAuthenticated) {
-            sessionStorage.setItem('adminAuth', 'true')
+            localStorage.setItem('adminAuth', 'true')
           }
         //   return responseData
         } catch (error) {
@@ -128,8 +128,8 @@ export const StateContext =({children})=>{
     const handleLogOut=()=>{
       setIsAuthenticated(false)
       setPageValue(0)
-      sessionStorage.removeItem('adminAuth')
-      sessionStorage.removeItem('adminPage')
+      localStorage.removeItem('adminAuth')
+      localStorage.removeItem('adminPage')
     }
 
     async function searchMembersByName(inputString) {
