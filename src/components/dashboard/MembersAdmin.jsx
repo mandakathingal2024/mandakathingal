@@ -141,9 +141,9 @@ const MembersAdmin = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3 } }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'center' }, gap: 1.5, mb: 3 }}>
         <Typography variant="h5">Members</Typography>
-        <Button variant="contained" startIcon={<PersonAddIcon />} onClick={handleOpen}>
+        <Button variant="contained" startIcon={<PersonAddIcon />} onClick={handleOpen} sx={{ alignSelf: { xs: 'flex-start', sm: 'auto' } }}>
           Add Member
         </Button>
       </Box>
@@ -331,24 +331,24 @@ const MembersAdmin = () => {
         </Box>
 
         <Box sx={{ overflowX: 'auto' }}>
-          <Table size="small">
+          <Table size="small" sx={{ minWidth: { xs: 0, sm: 500 } }}>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ width: 50 }}>Sl No</TableCell>
-                <TableCell sx={{ width: 80 }}>Photo</TableCell>
-                <TableCell>Name</TableCell>
-                <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Unique Text</TableCell>
-                <TableCell sx={{ width: { xs: 100, sm: 160 } }} align="center">Actions</TableCell>
+                <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' }, width: 50 }}>Sl No</TableCell>
+                <TableCell sx={{ width: { xs: 44, sm: 80 }, px: { xs: 1, sm: 2 } }}>Photo</TableCell>
+                <TableCell sx={{ px: { xs: 1, sm: 2 } }}>Name</TableCell>
+                <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Unique Text</TableCell>
+                <TableCell sx={{ width: { xs: 'auto', sm: 160 }, px: { xs: 0.5, sm: 2 } }} align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {members && members.map((row, index) => (
                 <TableRow key={row.id || index}>
-                  <TableCell>
+                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
                     <Typography variant="body2" sx={{ fontWeight: 500 }}>{index + 1}</Typography>
                   </TableCell>
-                  <TableCell>
-                    <Box sx={{ width: 48, height: 48, borderRadius: '50%', overflow: 'hidden', border: '2px solid #F0E8E0' }}>
+                  <TableCell sx={{ px: { xs: 1, sm: 2 } }}>
+                    <Box sx={{ width: { xs: 36, sm: 48 }, height: { xs: 36, sm: 48 }, borderRadius: '50%', overflow: 'hidden', border: '2px solid #F0E8E0', flexShrink: 0 }}>
                       <Image
                         src={row.memberImgUrl ? row.memberImgUrl : '/default-avatar.svg'}
                         width={48} height={48} alt={row.name || 'Member'}
@@ -356,42 +356,42 @@ const MembersAdmin = () => {
                       />
                     </Box>
                   </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>{row.name}</Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'block', sm: 'none' } }}>
+                  <TableCell sx={{ px: { xs: 1, sm: 2 } }}>
+                    <Typography variant="body2" sx={{ fontWeight: 500, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>{row.name}</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'block', md: 'none' }, fontSize: '0.7rem' }}>
                       {row.uniqueText}
                     </Typography>
                   </TableCell>
-                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
+                  <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                     <Typography variant="body2" color="text.secondary">{row.uniqueText}</Typography>
                   </TableCell>
-                  <TableCell align="center">
-                    <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+                  <TableCell align="center" sx={{ px: { xs: 0.5, sm: 2 } }}>
+                    <Box sx={{ display: 'flex', gap: { xs: 0, sm: 0.5 }, justifyContent: 'center' }}>
                       <Tooltip title="View Family">
                         <IconButton
                           size="small"
                           onClick={async () => { await getMembersByRelatedTo(row.id); }}
-                          sx={{ color: '#5C3D2E', '&:hover': { backgroundColor: 'rgba(92,61,46,0.08)' } }}
+                          sx={{ color: '#5C3D2E', '&:hover': { backgroundColor: 'rgba(92,61,46,0.08)' }, p: { xs: 0.5, sm: 1 } }}
                         >
-                          <AccountTreeIcon fontSize="small" />
+                          <AccountTreeIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Edit">
                         <IconButton
                           size="small"
                           onClick={async () => { await handleEdit(row); }}
-                          sx={{ color: '#2E7D32', '&:hover': { backgroundColor: 'rgba(46,125,50,0.08)' } }}
+                          sx={{ color: '#2E7D32', '&:hover': { backgroundColor: 'rgba(46,125,50,0.08)' }, p: { xs: 0.5, sm: 1 } }}
                         >
-                          <EditOutlinedIcon fontSize="small" />
+                          <EditOutlinedIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Delete">
                         <IconButton
                           size="small"
                           onClick={() => setDeleteTarget(row)}
-                          sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' } }}
+                          sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' }, p: { xs: 0.5, sm: 1 } }}
                         >
-                          <DeleteOutlineIcon fontSize="small" />
+                          <DeleteOutlineIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
                         </IconButton>
                       </Tooltip>
                     </Box>
