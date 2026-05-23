@@ -52,10 +52,10 @@ export default function SignInSide() {
   const { authenticateUser, isAuthenticated, isAuthLoading } = useStateContext();
   const router = useRouter();
 
-  // Register service worker for PWA install
+  // Register service worker for PWA install (scoped to admin only)
   React.useEffect(() => {
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
+      navigator.serviceWorker.register('/sw.js', { scope: '/mkadminhamza/' }).catch(() => {});
     }
   }, []);
 

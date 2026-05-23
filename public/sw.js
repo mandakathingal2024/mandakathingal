@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mk-admin-v1';
+const CACHE_NAME = 'mk-admin-v2';
 const OFFLINE_URL = '/mkadminhamza/dashboard';
 
 // Install — cache the admin shell
@@ -23,9 +23,10 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch — network first, fallback to cache
+// Fetch — only handle admin pages, ignore everything else
 self.addEventListener('fetch', (event) => {
-  if (event.request.mode === 'navigate') {
+  const url = new URL(event.request.url);
+  if (event.request.mode === 'navigate' && url.pathname.startsWith('/mkadminhamza')) {
     event.respondWith(
       fetch(event.request).catch(() => {
         return caches.match(OFFLINE_URL);

@@ -3,7 +3,7 @@
   "short_name": "Mandakathingal Admin",
   "description": "Mandakathingal Family Association - Admin Panel",
   "start_url": "/mkadminhamza/dashboard",
-  "scope": "/",
+  "scope": "/mkadminhamza/",
   "display": "standalone",
   "background_color": "#F5F0EB",
   "theme_color": "#5C3D2E",

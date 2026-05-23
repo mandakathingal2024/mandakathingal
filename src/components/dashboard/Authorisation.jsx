@@ -9,10 +9,10 @@ import CircularProgress from '@mui/material/CircularProgress'
 const Authorisation = () => {
     const { isAuthenticated, isAuthLoading } = useStateContext()
 
-  // Register service worker for PWA install
+  // Register service worker for PWA install (scoped to admin only)
   useEffect(() => {
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
+      navigator.serviceWorker.register('/sw.js', { scope: '/mkadminhamza/' }).catch(() => {});
     }
   }, [])
 
