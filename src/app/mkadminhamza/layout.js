@@ -1,5 +1,5 @@
 export const metadata = {
-  manifest: "/manifest.json",
+  manifest: "/admin-manifest.json",
   themeColor: "#5C3D2E",
   appleWebApp: {
     capable: true,
