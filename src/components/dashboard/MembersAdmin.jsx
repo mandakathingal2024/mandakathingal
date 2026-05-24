@@ -74,7 +74,7 @@ const MembersAdmin = () => {
   const [sortBy, setSortBy] = React.useState('default');
 
   const {
-    addMember, searchMembersByName, getMembersWithNewBranchRelation,
+    addMember, searchMembersByName, fetchAllMembers,
     members, getMembersByRelatedTo, deleteDocument, updateMember
   } = useStateContext();
 
@@ -94,7 +94,7 @@ const MembersAdmin = () => {
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        await getMembersWithNewBranchRelation();
+        await fetchAllMembers();
       } catch (error) {
         setError(error);
       } finally {
@@ -119,7 +119,7 @@ const MembersAdmin = () => {
     try {
       await updateMember(member);
       handleClose();
-      await getMembersWithNewBranchRelation();
+      await fetchAllMembers();
       setToast({ open: true, message: 'Member updated successfully!' });
     } catch (err) {
       console.error(err);
@@ -146,7 +146,7 @@ const MembersAdmin = () => {
       try {
         await addMember(member);
         handleClose();
-        await getMembersWithNewBranchRelation();
+        await fetchAllMembers();
         setToast({ open: true, message: 'Member added successfully!' });
       } catch (err) {
         console.error(err);

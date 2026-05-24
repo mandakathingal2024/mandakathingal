@@ -189,6 +189,22 @@ export const StateContext =({children})=>{
         return membersArray;
       }
 
+      async function fetchAllMembers() {
+        try {
+          const membersCollection = collection(db, 'members');
+          const querySnapshot = await getDocs(membersCollection);
+          const membersArray = [];
+          querySnapshot.forEach((doc) => {
+            membersArray.push({ id: doc.id, ...doc.data() });
+          });
+          setMembers(membersArray);
+          return membersArray;
+        } catch (error) {
+          console.error('Error fetching all members:', error);
+          return [];
+        }
+      }
+
       async function getMembersByRelatedTo(id) {
         try {
           const membersCollection = collection(db, "members");
@@ -531,6 +547,7 @@ export const StateContext =({children})=>{
         handleLogOut,
         searchMembersByName,
         getMembersWithNewBranchRelation,
+        fetchAllMembers,
         setNewBranchData,
         newBranchData,
         getMembersByRelatedTo,
