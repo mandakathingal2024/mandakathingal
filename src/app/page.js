@@ -1,7 +1,8 @@
 import Hero from "@/components/home/Hero";
 import About from "@/components/home/About";
 import Association from "@/components/home/Association";
-import Photos from "@/components/home/Photos";
+import RecentActivities from "@/components/home/RecentActivities";
+import Milestones from "@/components/home/Milestones";
 import Footer from "@/components/Footer"
 import { Header } from "@/components/home/header"
 import Editorial from "@/components/home/Editorial";
@@ -20,9 +21,10 @@ export default function Home() {
         <About/>
         <Editorial/>
         <AdvisoryBoard/>
-        <Association/> 
+        <Association/>
         {/* //Association renamed as executives */}
-        <Photos/>
+        <RecentActivities/>
+        <Milestones/>
       </main>
       <footer>
             <Footer/>

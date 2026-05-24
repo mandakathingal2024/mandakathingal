@@ -128,6 +128,58 @@ export const MembersSkeleton = () => (
   </main>
 )
 
+// Skeleton for view family page
+export const ViewFamilySkeleton = () => (
+  <>
+    <section id="breadcrumbs" className="breadcrumbs">
+      <div className="container">
+        <div className="d-flex justify-content-between align-items-center">
+          <Skeleton width="160px" height="26px" />
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <Skeleton width="50px" height="14px" />
+            <Skeleton width="70px" height="14px" />
+            <Skeleton width="120px" height="14px" />
+          </div>
+        </div>
+      </div>
+    </section>
+    <section style={{ padding: '20px 0' }}>
+      <div className="container">
+        <div className="row">
+          <div className="col-lg-6 pt-4 pt-lg-0">
+            <div className="row">
+              <div className="col-6" style={{ textAlign: 'center' }}>
+                <Skeleton width="130px" height="170px" borderRadius="12px" style={{ margin: '0 auto 12px' }} />
+                <Skeleton width="100px" height="16px" style={{ margin: '0 auto 6px' }} />
+                <Skeleton width="70px" height="12px" style={{ margin: '0 auto' }} />
+              </div>
+              <div className="col-6" style={{ textAlign: 'center' }}>
+                <Skeleton width="130px" height="170px" borderRadius="12px" style={{ margin: '0 auto 12px' }} />
+                <Skeleton width="100px" height="16px" style={{ margin: '0 auto 6px' }} />
+                <Skeleton width="70px" height="12px" style={{ margin: '0 auto' }} />
+              </div>
+            </div>
+          </div>
+          <div className="col-lg-6">
+            <Skeleton width="100%" height="280px" borderRadius="20px" />
+          </div>
+        </div>
+        <hr style={{ margin: '24px 0' }} />
+        <Skeleton width="120px" height="24px" style={{ margin: '0 auto 20px' }} />
+        <div className="row">
+          {[1, 2, 3, 4].map(i => (
+            <div className="col-lg-3 col-md-4 col-6" key={i} style={{ textAlign: 'center', marginBottom: '16px' }}>
+              <Skeleton width="100px" height="140px" borderRadius="12px" style={{ margin: '0 auto 10px' }} />
+              <Skeleton width="80px" height="14px" style={{ margin: '0 auto 6px' }} />
+              <Skeleton width="80px" height="28px" borderRadius="20px" style={{ margin: '0 auto' }} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  </>
+)
+
 // Skeleton for dashboard tables
 export const DashboardSkeleton = () => (
   <div style={{ padding: '20px', marginTop: '80px' }}>

@@ -38,7 +38,7 @@ const Editorial = () => {
   ]
 
   return (
-    <section id="editorial" className="features section-bg-warm">
+    <section id="editorial" className="team-section section-bg-warm">
       <div className="container">
         <p className="section-label">
           {isEnglish ? 'Editorial Board' : 'എഡിറ്റോറിയൽ ബോർഡ്'}
@@ -46,26 +46,28 @@ const Editorial = () => {
         <div className="section-title">
           <h2>{isEnglish ? 'Editorial' : 'എഡിറ്റോറിയൽ'}</h2>
         </div>
-        <p className="section-subtitle">
-          {isEnglish ? 'Suvaneer Editorial Team' : 'സുവനീർ എഡിറ്റോറിയൽ ടീം'}
-        </p>
         <hr className="section-divider" />
 
-        <div className="row justify-content-center">
+        <div className="team-grid">
           {members.map((member, index) => (
-            <div key={index} className="col-lg-3 col-md-4 col-6">
-              <div className="icon-box">
-                <div className="icon">
-                  <Image
-                    src={member.img}
-                    alt={isEnglish ? member.nameEn : member.nameMl}
-                    width={200}
-                    height={200}
-                    style={{ objectFit: 'cover', objectPosition: 'center top', width: '100%', height: '100%' }}
-                  />
+            <div key={index} className="team-card">
+              <div className="team-card-img-wrapper">
+                <Image
+                  src={member.img}
+                  alt={isEnglish ? member.nameEn : member.nameMl}
+                  width={200}
+                  height={200}
+                  style={{ objectFit: 'cover', objectPosition: 'center top', width: '100%', height: '100%' }}
+                />
+                <div className="team-card-overlay">
+                  <span className="team-card-role-badge">
+                    {isEnglish ? member.roleEn : member.roleMl}
+                  </span>
                 </div>
-                <h4 className="title">{isEnglish ? member.nameEn : member.nameMl}</h4>
-                <p className="description">{isEnglish ? member.roleEn : member.roleMl}</p>
+              </div>
+              <div className="team-card-info">
+                <h4 className="team-card-name">{isEnglish ? member.nameEn : member.nameMl}</h4>
+                <p className="team-card-role">{isEnglish ? member.roleEn : member.roleMl}</p>
               </div>
             </div>
           ))}

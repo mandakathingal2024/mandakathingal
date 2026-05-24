@@ -35,7 +35,7 @@ const AdvisoryBoard = () => {
   ]
 
   return (
-    <section id="advisory-board" className="features">
+    <section id="advisory-board" className="team-section">
       <div className="container">
         <p className="section-label">
           {isEnglish ? 'Advisory Council' : 'ഉപദേശക സഭ'}
@@ -43,25 +43,22 @@ const AdvisoryBoard = () => {
         <div className="section-title">
           <h2>{isEnglish ? 'Advisory Board' : 'ഉപദേശക സമിതി'}</h2>
         </div>
-        <p className="section-subtitle">
-          {isEnglish ? 'Permanent Advisory Members' : 'സ്ഥിരം ഉപദേശക അംഗങ്ങൾ'}
-        </p>
         <hr className="section-divider" />
 
-        <div className="row justify-content-center">
+        <div className="team-grid team-grid-5">
           {members.map((member, index) => (
-            <div key={index} className="col-lg-3 col-md-4 col-6">
-              <div className="icon-box">
-                <div className="icon">
-                  <Image
-                    src={member.img}
-                    alt={isEnglish ? member.nameEn : member.nameMl}
-                    width={200}
-                    height={200}
-                    style={{ objectFit: 'cover', objectPosition: 'center top', width: '100%', height: '100%' }}
-                  />
-                </div>
-                <h4 className="title">{isEnglish ? member.nameEn : member.nameMl}</h4>
+            <div key={index} className="team-card">
+              <div className="team-card-img-wrapper">
+                <Image
+                  src={member.img}
+                  alt={isEnglish ? member.nameEn : member.nameMl}
+                  width={200}
+                  height={200}
+                  style={{ objectFit: 'cover', objectPosition: 'center top', width: '100%', height: '100%' }}
+                />
+              </div>
+              <div className="team-card-info">
+                <h4 className="team-card-name">{isEnglish ? member.nameEn : member.nameMl}</h4>
               </div>
             </div>
           ))}
