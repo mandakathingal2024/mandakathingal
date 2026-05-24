@@ -71,7 +71,7 @@ const MembersAdmin = () => {
   const [error, setError] = React.useState(null);
   const [deleteTarget, setDeleteTarget] = React.useState(null);
   const [toast, setToast] = React.useState({ open: false, message: '' });
-  const [sortBy, setSortBy] = React.useState('default');
+  const [sortBy, setSortBy] = React.useState('newest');
 
   const {
     addMember, searchMembersByName, fetchAllMembers,
