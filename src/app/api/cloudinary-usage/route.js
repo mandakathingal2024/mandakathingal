@@ -28,25 +28,30 @@ export async function GET() {
 
     const data = await res.json();
 
+    // Free plan defaults: 25 GB storage, 25 GB bandwidth
+    const FREE_STORAGE_LIMIT = 25 * 1024 * 1024 * 1024; // 25 GB in bytes
+    const FREE_BANDWIDTH_LIMIT = 25 * 1024 * 1024 * 1024; // 25 GB in bytes
+
+    const storageUsed = data.storage?.usage || 0;
+    const storageLimit = data.storage?.limit || FREE_STORAGE_LIMIT;
+    const bandwidthUsed = data.bandwidth?.usage || 0;
+    const bandwidthLimit = data.bandwidth?.limit || FREE_BANDWIDTH_LIMIT;
+
     // Extract the key usage info
     const usage = {
       storage: {
-        used: data.storage?.usage || 0,        // bytes used
-        limit: data.storage?.limit || 0,        // bytes limit
-        usedFormatted: formatBytes(data.storage?.usage || 0),
-        limitFormatted: formatBytes(data.storage?.limit || 0),
-        percentage: data.storage?.limit
-          ? Math.round((data.storage.usage / data.storage.limit) * 100)
-          : 0,
+        used: storageUsed,
+        limit: storageLimit,
+        usedFormatted: formatBytes(storageUsed),
+        limitFormatted: formatBytes(storageLimit),
+        percentage: Math.round((storageUsed / storageLimit) * 100),
       },
       bandwidth: {
-        used: data.bandwidth?.usage || 0,
-        limit: data.bandwidth?.limit || 0,
-        usedFormatted: formatBytes(data.bandwidth?.usage || 0),
-        limitFormatted: formatBytes(data.bandwidth?.limit || 0),
-        percentage: data.bandwidth?.limit
-          ? Math.round((data.bandwidth.usage / data.bandwidth.limit) * 100)
-          : 0,
+        used: bandwidthUsed,
+        limit: bandwidthLimit,
+        usedFormatted: formatBytes(bandwidthUsed),
+        limitFormatted: formatBytes(bandwidthLimit),
+        percentage: Math.round((bandwidthUsed / bandwidthLimit) * 100),
       },
       resources: data.resources || 0,
       plan: data.plan || 'Free',
