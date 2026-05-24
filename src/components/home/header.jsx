@@ -30,11 +30,11 @@ export const Header = () => {
           <h1 className="logo">
             <Image
               src="/m.png"
-              width={40}
-              height={120}
+              width={30}
+              height={30}
               alt="Mandakathingal Family Logo"
-              className="img-fluid"
-            />{" "}
+              style={{ width: 'auto', height: 'auto' }}
+            />
             <a href="/">{isEnglish?`Mandakathingal`:`മണ്ടകത്തിങ്ങൽ`}</a>
           </h1>
           <nav id="navbar" className={`navbar${mobileNavOpen ? ' navbar-mobile' : ''}`}>

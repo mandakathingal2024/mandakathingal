@@ -320,12 +320,20 @@ a {
 }
 #header .logo {
   font-family: var(--font-playfair), 'Playfair Display', Georgia, serif !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 #header .logo a {
   font-family: var(--font-playfair), 'Playfair Display', Georgia, serif !important;
   font-weight: 800 !important;
   letter-spacing: 3px !important;
   text-transform: uppercase !important;
+}
+#header .logo img {
+  max-height: 30px;
+  width: auto !important;
+  height: auto !important;
 }
 .navbar ul li a {
   font-weight: 500 !important;
@@ -335,6 +343,45 @@ a {
 }
 .navbar ul li a:hover {
   color: #D4A373 !important;
+}
+
+/* Mobile navbar */
+@media (max-width: 991px) {
+  #header .logo {
+    font-size: 18px !important;
+    letter-spacing: 2px !important;
+    gap: 6px;
+  }
+  #header .logo img {
+    max-height: 24px !important;
+  }
+}
+@media (max-width: 768px) {
+  #header .logo {
+    font-size: 15px !important;
+    letter-spacing: 1.5px !important;
+  }
+  #header .logo img {
+    max-height: 22px !important;
+  }
+  .mobile-nav-toggle {
+    font-size: 22px !important;
+  }
+  .breadcrumbs {
+    padding: 70px 0 16px !important;
+  }
+  .breadcrumbs h2 {
+    font-size: 1.2rem !important;
+  }
+}
+@media (max-width: 400px) {
+  #header .logo {
+    font-size: 13px !important;
+    letter-spacing: 1px !important;
+  }
+  #header .logo img {
+    max-height: 18px !important;
+  }
 }
 
 /* ===== Section Title Modern ===== */
