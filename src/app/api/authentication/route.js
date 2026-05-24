@@ -1,28 +1,37 @@
 'use server'
-import { initializeApp, getApps } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+import { initializeApp, getApps } from 'firebase/app';
+import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
 
-function getAdminDb() {
-  if (getApps().length === 0) {
-    initializeApp({ projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID });
-  }
-  return getFirestore();
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+};
+
+function getDb() {
+  const apps = getApps();
+  const existing = apps.find((a) => a.name === 'server-auth');
+  if (existing) return getFirestore(existing);
+  const app = initializeApp(firebaseConfig, 'server-auth');
+  return getFirestore(app);
 }
 
 export async function POST(request) {
   const req = await request.json();
 
   try {
-    const db = getAdminDb();
-    const adminsRef = db.collection('admins');
-    const snapshot = await adminsRef.where('username', '==', req.userName).get();
+    const db = getDb();
+    const adminsRef = collection(db, 'admins');
+    const q = query(adminsRef, where('username', '==', req.userName));
+    const snapshot = await getDocs(q);
 
     if (!snapshot.empty) {
-      const adminDoc = snapshot.docs[0];
-      const admin = adminDoc.data();
+      const admin = snapshot.docs[0].data();
 
       if (admin.password === req.password && admin.isActive !== false) {
-        const { password, ...adminInfo } = admin;
         const data = {
           isAuthenticated: true,
           admin: {
@@ -37,7 +46,7 @@ export async function POST(request) {
       }
     }
 
-    // Fallback: check env vars (for backward compatibility before seed)
+    // Fallback: check env vars (backward compatibility)
     const userName = process.env.USER_NAME;
     const password = process.env.PASSWORD;
     if (userName === req.userName && password === req.password) {

@@ -17,6 +17,7 @@ import InstallMobileIcon from '@mui/icons-material/InstallMobile';
 import WebIcon from '@mui/icons-material/Web';
 import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
 import HistoryIcon from '@mui/icons-material/History';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 
 const navItems = [
   { label: 'Dashboard', icon: <DashboardIcon />, page: 0 },
@@ -157,6 +158,23 @@ const ListItems = ({ onNavigate, onLogout, installPrompt, onInstall }) => {
       )}
 
       <Divider sx={{ borderColor: 'rgba(255,255,255,0.08)', my: 1.5, mx: 2 }} />
+
+      <ListItemButton
+        onClick={() => navigate(9)}
+        sx={{ ...defaultStyle, ...(pageValue === 9 ? activeStyle : {}) }}
+      >
+        <ListItemIcon sx={{ color: pageValue === 9 ? '#D4A373' : '#9B8B7E', minWidth: 40 }}>
+          <AccountCircleIcon />
+        </ListItemIcon>
+        <ListItemText
+          primary="My Profile"
+          primaryTypographyProps={{
+            fontSize: '0.875rem',
+            fontWeight: pageValue === 9 ? 600 : 400,
+            color: pageValue === 9 ? '#FFFFFF' : '#C4B5A8',
+          }}
+        />
+      </ListItemButton>
 
       <ListItemButton
         onClick={() => { if (onLogout) onLogout(); }}

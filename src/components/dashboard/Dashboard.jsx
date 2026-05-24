@@ -24,6 +24,7 @@ import DashboardHome from './DashboardHome';
 import WebsiteContentAdmin from './WebsiteContentAdmin';
 import AdminManagement from './AdminManagement';
 import ActivityLog from './ActivityLog';
+import ProfileAdmin from './ProfileAdmin';
 import ConfirmDialog from './ConfirmDialog';
 import Chip from '@mui/material/Chip';
 
@@ -257,6 +258,7 @@ export default function Dashboard() {
           {pageValue === 6 && <WebsiteContentAdmin />}
           {pageValue === 7 && adminUser?.role === 'superAdmin' && <AdminManagement />}
           {pageValue === 8 && adminUser?.role === 'superAdmin' && <ActivityLog />}
+          {pageValue === 9 && <ProfileAdmin />}
         </Box>
       </Box>
 
