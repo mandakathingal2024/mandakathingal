@@ -356,7 +356,6 @@ const MembersAdmin = () => {
               startAdornment={<SortIcon sx={{ fontSize: 18, color: 'text.secondary', mr: 0.5 }} />}
               sx={{ fontSize: '0.8125rem' }}
             >
-              <MenuItem value="default">Default</MenuItem>
               <MenuItem value="az">A → Z</MenuItem>
               <MenuItem value="za">Z → A</MenuItem>
               <MenuItem value="newest">Newest First</MenuItem>
