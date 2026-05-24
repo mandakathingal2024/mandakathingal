@@ -1153,6 +1153,7 @@ section {
 --------------------------------------------------------------*/
 .recent-photos {
   overflow: hidden;
+  padding-bottom: 20px;
 }
 
 .recent-photo{
