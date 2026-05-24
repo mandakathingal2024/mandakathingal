@@ -97,6 +97,18 @@ const WebsiteContentAdmin = () => {
     stat3Num: '50+', stat3LabelEn: 'Events Hosted', stat3LabelMl: 'പരിപാടികൾ',
   });
   const [savingHero, setSavingHero] = React.useState(false);
+  const [introData, setIntroData] = React.useState({
+    titleEn: 'Introduction',
+    titleMl: 'ആമുഖം',
+    contentEn: '',
+    contentMl: '',
+    signatureEn: '',
+    signatureMl: '',
+    btnTextEn: 'Learn More',
+    btnTextMl: 'കൂടുതലറിയുക',
+    btnLink: '/our-story',
+  });
+  const [savingIntro, setSavingIntro] = React.useState(false);
 
   // Fetch executives and website content on mount
   React.useEffect(() => {
@@ -109,6 +121,13 @@ const WebsiteContentAdmin = () => {
         const heroSnap = await getDoc(heroRef);
         if (heroSnap.exists()) {
           setHeroData((prev) => ({ ...prev, ...heroSnap.data() }));
+        }
+
+        // Fetch introduction
+        const introRef = doc(db, 'websiteContent', 'introduction');
+        const introSnap = await getDoc(introRef);
+        if (introSnap.exists()) {
+          setIntroData((prev) => ({ ...prev, ...introSnap.data() }));
         }
 
         // Fetch team sections
@@ -162,6 +181,24 @@ const WebsiteContentAdmin = () => {
 
   const updateHeroField = (field, value) => {
     setHeroData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveIntro = async () => {
+    setSavingIntro(true);
+    try {
+      const docRef = doc(db, 'websiteContent', 'introduction');
+      await setDoc(docRef, introData);
+      setToast({ open: true, message: 'Introduction saved successfully!' });
+    } catch (err) {
+      console.error('Error saving intro:', err);
+      setToast({ open: true, message: 'Failed to save. Please try again.' });
+    } finally {
+      setSavingIntro(false);
+    }
+  };
+
+  const updateIntroField = (field, value) => {
+    setIntroData((prev) => ({ ...prev, [field]: value }));
   };
 
   const updateSectionField = (sectionId, field, value) => {
@@ -340,6 +377,81 @@ const WebsiteContentAdmin = () => {
               sx={{ textTransform: 'none', fontWeight: 600 }}
             >
               {savingHero ? 'Saving...' : 'Save Hero Banner'}
+            </Button>
+          </Box>
+        </AccordionDetails>
+      </Accordion>
+
+      {/* Introduction Accordion */}
+      <Accordion
+        expanded={expanded === 'introduction'}
+        onChange={(_, isExpanded) => setExpanded(isExpanded ? 'introduction' : false)}
+        sx={{
+          mb: 2, border: '1px solid #F0E8E0', borderRadius: '8px !important',
+          '&:before': { display: 'none' }, boxShadow: 'none',
+          '&.Mui-expanded': { margin: '0 0 16px 0' },
+        }}
+      >
+        <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ backgroundColor: expanded === 'introduction' ? 'rgba(92,61,46,0.04)' : 'transparent', borderRadius: '8px', '& .MuiAccordionSummary-content': { my: 1.5 } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#2C1810' }}>Introduction</Typography>
+            <Typography variant="caption" sx={{ backgroundColor: 'rgba(212,163,115,0.2)', color: '#5C3D2E', px: 1, py: 0.25, borderRadius: 1, fontWeight: 600 }}>
+              Home Page
+            </Typography>
+          </Box>
+        </AccordionSummary>
+        <AccordionDetails sx={{ px: { xs: 2, sm: 3 }, pb: 3 }}>
+          {/* Title */}
+          <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.65rem', letterSpacing: '0.05em' }}>
+            Section Title
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 2 }}>
+            <TextField size="small" fullWidth label="Title (English)" value={introData.titleEn} onChange={(e) => updateIntroField('titleEn', e.target.value)} />
+            <TextField size="small" fullWidth label="Title (Malayalam)" value={introData.titleMl} onChange={(e) => updateIntroField('titleMl', e.target.value)} />
+          </Box>
+
+          <Divider sx={{ borderColor: '#F0E8E0', mb: 2 }} />
+
+          {/* Content */}
+          <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.65rem', letterSpacing: '0.05em' }}>
+            Content
+          </Typography>
+          <TextField size="small" fullWidth label="Content (English)" value={introData.contentEn} onChange={(e) => updateIntroField('contentEn', e.target.value)} multiline rows={5} sx={{ mb: 2 }} />
+          <TextField size="small" fullWidth label="Content (Malayalam)" value={introData.contentMl} onChange={(e) => updateIntroField('contentMl', e.target.value)} multiline rows={5} sx={{ mb: 2 }} />
+
+          <Divider sx={{ borderColor: '#F0E8E0', mb: 2 }} />
+
+          {/* Signature */}
+          <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.65rem', letterSpacing: '0.05em' }}>
+            Signature / Closing
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 2 }}>
+            <TextField size="small" fullWidth label="Signature (English)" value={introData.signatureEn} onChange={(e) => updateIntroField('signatureEn', e.target.value)} multiline rows={2} />
+            <TextField size="small" fullWidth label="Signature (Malayalam)" value={introData.signatureMl} onChange={(e) => updateIntroField('signatureMl', e.target.value)} multiline rows={2} />
+          </Box>
+
+          <Divider sx={{ borderColor: '#F0E8E0', mb: 2 }} />
+
+          {/* Button */}
+          <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.65rem', letterSpacing: '0.05em' }}>
+            Button
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 2 }}>
+            <TextField size="small" fullWidth label="Button Text (English)" value={introData.btnTextEn} onChange={(e) => updateIntroField('btnTextEn', e.target.value)} />
+            <TextField size="small" fullWidth label="Button Text (Malayalam)" value={introData.btnTextMl} onChange={(e) => updateIntroField('btnTextMl', e.target.value)} />
+            <TextField size="small" fullWidth label="Button Link" value={introData.btnLink} onChange={(e) => updateIntroField('btnLink', e.target.value)} />
+          </Box>
+
+          {/* Save */}
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+            <Button
+              variant="contained"
+              startIcon={savingIntro ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : <SaveIcon />}
+              onClick={handleSaveIntro}
+              disabled={savingIntro}
+              sx={{ textTransform: 'none', fontWeight: 600 }}
+            >
+              {savingIntro ? 'Saving...' : 'Save Introduction'}
             </Button>
           </Box>
         </AccordionDetails>
