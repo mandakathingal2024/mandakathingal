@@ -2,7 +2,7 @@
 import React, {  createContext, useContext,useEffect,useRef,useState } from "react"
 import { db,storage,auth } from "./firebaseConfig"
 import { signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, setDoc,getDoc, deleteDoc,addDoc,collection, getDocs, query, where, orderBy, startAt, endAt ,updateDoc  } from "firebase/firestore";
+import { doc, setDoc,getDoc, deleteDoc,addDoc,collection, getDocs, query, where, orderBy, startAt, endAt ,updateDoc, serverTimestamp  } from "firebase/firestore";
 // import { ref, deleteObject } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -74,10 +74,10 @@ export const StateContext =({children})=>{
     }
     async function addMember(obj) {
       try {
-        const membersCollectionRef = collection(db, "members"); // Get a reference to the 'members' collection
+        const membersCollectionRef = collection(db, "members");
         const uniqueId = uuidv4();
-        const docRef = await addDoc(membersCollectionRef, {...obj,id:uniqueId}); // Add the object to the collection, generating a unique ID
-        console.log("Document written with ID: ", docRef.id); // Log the generated ID
+        const docRef = await addDoc(membersCollectionRef, {...obj, id: uniqueId, createdAt: serverTimestamp()});
+        console.log("Document written with ID: ", docRef.id);
       } catch (error) {
         console.error("Error adding document: ", error);
       }

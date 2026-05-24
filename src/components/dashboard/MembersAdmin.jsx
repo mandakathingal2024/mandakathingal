@@ -392,8 +392,16 @@ const MembersAdmin = () => {
               {filteredMembers.length > 0 && [...filteredMembers].sort((a, b) => {
                 if (sortBy === 'az') return (a.name || '').localeCompare(b.name || '');
                 if (sortBy === 'za') return (b.name || '').localeCompare(a.name || '');
-                if (sortBy === 'newest') return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
-                if (sortBy === 'oldest') return (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0);
+                if (sortBy === 'newest') {
+                  const aTime = a.createdAt?.seconds || a.createdAt?._seconds || 0;
+                  const bTime = b.createdAt?.seconds || b.createdAt?._seconds || 0;
+                  return bTime - aTime;
+                }
+                if (sortBy === 'oldest') {
+                  const aTime = a.createdAt?.seconds || a.createdAt?._seconds || 0;
+                  const bTime = b.createdAt?.seconds || b.createdAt?._seconds || 0;
+                  return aTime - bTime;
+                }
                 return 0;
               }).map((row, index) => (
                 <TableRow key={row.id || index}>
