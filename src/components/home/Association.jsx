@@ -1,94 +1,69 @@
 'use client'
 import Image from 'next/image'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useStateContext } from '../../../context/stateContext'
+import { doc, getDoc } from 'firebase/firestore'
+import { db } from '../../../context/firebaseConfig'
 
 const Association = () => {
   const { isEnglish } = useStateContext()
+  const [data, setData] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
 
-  const members = [
-    {
-      img: '/saidumuhammed.png',
-      nameEn: 'Saidu Muhammed',
-      nameMl: 'സെയ്ദു മുഹമ്മദ്',
-      roleEn: 'Chairman',
-      roleMl: 'ചെയർമാൻ',
-    },
-    {
-      img: '/bavaareekad.png',
-      nameEn: 'Bava Areekad',
-      nameMl: 'ബാവ അരീക്കാട്',
-      roleEn: 'Vice Chairman',
-      roleMl: 'വൈസ് ചെയർമാൻ',
-    },
-    {
-      img: '/thajudheen.png',
-      nameEn: 'Thajudheen',
-      nameMl: 'താജുദ്ദീൻ',
-      roleEn: 'Vice Chairman',
-      roleMl: 'വൈസ് ചെയർമാൻ',
-    },
-    {
-      img: '/img-6.png',
-      nameEn: 'M A Rafeeque',
-      nameMl: 'എം എ റഫീഖ്',
-      roleEn: 'General Secretary',
-      roleMl: 'ജനറൽ സെക്രട്ടറി',
-    },
-    {
-      img: '/img-2.png',
-      nameEn: 'Abdul Mujeeb',
-      nameMl: 'അബ്ദുൾ മുജീബ്',
-      roleEn: 'Secretary',
-      roleMl: 'സെക്രട്ടറി',
-    },
-    {
-      img: '/saleemmaster.jpg',
-      nameEn: 'Saleem Master',
-      nameMl: 'സലീം മാസ്റ്റർ',
-      roleEn: 'Secretary',
-      roleMl: 'സെക്രട്ടറി',
-    },
-    {
-      img: '/shareef.png',
-      nameEn: 'Shareef',
-      nameMl: 'ഷെരീഫ്',
-      roleEn: 'Treasurer',
-      roleMl: 'ട്രഷറർ',
-    },
-  ]
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const docRef = doc(db, 'websiteContent', 'committee')
+        const snap = await getDoc(docRef)
+        if (snap.exists()) {
+          setData(snap.data())
+        }
+      } catch (err) {
+        console.error('Error fetching committee:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
+
+  if (isLoading || !data || !data.members || data.members.length === 0) return null
 
   return (
     <section id="committee" className="team-section section-bg-warm">
       <div className="container">
         <p className="section-label">
-          {isEnglish ? 'Leadership' : 'നേതൃത്വം'}
+          {isEnglish ? data.labelEn : data.labelMl}
         </p>
         <div className="section-title">
-          <h2>{isEnglish ? 'Committee' : 'കമ്മിറ്റി'}</h2>
+          <h2>{isEnglish ? data.titleEn : data.titleMl}</h2>
         </div>
         <hr className="section-divider" />
 
         <div className="team-grid">
-          {members.map((member, index) => (
+          {data.members.map((member, index) => (
             <div key={index} className="team-card">
               <div className="team-card-img-wrapper">
                 <Image
-                  src={member.img}
-                  alt={isEnglish ? member.nameEn : member.nameMl}
+                  src={member.img || '/default-avatar.svg'}
+                  alt={isEnglish ? member.name : (member.nameMl || member.name)}
                   width={200}
                   height={200}
                   style={{ objectFit: 'cover', objectPosition: 'center top', width: '100%', height: '100%' }}
                 />
-                <div className="team-card-overlay">
-                  <span className="team-card-role-badge">
-                    {isEnglish ? member.roleEn : member.roleMl}
-                  </span>
-                </div>
+                {member.roleEn && (
+                  <div className="team-card-overlay">
+                    <span className="team-card-role-badge">
+                      {isEnglish ? member.roleEn : (member.roleMl || member.roleEn)}
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="team-card-info">
-                <h4 className="team-card-name">{isEnglish ? member.nameEn : member.nameMl}</h4>
-                <p className="team-card-role">{isEnglish ? member.roleEn : member.roleMl}</p>
+                <h4 className="team-card-name">{isEnglish ? member.name : (member.nameMl || member.name)}</h4>
+                {member.roleEn && (
+                  <p className="team-card-role">{isEnglish ? member.roleEn : (member.roleMl || member.roleEn)}</p>
+                )}
               </div>
             </div>
           ))}

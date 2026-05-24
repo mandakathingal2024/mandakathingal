@@ -1,73 +1,69 @@
 'use client'
 import Image from 'next/image'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useStateContext } from '../../../context/stateContext'
+import { doc, getDoc } from 'firebase/firestore'
+import { db } from '../../../context/firebaseConfig'
 
 const Editorial = () => {
   const { isEnglish } = useStateContext()
+  const [data, setData] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
 
-  const members = [
-    {
-      img: '/img-1.png',
-      nameEn: 'Hamza Mandakathingal',
-      nameMl: 'ഹംസ  മണ്ടകത്തിങ്ങൽ',
-      roleEn: 'Patron, Convenor & Editor',
-      roleMl: 'രക്ഷാധികാരി കൺവീനർ & എഡിറ്റർ',
-    },
-    {
-      img: '/img-2.png',
-      nameEn: 'Abdul Mujeeb',
-      nameMl: 'അബ്ദുൽ മുജീബ്',
-      roleEn: 'Secretary & Sub Editor',
-      roleMl: 'സെക്രട്ടറി & സബ് എഡിറ്റർ',
-    },
-    {
-      img: '/img-5.jpeg',
-      nameEn: 'Saleem Master',
-      nameMl: 'സലീം  മാസ്റ്റർ',
-      roleEn: 'Secretary & Sub Editor',
-      roleMl: 'സെക്രട്ടറി & സബ് എഡിറ്റർ',
-    },
-    {
-      img: '/img-7.png',
-      nameEn: 'Mohamed Shahin M',
-      nameMl: 'മുഹമ്മദ് ഷാഹിൻ  എം',
-      roleEn: 'Designer & Creator',
-      roleMl: 'ഡിസൈനർ & ക്രിയേറ്റർ',
-    },
-  ]
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const docRef = doc(db, 'websiteContent', 'editorial')
+        const snap = await getDoc(docRef)
+        if (snap.exists()) {
+          setData(snap.data())
+        }
+      } catch (err) {
+        console.error('Error fetching editorial:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
+
+  if (isLoading || !data || !data.members || data.members.length === 0) return null
 
   return (
     <section id="editorial" className="team-section section-bg-warm">
       <div className="container">
         <p className="section-label">
-          {isEnglish ? 'Editorial Board' : 'എഡിറ്റോറിയൽ ബോർഡ്'}
+          {isEnglish ? data.labelEn : data.labelMl}
         </p>
         <div className="section-title">
-          <h2>{isEnglish ? 'Editorial' : 'എഡിറ്റോറിയൽ'}</h2>
+          <h2>{isEnglish ? data.titleEn : data.titleMl}</h2>
         </div>
         <hr className="section-divider" />
 
         <div className="team-grid">
-          {members.map((member, index) => (
+          {data.members.map((member, index) => (
             <div key={index} className="team-card">
               <div className="team-card-img-wrapper">
                 <Image
-                  src={member.img}
-                  alt={isEnglish ? member.nameEn : member.nameMl}
+                  src={member.img || '/default-avatar.svg'}
+                  alt={isEnglish ? member.name : (member.nameMl || member.name)}
                   width={200}
                   height={200}
                   style={{ objectFit: 'cover', objectPosition: 'center top', width: '100%', height: '100%' }}
                 />
-                <div className="team-card-overlay">
-                  <span className="team-card-role-badge">
-                    {isEnglish ? member.roleEn : member.roleMl}
-                  </span>
-                </div>
+                {member.roleEn && (
+                  <div className="team-card-overlay">
+                    <span className="team-card-role-badge">
+                      {isEnglish ? member.roleEn : (member.roleMl || member.roleEn)}
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="team-card-info">
-                <h4 className="team-card-name">{isEnglish ? member.nameEn : member.nameMl}</h4>
-                <p className="team-card-role">{isEnglish ? member.roleEn : member.roleMl}</p>
+                <h4 className="team-card-name">{isEnglish ? member.name : (member.nameMl || member.name)}</h4>
+                {member.roleEn && (
+                  <p className="team-card-role">{isEnglish ? member.roleEn : (member.roleMl || member.roleEn)}</p>
+                )}
               </div>
             </div>
           ))}

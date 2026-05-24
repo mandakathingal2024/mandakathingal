@@ -14,12 +14,14 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import EmailIcon from '@mui/icons-material/Email';
 import InstallMobileIcon from '@mui/icons-material/InstallMobile';
+import WebIcon from '@mui/icons-material/Web';
 const navItems = [
   { label: 'Dashboard', icon: <DashboardIcon />, page: 0 },
   { label: 'Gallery', icon: <PhotoLibraryIcon />, page: 1 },
   { label: 'Members', icon: <PeopleIcon />, page: 2 },
   { label: 'Events', icon: <EventNoteIcon />, page: 3 },
   { label: 'Executives', icon: <AdminPanelSettingsIcon />, page: 4 },
+  { label: 'Website Content', icon: <WebIcon />, page: 6 },
 ];
 
 const ListItems = ({ onNavigate, onLogout, installPrompt, onInstall }) => {

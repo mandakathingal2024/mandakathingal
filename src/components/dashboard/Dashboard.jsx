@@ -21,6 +21,7 @@ import MembersAdmin from './MembersAdmin';
 import ExecutiveAdmin from './ExecutiveAdmin';
 import GmailAccessAdmin from './GmailAccessAdmin';
 import DashboardHome from './DashboardHome';
+import WebsiteContentAdmin from './WebsiteContentAdmin';
 import ConfirmDialog from './ConfirmDialog';
 
 const adminTheme = createTheme({
@@ -238,6 +239,7 @@ export default function Dashboard() {
           {pageValue === 3 && <EventsAdmin />}
           {pageValue === 4 && <ExecutiveAdmin />}
           {pageValue === 5 && <GmailAccessAdmin />}
+          {pageValue === 6 && <WebsiteContentAdmin />}
         </Box>
       </Box>
 
