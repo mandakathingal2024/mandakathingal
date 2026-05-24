@@ -13,6 +13,16 @@ import Image from 'next/image';
 const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
+// Extract Cloudinary public_id from a secure_url
+function extractPublicId(url) {
+  try {
+    const match = url.match(/\/upload\/(?:v\d+\/)?(.+)\.\w+$/);
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
+}
+
 // Compress image using Canvas API — no external library needed
 function compressImage(file, maxWidth = 1200, maxHeight = 1200, quality = 0.75) {
   return new Promise((resolve, reject) => {
@@ -111,7 +121,27 @@ const UploadImage = ({ folderName, setMember, imageType, setGallery, setEvent, s
     }
   }, [imageType, setMember, setGallery, setEvent, setExecutive]);
 
-  const handleDelete = () => {
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    const urlToDelete = imageUrl || existingUrl;
+    if (urlToDelete && urlToDelete.includes('cloudinary')) {
+      const publicId = extractPublicId(urlToDelete);
+      if (publicId) {
+        setIsDeleting(true);
+        try {
+          await fetch('/api/cloudinary-delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ publicId }),
+          });
+        } catch (err) {
+          console.error('Failed to delete from Cloudinary:', err);
+        } finally {
+          setIsDeleting(false);
+        }
+      }
+    }
     setImageUrl(null);
     setCleared(true);
     setSizeInfo(null);
@@ -122,6 +152,19 @@ const UploadImage = ({ folderName, setMember, imageType, setGallery, setEvent, s
     event.stopPropagation();
     const file = event.target.files?.[0];
     if (!file) return;
+
+    // Delete old image from Cloudinary when replacing
+    const oldUrl = imageUrl || existingUrl;
+    if (oldUrl && oldUrl.includes('cloudinary')) {
+      const oldPublicId = extractPublicId(oldUrl);
+      if (oldPublicId) {
+        fetch('/api/cloudinary-delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ publicId: oldPublicId }),
+        }).catch((err) => console.error('Failed to delete old image:', err));
+      }
+    }
 
     setError(null);
     setImageUrl(null);
@@ -230,9 +273,9 @@ const UploadImage = ({ folderName, setMember, imageType, setGallery, setEvent, s
                 Change
                 <input type="file" accept="image/*" onChange={handleFileSelect} style={{ display: 'none' }} />
               </label>
-              <button onClick={handleDelete} style={btnStyle('#B71C1C', 'transparent', '1px solid #EECFCF')}>
+              <button onClick={handleDelete} disabled={isDeleting} style={btnStyle(isDeleting ? '#999' : '#B71C1C', 'transparent', `1px solid ${isDeleting ? '#ddd' : '#EECFCF'}`)}>
                 <DeleteOutlineIcon style={{ fontSize: 14 }} />
-                Remove
+                {isDeleting ? 'Deleting...' : 'Remove'}
               </button>
             </Box>
           </Box>
@@ -266,9 +309,9 @@ const UploadImage = ({ folderName, setMember, imageType, setGallery, setEvent, s
                 Replace
                 <input type="file" accept="image/*" onChange={handleFileSelect} style={{ display: 'none' }} />
               </label>
-              <button onClick={handleDelete} style={btnStyle('#B71C1C', 'transparent', '1px solid #EECFCF')}>
+              <button onClick={handleDelete} disabled={isDeleting} style={btnStyle(isDeleting ? '#999' : '#B71C1C', 'transparent', `1px solid ${isDeleting ? '#ddd' : '#EECFCF'}`)}>
                 <DeleteOutlineIcon style={{ fontSize: 14 }} />
-                Remove
+                {isDeleting ? 'Deleting...' : 'Remove'}
               </button>
             </Box>
           </Box>

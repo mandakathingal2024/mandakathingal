@@ -12,8 +12,11 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import EmailIcon from '@mui/icons-material/Email';
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
 import CloudIcon from '@mui/icons-material/Cloud';
+import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
 import CircularProgress from '@mui/material/CircularProgress';
 import LinearProgress from '@mui/material/LinearProgress';
+import Button from '@mui/material/Button';
+import Divider from '@mui/material/Divider';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../../context/firebaseConfig';
 
@@ -66,6 +69,12 @@ const DashboardHome = () => {
     galleryImages: null,
   });
   const [storageUsage, setStorageUsage] = React.useState(null);
+  const [cleanupState, setCleanupState] = React.useState({
+    loading: false,
+    scanning: false,
+    result: null,
+    error: null,
+  });
 
   React.useEffect(() => {
     const fetchStats = async () => {
@@ -107,6 +116,45 @@ const DashboardHome = () => {
     fetchStats();
     fetchStorageUsage();
   }, []);
+
+  const handleScanOrphans = async () => {
+    setCleanupState({ loading: false, scanning: true, result: null, error: null });
+    try {
+      const res = await fetch('/api/cloudinary-cleanup');
+      if (!res.ok) throw new Error('Failed to scan');
+      const data = await res.json();
+      setCleanupState({ loading: false, scanning: false, result: data, error: null });
+    } catch (err) {
+      setCleanupState({ loading: false, scanning: false, result: null, error: err.message });
+    }
+  };
+
+  const handleDeleteOrphans = async () => {
+    setCleanupState((prev) => ({ ...prev, loading: true, error: null }));
+    try {
+      const res = await fetch('/api/cloudinary-cleanup', { method: 'POST' });
+      if (!res.ok) throw new Error('Failed to delete');
+      const data = await res.json();
+      setCleanupState({ loading: false, scanning: false, result: null, error: null });
+      // Refresh storage usage after cleanup
+      const usageRes = await fetch('/api/cloudinary-usage');
+      if (usageRes.ok) {
+        const usageData = await usageRes.json();
+        setStorageUsage(usageData);
+      }
+      alert(`${data.message}`);
+    } catch (err) {
+      setCleanupState((prev) => ({ ...prev, loading: false, error: err.message }));
+    }
+  };
+
+  function formatBytes(bytes) {
+    if (!bytes || bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3 } }}>
@@ -242,6 +290,108 @@ const DashboardHome = () => {
             </Typography>
           </Box>
         )}
+
+        {/* Storage Cleanup Section */}
+        <Divider sx={{ my: 2.5, borderColor: '#F0E8E0' }} />
+        <Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2C1810' }}>
+                Storage Cleanup
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Find and remove orphaned images not linked to any member, event, or gallery
+              </Typography>
+            </Box>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={cleanupState.scanning ? <CircularProgress size={14} sx={{ color: '#D4A373' }} /> : <CleaningServicesIcon sx={{ fontSize: 16 }} />}
+              onClick={handleScanOrphans}
+              disabled={cleanupState.scanning || cleanupState.loading}
+              sx={{
+                color: '#5C3D2E',
+                borderColor: '#D4A373',
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: '0.8rem',
+                '&:hover': { borderColor: '#5C3D2E', backgroundColor: 'rgba(92,61,46,0.04)' },
+              }}
+            >
+              {cleanupState.scanning ? 'Scanning...' : 'Scan for Orphans'}
+            </Button>
+          </Box>
+
+          {cleanupState.error && (
+            <Box sx={{ mt: 1.5, p: 1.5, borderRadius: 1, backgroundColor: 'rgba(183,28,28,0.06)', border: '1px solid rgba(183,28,28,0.15)' }}>
+              <Typography variant="caption" sx={{ color: '#B71C1C' }}>
+                Error: {cleanupState.error}
+              </Typography>
+            </Box>
+          )}
+
+          {cleanupState.result && (
+            <Box sx={{ mt: 1.5, p: 2, borderRadius: 1.5, backgroundColor: 'rgba(92,61,46,0.04)', border: '1px solid #F0E8E0' }}>
+              <Box sx={{ display: 'flex', gap: 3, mb: 1.5, flexWrap: 'wrap' }}>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.05em' }}>
+                    Total in Cloudinary
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+                    {cleanupState.result.totalInCloudinary}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.05em' }}>
+                    In Use
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2, color: '#2E7D32' }}>
+                    {cleanupState.result.totalInUse}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.05em' }}>
+                    Orphaned
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2, color: cleanupState.result.orphanCount > 0 ? '#E65100' : '#2E7D32' }}>
+                    {cleanupState.result.orphanCount}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.05em' }}>
+                    Space to Free
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2, color: '#E65100' }}>
+                    {formatBytes(cleanupState.result.totalOrphanBytes)}
+                  </Typography>
+                </Box>
+              </Box>
+
+              {cleanupState.result.orphanCount > 0 ? (
+                <Button
+                  variant="contained"
+                  size="small"
+                  onClick={handleDeleteOrphans}
+                  disabled={cleanupState.loading}
+                  startIcon={cleanupState.loading ? <CircularProgress size={14} sx={{ color: '#fff' }} /> : <CleaningServicesIcon sx={{ fontSize: 16 }} />}
+                  sx={{
+                    backgroundColor: '#B71C1C',
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    fontSize: '0.8rem',
+                    '&:hover': { backgroundColor: '#8B1515' },
+                  }}
+                >
+                  {cleanupState.loading ? 'Deleting...' : `Delete ${cleanupState.result.orphanCount} Orphaned Images`}
+                </Button>
+              ) : (
+                <Typography variant="body2" sx={{ color: '#2E7D32', fontWeight: 500 }}>
+                  No orphaned images found. Storage is clean!
+                </Typography>
+              )}
+            </Box>
+          )}
+        </Box>
       </Paper>
     </Container>
   );
