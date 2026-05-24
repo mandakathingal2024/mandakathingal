@@ -25,6 +25,7 @@ import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import WebIcon from '@mui/icons-material/Web';
 import Image from 'next/image';
+import ConfirmDialog from './ConfirmDialog';
 import SuccessToast from './SuccessToast';
 import { useStateContext } from '../../../context/stateContext';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -79,6 +80,7 @@ const WebsiteContentAdmin = () => {
   const [savingSection, setSavingSection] = React.useState(null);
   const [toast, setToast] = React.useState({ open: false, message: '' });
   const [expanded, setExpanded] = React.useState('editorial');
+  const [deleteTarget, setDeleteTarget] = React.useState(null); // { sectionId, index, name }
 
   // Fetch executives and website content on mount
   React.useEffect(() => {
@@ -383,7 +385,7 @@ const WebsiteContentAdmin = () => {
                       <Tooltip title="Remove">
                         <IconButton
                           size="small"
-                          onClick={() => removeMember(section.id, index)}
+                          onClick={() => setDeleteTarget({ sectionId: section.id, index, name: member.name })}
                           sx={{ color: '#B71C1C', p: 0.5 }}
                         >
                           <DeleteOutlineIcon sx={{ fontSize: 16 }} />
@@ -410,6 +412,18 @@ const WebsiteContentAdmin = () => {
           </Accordion>
         );
       })}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Remove Member"
+        message={`Are you sure you want to remove "${deleteTarget?.name}" from this section?`}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          removeMember(deleteTarget.sectionId, deleteTarget.index);
+          setDeleteTarget(null);
+          setToast({ open: true, message: `${deleteTarget.name} removed. Don't forget to save!` });
+        }}
+      />
 
       <SuccessToast
         open={toast.open}
