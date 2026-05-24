@@ -15,6 +15,9 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import EmailIcon from '@mui/icons-material/Email';
 import InstallMobileIcon from '@mui/icons-material/InstallMobile';
 import WebIcon from '@mui/icons-material/Web';
+import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
+import HistoryIcon from '@mui/icons-material/History';
+
 const navItems = [
   { label: 'Dashboard', icon: <DashboardIcon />, page: 0 },
   { label: 'Gallery', icon: <PhotoLibraryIcon />, page: 1 },
@@ -25,7 +28,9 @@ const navItems = [
 ];
 
 const ListItems = ({ onNavigate, onLogout, installPrompt, onInstall }) => {
-  const { setPageValue, pageValue } = useStateContext();
+  const { setPageValue, pageValue, adminUser } = useStateContext();
+
+  const isSuperAdmin = adminUser?.role === 'superAdmin';
 
   const navigate = (page) => {
     setPageValue(page);
@@ -84,6 +89,47 @@ const ListItems = ({ onNavigate, onLogout, installPrompt, onInstall }) => {
           }}
         />
       </ListItemButton>
+
+      {/* Super Admin only sections */}
+      {isSuperAdmin && (
+        <>
+          <Divider sx={{ borderColor: 'rgba(255,255,255,0.08)', my: 1.5, mx: 2 }} />
+
+          <ListItemButton
+            onClick={() => navigate(7)}
+            sx={{ ...defaultStyle, ...(pageValue === 7 ? activeStyle : {}) }}
+          >
+            <ListItemIcon sx={{ color: pageValue === 7 ? '#D4A373' : '#9B8B7E', minWidth: 40 }}>
+              <SupervisorAccountIcon />
+            </ListItemIcon>
+            <ListItemText
+              primary="Admin Management"
+              primaryTypographyProps={{
+                fontSize: '0.875rem',
+                fontWeight: pageValue === 7 ? 600 : 400,
+                color: pageValue === 7 ? '#FFFFFF' : '#C4B5A8',
+              }}
+            />
+          </ListItemButton>
+
+          <ListItemButton
+            onClick={() => navigate(8)}
+            sx={{ ...defaultStyle, ...(pageValue === 8 ? activeStyle : {}) }}
+          >
+            <ListItemIcon sx={{ color: pageValue === 8 ? '#D4A373' : '#9B8B7E', minWidth: 40 }}>
+              <HistoryIcon />
+            </ListItemIcon>
+            <ListItemText
+              primary="Activity Log"
+              primaryTypographyProps={{
+                fontSize: '0.875rem',
+                fontWeight: pageValue === 8 ? 600 : 400,
+                color: pageValue === 8 ? '#FFFFFF' : '#C4B5A8',
+              }}
+            />
+          </ListItemButton>
+        </>
+      )}
 
       {installPrompt && (
         <>

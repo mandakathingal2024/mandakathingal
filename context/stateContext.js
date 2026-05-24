@@ -15,6 +15,7 @@ export const StateContext =({children})=>{
     const [isAuthenticated,setIsAuthenticated]=useState(false)
     const [isAuthLoading,setIsAuthLoading]=useState(true)
     const [pageValue,setPageValue]=useState(0)
+    const [adminUser, setAdminUser] = useState(null)
     const [newBranchData, setNewBranchData] = useState([]);
     const [viewFamilyData,setViewFamilyData]= useState([]);
     const [memberObj,setMemberObj]= useState(null);
@@ -34,8 +35,12 @@ export const StateContext =({children})=>{
     useEffect(() => {
       const savedAuth = localStorage.getItem('adminAuth') === 'true'
       const savedPage = localStorage.getItem('adminPage')
+      const savedAdmin = localStorage.getItem('adminUser')
       if (savedAuth) setIsAuthenticated(true)
       if (savedPage !== null) setPageValue(Number(savedPage))
+      if (savedAdmin) {
+        try { setAdminUser(JSON.parse(savedAdmin)) } catch (e) {}
+      }
       setIsAuthLoading(false)
     }, [])
 
@@ -65,6 +70,10 @@ export const StateContext =({children})=>{
           setIsAuthenticated(responseData.isAuthenticated)
           if (responseData.isAuthenticated) {
             localStorage.setItem('adminAuth', 'true')
+            if (responseData.admin) {
+              setAdminUser(responseData.admin)
+              localStorage.setItem('adminUser', JSON.stringify(responseData.admin))
+            }
           }
           return responseData.isAuthenticated;
         } catch (error) {
@@ -96,10 +105,10 @@ export const StateContext =({children})=>{
     async function addEvent(obj) {
       try {
         console.log(obj);
-        const eventCollectionRef = collection(db, "events"); // Get a reference to the 'members' collection
+        const eventCollectionRef = collection(db, "events");
         const uniqueId = uuidv4();
-        const docRef = await addDoc(eventCollectionRef, {...obj,id:uniqueId}); // Add the object to the collection, generating a unique ID
-        console.log("Document written with ID: ", docRef.id); // Log the generated ID
+        const docRef = await addDoc(eventCollectionRef, {...obj, id: uniqueId, createdAt: serverTimestamp()});
+        console.log("Document written with ID: ", docRef.id);
       } catch (error) {
         console.error("Error adding document: ", error);
       }
@@ -130,8 +139,35 @@ export const StateContext =({children})=>{
     const handleLogOut=()=>{
       setIsAuthenticated(false)
       setPageValue(0)
+      setAdminUser(null)
       localStorage.removeItem('adminAuth')
       localStorage.removeItem('adminPage')
+      localStorage.removeItem('adminUser')
+    }
+
+    // Permission helper
+    const hasPermission = (type) => {
+      if (!adminUser) return false
+      if (adminUser.role === 'superAdmin') return true
+      return adminUser.permissions?.[type] === true
+    }
+
+    // Activity logger
+    async function logActivity(action, module, details) {
+      try {
+        const activityRef = collection(db, 'activityLog')
+        await addDoc(activityRef, {
+          id: uuidv4(),
+          adminId: adminUser?.id || 'unknown',
+          adminName: adminUser?.name || 'Unknown',
+          action,
+          module,
+          details,
+          createdAt: serverTimestamp(),
+        })
+      } catch (error) {
+        console.error('Error logging activity:', error)
+      }
     }
 
     async function searchMembersByName(inputString) {
@@ -584,7 +620,11 @@ export const StateContext =({children})=>{
         deniedEmail,
         gmail,
         fetchAllGmail,
-        isGmailLoading
+        isGmailLoading,
+        adminUser,
+        setAdminUser,
+        hasPermission,
+        logActivity
         }}>
             {children}
         </Context.Provider>

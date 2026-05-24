@@ -50,7 +50,7 @@ const ExecutiveAdmin = () => {
     role: '',
     sortOrder: '',
   });
-  const { addExecutive, fetchAllExecutives, deleteDocument, updateDocument, executives } = useStateContext();
+  const { addExecutive, fetchAllExecutives, deleteDocument, updateDocument, executives, hasPermission, logActivity } = useStateContext();
   const [isEdit, setIsEdit] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
@@ -116,9 +116,11 @@ const ExecutiveAdmin = () => {
       try {
         if (isEdit) {
           await updateDocument('executives', executive);
+          await logActivity('Updated', 'Executives', `Updated executive "${executive.name}"`);
           setToast({ open: true, message: 'Executive updated successfully!' });
         } else {
           await addExecutive(executive);
+          await logActivity('Added', 'Executives', `Added executive "${executive.name}"`);
           setToast({ open: true, message: 'Executive added successfully!' });
         }
         handleClose();
@@ -135,9 +137,11 @@ const ExecutiveAdmin = () => {
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3 } }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h5">Executives</Typography>
-        <Button variant="contained" startIcon={<PersonAddIcon />} onClick={handleOpen}>
-          Add Executive
-        </Button>
+        {hasPermission('add') && (
+          <Button variant="contained" startIcon={<PersonAddIcon />} onClick={handleOpen}>
+            Add Executive
+          </Button>
+        )}
       </Box>
 
       <TextField
@@ -256,16 +260,20 @@ const ExecutiveAdmin = () => {
                   </TableCell>
                   <TableCell align="center">
                     <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
-                      <Tooltip title="Edit">
-                        <IconButton size="small" onClick={() => handleEdit(row)} sx={{ color: '#2E7D32', '&:hover': { backgroundColor: 'rgba(46,125,50,0.08)' } }}>
-                          <EditOutlinedIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Delete">
-                        <IconButton size="small" onClick={() => setDeleteTarget(row)} sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' } }}>
-                          <DeleteOutlineIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
+                      {hasPermission('edit') && (
+                        <Tooltip title="Edit">
+                          <IconButton size="small" onClick={() => handleEdit(row)} sx={{ color: '#2E7D32', '&:hover': { backgroundColor: 'rgba(46,125,50,0.08)' } }}>
+                            <EditOutlinedIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                      {hasPermission('delete') && (
+                        <Tooltip title="Delete">
+                          <IconButton size="small" onClick={() => setDeleteTarget(row)} sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' } }}>
+                            <DeleteOutlineIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                     </Box>
                   </TableCell>
                 </TableRow>
@@ -291,6 +299,7 @@ const ExecutiveAdmin = () => {
         onCancel={() => setDeleteTarget(null)}
         onConfirm={async () => {
           await deleteDocument('executives', deleteTarget.id);
+          await logActivity('Deleted', 'Executives', `Deleted executive "${deleteTarget.name}"`);
           setDeleteTarget(null);
           setToast({ open: true, message: 'Executive removed successfully.' });
         }}

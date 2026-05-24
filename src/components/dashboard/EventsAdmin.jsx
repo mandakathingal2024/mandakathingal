@@ -19,6 +19,11 @@ import CloseIcon from '@mui/icons-material/Close';
 import EventNoteIcon from '@mui/icons-material/EventNote';
 import SearchIcon from '@mui/icons-material/Search';
 import InputAdornment from '@mui/material/InputAdornment';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import Chip from '@mui/material/Chip';
 import ConfirmDialog from './ConfirmDialog';
 import SuccessToast from './SuccessToast';
 import UploadImage from './UploadImage';
@@ -29,7 +34,7 @@ const modalStyle = {
   top: '50%',
   left: '50%',
   transform: 'translate(-50%, -50%)',
-  width: { xs: '94vw', sm: 520 },
+  width: { xs: '94vw', sm: 560 },
   maxHeight: '90vh',
   overflow: 'auto',
   bgcolor: 'background.paper',
@@ -38,14 +43,27 @@ const modalStyle = {
   p: 0,
 };
 
+const EMPTY_EVENT = {
+  eventImgUrl: '',
+  title: '',
+  titleMl: '',
+  description: '',
+  descMl: '',
+  displaySection: '',
+  category: '',
+  categoryMl: '',
+  year: '',
+};
+
+const SECTION_LABELS = {
+  recentActivities: 'Recent Activities',
+  familyMilestones: 'Family Milestones',
+};
+
 const EventsAdmin = () => {
   const [open, setOpen] = React.useState(false);
-  const [event, setEvent] = React.useState({
-    eventImgUrl: '',
-    title: '',
-    description: '',
-  });
-  const { addEvent, fetchAllEvents, deleteDocument, updateDocument, events } = useStateContext();
+  const [event, setEvent] = React.useState({ ...EMPTY_EVENT });
+  const { addEvent, fetchAllEvents, deleteDocument, updateDocument, events, hasPermission, logActivity } = useStateContext();
   const [isEdit, setIsEdit] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
@@ -53,18 +71,41 @@ const EventsAdmin = () => {
   const [deleteTarget, setDeleteTarget] = React.useState(null);
   const [toast, setToast] = React.useState({ open: false, message: '' });
   const [search, setSearch] = React.useState('');
+  const [filterSection, setFilterSection] = React.useState('all');
 
-  // Client-side case-insensitive search
+  // Client-side case-insensitive search + section filter
   const filteredEvents = React.useMemo(() => {
     if (!events) return [];
-    if (!search.trim()) return events;
-    const q = search.trim().toLowerCase();
-    return events.filter((e) => {
-      const title = (e.title || '').toLowerCase();
-      const description = (e.description || '').toLowerCase();
-      return title.includes(q) || description.includes(q);
+    let result = events;
+
+    // Filter by display section
+    if (filterSection !== 'all') {
+      if (filterSection === 'none') {
+        result = result.filter((e) => !e.displaySection);
+      } else {
+        result = result.filter((e) => e.displaySection === filterSection);
+      }
+    }
+
+    // Search filter
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      result = result.filter((e) => {
+        const title = (e.title || '').toLowerCase();
+        const titleMl = (e.titleMl || '').toLowerCase();
+        const description = (e.description || '').toLowerCase();
+        const descMl = (e.descMl || '').toLowerCase();
+        return title.includes(q) || titleMl.includes(q) || description.includes(q) || descMl.includes(q);
+      });
+    }
+
+    // Sort by createdAt descending (newest first)
+    return [...result].sort((a, b) => {
+      const aTime = a.createdAt?.seconds || 0;
+      const bTime = b.createdAt?.seconds || 0;
+      return bTime - aTime;
     });
-  }, [search, events]);
+  }, [search, events, filterSection]);
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -89,11 +130,18 @@ const EventsAdmin = () => {
   };
 
   const handleOpen = () => { setIsEdit(false); setOpen(true); };
-  const handleEdit = (row) => { setEvent(row); setIsEdit(true); setOpen(true); };
+  const handleEdit = (row) => {
+    setEvent({
+      ...EMPTY_EVENT,
+      ...row,
+    });
+    setIsEdit(true);
+    setOpen(true);
+  };
   const handleClose = () => {
     setOpen(false);
     setIsEdit(false);
-    setEvent({ eventImgUrl: '', title: '', description: '' });
+    setEvent({ ...EMPTY_EVENT });
   };
 
   const handleSubmit = async () => {
@@ -103,9 +151,11 @@ const EventsAdmin = () => {
       try {
         if (isEdit) {
           await updateDocument('events', event);
+          await logActivity('Updated', 'Events', `Updated event "${event.title}"`);
           setToast({ open: true, message: 'Event updated successfully!' });
         } else {
           await addEvent(event);
+          await logActivity('Added', 'Events', `Added event "${event.title}"`);
           setToast({ open: true, message: 'Event added successfully!' });
         }
         handleClose();
@@ -122,25 +172,42 @@ const EventsAdmin = () => {
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3 } }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h5">Events</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpen}>
-          Add Event
-        </Button>
+        {hasPermission('add') && (
+          <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpen}>
+            Add Event
+          </Button>
+        )}
       </Box>
 
-      <TextField
-        placeholder="Search events..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        size="small"
-        sx={{ mb: 3, maxWidth: { xs: '100%', sm: 320 }, width: '100%' }}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-            </InputAdornment>
-          ),
-        }}
-      />
+      <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', alignItems: 'center' }}>
+        <TextField
+          placeholder="Search events..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          size="small"
+          sx={{ maxWidth: { xs: '100%', sm: 280 }, width: '100%' }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+              </InputAdornment>
+            ),
+          }}
+        />
+        <FormControl size="small" sx={{ minWidth: 180 }}>
+          <InputLabel>Filter by Section</InputLabel>
+          <Select
+            value={filterSection}
+            label="Filter by Section"
+            onChange={(e) => setFilterSection(e.target.value)}
+          >
+            <MenuItem value="all">All Events</MenuItem>
+            <MenuItem value="none">No Section</MenuItem>
+            <MenuItem value="recentActivities">Recent Activities</MenuItem>
+            <MenuItem value="familyMilestones">Family Milestones</MenuItem>
+          </Select>
+        </FormControl>
+      </Box>
 
       <Modal open={open} onClose={handleClose}>
         <Box sx={modalStyle}>
@@ -158,12 +225,52 @@ const EventsAdmin = () => {
             <UploadImage folderName="events" setEvent={setEvent} imageType="event" existingUrl={isEdit ? event.eventImgUrl : ''} />
 
             <Typography variant="subtitle2" sx={{ mt: 2.5, mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
-              Event Details
+              Display Section
+            </Typography>
+            <FormControl fullWidth size="small" sx={{ mt: 1 }}>
+              <InputLabel>Display on Home Page</InputLabel>
+              <Select
+                name="displaySection"
+                value={event.displaySection}
+                label="Display on Home Page"
+                onChange={handleChange}
+              >
+                <MenuItem value="">None</MenuItem>
+                <MenuItem value="recentActivities">Recent Activities</MenuItem>
+                <MenuItem value="familyMilestones">Family Milestones</MenuItem>
+              </Select>
+            </FormControl>
+
+            <Typography variant="subtitle2" sx={{ mt: 2.5, mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
+              Event Details (English)
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-              <TextField fullWidth required label="Title" name="title" value={event.title} onChange={handleChange} size="small" />
-              <TextField fullWidth required label="Description" name="description" value={event.description} onChange={handleChange} size="small" multiline rows={3} />
+              <TextField fullWidth required label="Title (English)" name="title" value={event.title} onChange={handleChange} size="small" />
+              <TextField fullWidth required label="Description (English)" name="description" value={event.description} onChange={handleChange} size="small" multiline rows={3} />
             </Box>
+
+            <Typography variant="subtitle2" sx={{ mt: 2.5, mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
+              Event Details (Malayalam)
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+              <TextField fullWidth label="Title (Malayalam)" name="titleMl" value={event.titleMl} onChange={handleChange} size="small" />
+              <TextField fullWidth label="Description (Malayalam)" name="descMl" value={event.descMl} onChange={handleChange} size="small" multiline rows={3} />
+            </Box>
+
+            {event.displaySection === 'familyMilestones' && (
+              <>
+                <Typography variant="subtitle2" sx={{ mt: 2.5, mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
+                  Milestone Details
+                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+                  <Box sx={{ display: 'flex', gap: 2 }}>
+                    <TextField fullWidth label="Category (English)" name="category" value={event.category} onChange={handleChange} size="small" placeholder="e.g. Foundation, Reunion" />
+                    <TextField fullWidth label="Category (Malayalam)" name="categoryMl" value={event.categoryMl} onChange={handleChange} size="small" />
+                  </Box>
+                  <TextField label="Year" name="year" value={event.year} onChange={handleChange} size="small" placeholder="e.g. 2024" sx={{ maxWidth: 120 }} />
+                </Box>
+              </>
+            )}
           </Box>
 
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, p: 3, pt: 1, borderTop: '1px solid #F0E8E0' }}>
@@ -187,10 +294,10 @@ const EventsAdmin = () => {
         <Paper sx={{ p: 6, textAlign: 'center' }}>
           <EventNoteIcon sx={{ fontSize: 48, color: '#D4A373', mb: 1 }} />
           <Typography variant="h6" sx={{ color: 'text.secondary', mb: 0.5 }}>
-            {search ? 'No matching events' : 'No events yet'}
+            {search || filterSection !== 'all' ? 'No matching events' : 'No events yet'}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            {search ? `No events matching "${search}"` : 'Add your first event to get started.'}
+            {search ? `No events matching "${search}"` : filterSection !== 'all' ? 'No events in this section.' : 'Add your first event to get started.'}
           </Typography>
         </Paper>
       ) : (
@@ -206,21 +313,41 @@ const EventsAdmin = () => {
                     alt={row.title}
                     style={{ objectFit: 'cover' }}
                   />
+                  {/* Section badge */}
+                  {row.displaySection && (
+                    <Chip
+                      label={SECTION_LABELS[row.displaySection] || row.displaySection}
+                      size="small"
+                      sx={{
+                        position: 'absolute',
+                        top: 8,
+                        left: 8,
+                        backgroundColor: row.displaySection === 'recentActivities' ? 'rgba(46, 125, 50, 0.9)' : 'rgba(21, 101, 192, 0.9)',
+                        color: '#fff',
+                        fontWeight: 600,
+                        fontSize: '0.65rem',
+                      }}
+                    />
+                  )}
                   <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 0.5 }}>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleEdit(row)}
-                      sx={{ backgroundColor: 'rgba(255,255,255,0.9)', color: '#2E7D32', '&:hover': { backgroundColor: '#fff' }, boxShadow: '0 1px 4px rgba(0,0,0,0.15)' }}
-                    >
-                      <EditOutlinedIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => setDeleteTarget(row)}
-                      sx={{ backgroundColor: 'rgba(255,255,255,0.9)', color: '#B71C1C', '&:hover': { backgroundColor: '#fff' }, boxShadow: '0 1px 4px rgba(0,0,0,0.15)' }}
-                    >
-                      <DeleteOutlineIcon fontSize="small" />
-                    </IconButton>
+                    {hasPermission('edit') && (
+                      <IconButton
+                        size="small"
+                        onClick={() => handleEdit(row)}
+                        sx={{ backgroundColor: 'rgba(255,255,255,0.9)', color: '#2E7D32', '&:hover': { backgroundColor: '#fff' }, boxShadow: '0 1px 4px rgba(0,0,0,0.15)' }}
+                      >
+                        <EditOutlinedIcon fontSize="small" />
+                      </IconButton>
+                    )}
+                    {hasPermission('delete') && (
+                      <IconButton
+                        size="small"
+                        onClick={() => setDeleteTarget(row)}
+                        sx={{ backgroundColor: 'rgba(255,255,255,0.9)', color: '#B71C1C', '&:hover': { backgroundColor: '#fff' }, boxShadow: '0 1px 4px rgba(0,0,0,0.15)' }}
+                      >
+                        <DeleteOutlineIcon fontSize="small" />
+                      </IconButton>
+                    )}
                   </Box>
                 </Box>
                 {/* Event Info */}
@@ -228,9 +355,19 @@ const EventsAdmin = () => {
                   <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5, lineHeight: 1.3 }}>
                     {row.title}
                   </Typography>
+                  {row.titleMl && (
+                    <Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.5, fontStyle: 'italic', fontSize: '0.8rem' }}>
+                      {row.titleMl}
+                    </Typography>
+                  )}
                   <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                     {row.description}
                   </Typography>
+                  {row.year && (
+                    <Typography variant="caption" sx={{ mt: 'auto', pt: 1, color: '#D4A373', fontWeight: 600 }}>
+                      {row.category ? `${row.category} • ${row.year}` : row.year}
+                    </Typography>
+                  )}
                 </Box>
               </Paper>
             </Grid>
@@ -245,6 +382,7 @@ const EventsAdmin = () => {
         onCancel={() => setDeleteTarget(null)}
         onConfirm={async () => {
           await deleteDocument('events', deleteTarget.id);
+          await logActivity('Deleted', 'Events', `Deleted event "${deleteTarget.title}"`);
           setDeleteTarget(null);
           setToast({ open: true, message: 'Event deleted successfully.' });
         }}

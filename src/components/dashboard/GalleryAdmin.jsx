@@ -49,7 +49,7 @@ const GalleryAdmin = () => {
     galleryImgUrl: '',
     description: '',
   });
-  const { addGallery, fetchAllGallery, gallery, deleteDocument, updateDocument } = useStateContext();
+  const { addGallery, fetchAllGallery, gallery, deleteDocument, updateDocument, hasPermission, logActivity } = useStateContext();
   const [isLoading, setIsLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
   const [error, setError] = React.useState(null);
@@ -93,9 +93,11 @@ const GalleryAdmin = () => {
       try {
         if (isEdit) {
           await updateDocument('gallery', galleryData);
+          await logActivity('Updated', 'Gallery', `Updated gallery image`);
           setToast({ open: true, message: 'Image updated successfully!' });
         } else {
           await addGallery(galleryData);
+          await logActivity('Added', 'Gallery', `Added gallery image`);
           setToast({ open: true, message: 'Image added successfully!' });
         }
         handleClose();
@@ -109,7 +111,7 @@ const GalleryAdmin = () => {
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3 } }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h5">Gallery</Typography>
-        <Button variant="contained" startIcon={<AddPhotoAlternateIcon />} onClick={handleOpen}>Add Image</Button>
+        {hasPermission('add') && <Button variant="contained" startIcon={<AddPhotoAlternateIcon />} onClick={handleOpen}>Add Image</Button>}
       </Box>
 
       <TextField
@@ -175,16 +177,20 @@ const GalleryAdmin = () => {
                   <TableCell><Typography variant="body2">{row.description}</Typography></TableCell>
                   <TableCell align="center">
                     <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
-                      <Tooltip title="Edit">
-                        <IconButton size="small" onClick={() => handleEdit(row)} sx={{ color: '#2E7D32', '&:hover': { backgroundColor: 'rgba(46,125,50,0.08)' } }}>
-                          <EditOutlinedIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Delete">
-                        <IconButton size="small" onClick={() => setDeleteTarget(row)} sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' } }}>
-                          <DeleteOutlineIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
+                      {hasPermission('edit') && (
+                        <Tooltip title="Edit">
+                          <IconButton size="small" onClick={() => handleEdit(row)} sx={{ color: '#2E7D32', '&:hover': { backgroundColor: 'rgba(46,125,50,0.08)' } }}>
+                            <EditOutlinedIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                      {hasPermission('delete') && (
+                        <Tooltip title="Delete">
+                          <IconButton size="small" onClick={() => setDeleteTarget(row)} sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' } }}>
+                            <DeleteOutlineIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                     </Box>
                   </TableCell>
                 </TableRow>
@@ -202,7 +208,7 @@ const GalleryAdmin = () => {
       </Paper>
 
       <ConfirmDialog open={!!deleteTarget} title="Delete Image" message="Are you sure you want to delete this gallery image? This action cannot be undone."
-        onCancel={() => setDeleteTarget(null)} onConfirm={async () => { await deleteDocument('gallery', deleteTarget.id); setDeleteTarget(null); setToast({ open: true, message: 'Image deleted successfully.' }); }} />
+        onCancel={() => setDeleteTarget(null)} onConfirm={async () => { await deleteDocument('gallery', deleteTarget.id); await logActivity('Deleted', 'Gallery', `Deleted gallery image`); setDeleteTarget(null); setToast({ open: true, message: 'Image deleted successfully.' }); }} />
       <SuccessToast open={toast.open} message={toast.message} onClose={() => setToast({ ...toast, open: false })} />
     </Container>
   );

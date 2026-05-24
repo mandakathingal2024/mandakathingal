@@ -22,7 +22,10 @@ import ExecutiveAdmin from './ExecutiveAdmin';
 import GmailAccessAdmin from './GmailAccessAdmin';
 import DashboardHome from './DashboardHome';
 import WebsiteContentAdmin from './WebsiteContentAdmin';
+import AdminManagement from './AdminManagement';
+import ActivityLog from './ActivityLog';
 import ConfirmDialog from './ConfirmDialog';
+import Chip from '@mui/material/Chip';
 
 const adminTheme = createTheme({
   palette: {
@@ -151,7 +154,7 @@ export default function Dashboard() {
   const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
   const [installPrompt, setInstallPrompt] = React.useState(null);
   const toggleDrawer = () => setOpen(!open);
-  const { pageValue, handleLogOut } = useStateContext();
+  const { pageValue, handleLogOut, adminUser } = useStateContext();
 
   // Capture PWA install prompt
   React.useEffect(() => {
@@ -200,6 +203,18 @@ export default function Dashboard() {
                 Admin
               </Typography>
             </Box>
+            {adminUser && (
+              <Chip
+                label={`${adminUser.name} • ${adminUser.role === 'superAdmin' ? 'Super Admin' : adminUser.role === 'admin' ? 'Admin' : 'Viewer'}`}
+                size="small"
+                sx={{
+                  backgroundColor: adminUser.role === 'superAdmin' ? 'rgba(183,28,28,0.08)' : adminUser.role === 'admin' ? 'rgba(21,101,192,0.08)' : 'rgba(46,125,50,0.08)',
+                  color: adminUser.role === 'superAdmin' ? '#B71C1C' : adminUser.role === 'admin' ? '#1565C0' : '#2E7D32',
+                  fontWeight: 600,
+                  fontSize: '0.7rem',
+                }}
+              />
+            )}
           </Toolbar>
         </AppBar>
 
@@ -240,6 +255,8 @@ export default function Dashboard() {
           {pageValue === 4 && <ExecutiveAdmin />}
           {pageValue === 5 && <GmailAccessAdmin />}
           {pageValue === 6 && <WebsiteContentAdmin />}
+          {pageValue === 7 && adminUser?.role === 'superAdmin' && <AdminManagement />}
+          {pageValue === 8 && adminUser?.role === 'superAdmin' && <ActivityLog />}
         </Box>
       </Box>
 

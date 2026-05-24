@@ -75,7 +75,8 @@ const MembersAdmin = () => {
 
   const {
     addMember, searchMembersByName, fetchAllMembers,
-    members, getMembersByRelatedTo, deleteDocument, updateMember
+    members, getMembersByRelatedTo, deleteDocument, updateMember,
+    hasPermission, logActivity
   } = useStateContext();
 
   // Client-side case-insensitive search
@@ -118,6 +119,7 @@ const MembersAdmin = () => {
     setIsSaving(true);
     try {
       await updateMember(member);
+      await logActivity('Updated', 'Members', `Updated member "${member.name}"`);
       handleClose();
       await fetchAllMembers();
       setToast({ open: true, message: 'Member updated successfully!' });
@@ -145,6 +147,7 @@ const MembersAdmin = () => {
       setIsSaving(true);
       try {
         await addMember(member);
+        await logActivity('Added', 'Members', `Added member "${member.name}"`);
         handleClose();
         await fetchAllMembers();
         setToast({ open: true, message: 'Member added successfully!' });
@@ -174,9 +177,11 @@ const MembersAdmin = () => {
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3 } }}>
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'center' }, gap: 1.5, mb: 3 }}>
         <Typography variant="h5">Members</Typography>
-        <Button variant="contained" startIcon={<PersonAddIcon />} onClick={handleOpen} sx={{ alignSelf: { xs: 'flex-start', sm: 'auto' } }}>
-          Add Member
-        </Button>
+        {hasPermission('add') && (
+          <Button variant="contained" startIcon={<PersonAddIcon />} onClick={handleOpen} sx={{ alignSelf: { xs: 'flex-start', sm: 'auto' } }}>
+            Add Member
+          </Button>
+        )}
       </Box>
 
       {/* Add/Edit Modal */}
@@ -436,6 +441,7 @@ const MembersAdmin = () => {
                           <AccountTreeIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
                         </IconButton>
                       </Tooltip>
+                      {hasPermission('edit') && (
                       <Tooltip title="Edit">
                         <IconButton
                           size="small"
@@ -445,6 +451,8 @@ const MembersAdmin = () => {
                           <EditOutlinedIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
                         </IconButton>
                       </Tooltip>
+                      )}
+                      {hasPermission('delete') && (
                       <Tooltip title="Delete">
                         <IconButton
                           size="small"
@@ -454,6 +462,7 @@ const MembersAdmin = () => {
                           <DeleteOutlineIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
                         </IconButton>
                       </Tooltip>
+                      )}
                     </Box>
                   </TableCell>
                 </TableRow>
@@ -479,6 +488,7 @@ const MembersAdmin = () => {
         onCancel={() => setDeleteTarget(null)}
         onConfirm={async () => {
           await deleteDocument('members', deleteTarget.id);
+          await logActivity('Deleted', 'Members', `Deleted member "${deleteTarget.name}"`);
           setDeleteTarget(null);
           setToast({ open: true, message: 'Member deleted successfully.' });
         }}

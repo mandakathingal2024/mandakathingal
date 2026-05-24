@@ -1,53 +1,38 @@
 'use client'
 import Image from 'next/image'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useStateContext } from '../../../context/stateContext'
+import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore'
+import { db } from '../../../context/firebaseConfig'
 
 const Milestones = () => {
   const { isEnglish } = useStateContext()
+  const [milestones, setMilestones] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  const milestones = [
-    {
-      img: '/gallery/home-2.jpg',
-      titleEn: 'Association Founded',
-      titleMl: 'സമിതി സ്ഥാപിതം',
-      categoryEn: 'Foundation',
-      categoryMl: 'സ്ഥാപനം',
-      year: '2009',
-      descEn: 'Mandakathingal Family Association was officially formed to unite and serve the family community.',
-      descMl: 'കുടുംബ സമൂഹത്തെ ഒന്നിപ്പിക്കാനും സേവിക്കാനും മണ്ടകത്തിങ്ങൽ കുടുംബ സമിതി ഔദ്യോഗികമായി രൂപീകരിച്ചു.',
-    },
-    {
-      img: '/gallery/img-3.jpeg',
-      titleEn: 'First Grand Reunion',
-      titleMl: 'ആദ്യ മഹാ സംഗമം',
-      categoryEn: 'Reunion',
-      categoryMl: 'സംഗമം',
-      year: '2012',
-      descEn: 'The first large-scale family reunion brought together over 100 members from different branches.',
-      descMl: 'ആദ്യ വലിയ തോതിലുള്ള കുടുംബ സംഗമം വ്യത്യസ്ത ശാഖകളിൽ നിന്ന് 100-ലധികം അംഗങ്ങളെ ഒത്തുചേർത്തു.',
-    },
-    {
-      img: '/gallery/img-6.jpeg',
-      titleEn: 'Suvaneer Published',
-      titleMl: 'സുവനീർ പ്രസിദ്ധീകരണം',
-      categoryEn: 'Publication',
-      categoryMl: 'പ്രസിദ്ധീകരണം',
-      year: '2024',
-      descEn: 'Family souvenir documenting our heritage, history, and memorable moments was published.',
-      descMl: 'നമ്മുടെ പൈതൃകവും ചരിത്രവും അവിസ്മരണീയ നിമിഷങ്ങളും രേഖപ്പെടുത്തുന്ന കുടുംബ സുവനീർ പ്രസിദ്ധീകരിച്ചു.',
-    },
-    {
-      img: '/gallery/beach-1.jpg',
-      titleEn: '150+ Members Strong',
-      titleMl: '150+ അംഗങ്ങൾ',
-      categoryEn: 'Growth',
-      categoryMl: 'വളർച്ച',
-      year: '2024',
-      descEn: 'Our association crossed the milestone of 150 registered family members across multiple branches.',
-      descMl: 'നമ്മുടെ സമിതി 150 രജിസ്‌ട്രേഡ് കുടുംബാംഗങ്ങളുടെ നാഴികക്കല്ല് പിന്നിട്ടു.',
-    },
-  ]
+  useEffect(() => {
+    const fetchMilestones = async () => {
+      try {
+        const eventsRef = collection(db, 'events')
+        const q = query(
+          eventsRef,
+          where('displaySection', '==', 'familyMilestones'),
+          orderBy('createdAt', 'desc'),
+          limit(4)
+        )
+        const snap = await getDocs(q)
+        const data = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+        setMilestones(data)
+      } catch (err) {
+        console.error('Error fetching milestones:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchMilestones()
+  }, [])
+
+  if (isLoading || milestones.length === 0) return null
 
   return (
     <section id="milestones" className="milestones-section section-bg-warm">
@@ -61,27 +46,31 @@ const Milestones = () => {
         <hr className="section-divider" />
 
         <div className="milestones-grid">
-          {milestones.map((milestone, index) => (
-            <div key={index} className="milestone-card">
+          {milestones.map((milestone) => (
+            <div key={milestone.id} className="milestone-card">
               <div className="milestone-card-img">
                 <Image
-                  src={milestone.img}
-                  alt={isEnglish ? milestone.titleEn : milestone.titleMl}
+                  src={milestone.eventImgUrl}
+                  alt={isEnglish ? milestone.title : (milestone.titleMl || milestone.title)}
                   width={400}
                   height={260}
                   style={{ objectFit: 'cover', width: '100%', height: '100%' }}
                 />
-                <span className="milestone-year-badge">{milestone.year}</span>
+                {milestone.year && (
+                  <span className="milestone-year-badge">{milestone.year}</span>
+                )}
               </div>
               <div className="milestone-card-body">
-                <span className="milestone-category">
-                  {isEnglish ? milestone.categoryEn : milestone.categoryMl}
-                </span>
+                {(milestone.category || milestone.categoryMl) && (
+                  <span className="milestone-category">
+                    {isEnglish ? (milestone.category || '') : (milestone.categoryMl || milestone.category || '')}
+                  </span>
+                )}
                 <h4 className="milestone-card-title">
-                  {isEnglish ? milestone.titleEn : milestone.titleMl}
+                  {isEnglish ? milestone.title : (milestone.titleMl || milestone.title)}
                 </h4>
                 <p className="milestone-card-desc">
-                  {isEnglish ? milestone.descEn : milestone.descMl}
+                  {isEnglish ? milestone.description : (milestone.descMl || milestone.description)}
                 </p>
               </div>
             </div>

@@ -1,45 +1,41 @@
 'use client'
 import Image from 'next/image'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useStateContext } from '../../../context/stateContext'
+import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore'
+import { db } from '../../../context/firebaseConfig'
 
 const RecentActivities = () => {
   const { isEnglish } = useStateContext()
+  const [activities, setActivities] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  const activities = [
-    {
-      img: '/gallery/img-1.jpeg',
-      titleEn: 'Annual Family Gathering 2024',
-      titleMl: 'വാര്‍ഷിക കുടുംബ സംഗമം 2024',
-      descEn: 'Over 150 family members came together for a memorable day of reunion, cultural programs, and strengthening family bonds.',
-      descMl: 'കുടുംബ ബന്ധങ്ങൾ ശക്തിപ്പെടുത്തുന്ന ഒരു അവിസ്മരണീയ ദിനത്തിനായി 150-ലധികം കുടുംബാംഗങ്ങൾ ഒത്തുചേർന്നു.',
-      size: 'large',
-    },
-    {
-      img: '/gallery/home-1.jpg',
-      titleEn: 'Heritage Preservation Workshop',
-      titleMl: 'പൈതൃക സംരക്ഷണ ശിൽപശാല',
-      descEn: 'Workshop on documenting and preserving our family history and traditions for future generations.',
-      descMl: 'ഭാവി തലമുറകൾക്കായി നമ്മുടെ കുടുംബ ചരിത്രവും പാരമ്പര്യവും രേഖപ്പെടുത്തുന്ന ശിൽപശാല.',
-      size: 'medium',
-    },
-    {
-      img: '/gallery/img-5.jpeg',
-      titleEn: 'Community Welfare Drive',
-      titleMl: 'സമൂഹ ക്ഷേമ പ്രവർത്തനം',
-      descEn: 'Annual community health outreach and charity program organized by the association.',
-      descMl: 'സമിതിയുടെ വാർഷിക ആരോഗ്യ, ജീവകാരുണ്യ പരിപാടി.',
-      size: 'small',
-    },
-    {
-      img: '/gallery/img-8.jpeg',
-      titleEn: 'Cultural Celebration',
-      titleMl: 'സാംസ്കാരിക ആഘോഷം',
-      descEn: 'A vibrant celebration bringing together traditions, food, and festivities.',
-      descMl: 'പാരമ്പര്യവും ഭക്ഷണവും ഉത്സവങ്ങളും ഒത്തുചേരുന്ന ഉത്സവാഘോഷം.',
-      size: 'small',
-    },
-  ]
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        const eventsRef = collection(db, 'events')
+        const q = query(
+          eventsRef,
+          where('displaySection', '==', 'recentActivities'),
+          orderBy('createdAt', 'desc'),
+          limit(4)
+        )
+        const snap = await getDocs(q)
+        const data = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+        setActivities(data)
+      } catch (err) {
+        console.error('Error fetching recent activities:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchActivities()
+  }, [])
+
+  if (isLoading || activities.length === 0) return null
+
+  // Assign sizes based on position: 1st = large, 2nd = medium, rest = small
+  const sizes = ['large', 'medium', 'small', 'small']
 
   return (
     <section id="recent-activities" className="activities-section">
@@ -55,22 +51,22 @@ const RecentActivities = () => {
         <div className="activities-bento">
           {activities.map((activity, index) => (
             <div
-              key={index}
-              className={`activity-card activity-card--${activity.size}`}
+              key={activity.id}
+              className={`activity-card activity-card--${sizes[index] || 'small'}`}
             >
               <Image
-                src={activity.img}
-                alt={isEnglish ? activity.titleEn : activity.titleMl}
+                src={activity.eventImgUrl}
+                alt={isEnglish ? activity.title : (activity.titleMl || activity.title)}
                 fill
                 style={{ objectFit: 'cover' }}
                 sizes="(max-width: 768px) 100vw, 50vw"
               />
               <div className="activity-card-overlay">
                 <h3 className="activity-card-title">
-                  {isEnglish ? activity.titleEn : activity.titleMl}
+                  {isEnglish ? activity.title : (activity.titleMl || activity.title)}
                 </h3>
                 <p className="activity-card-desc">
-                  {isEnglish ? activity.descEn : activity.descMl}
+                  {isEnglish ? activity.description : (activity.descMl || activity.description)}
                 </p>
               </div>
             </div>

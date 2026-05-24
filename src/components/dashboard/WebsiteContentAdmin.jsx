@@ -75,7 +75,7 @@ const SECTIONS = [
 ];
 
 const WebsiteContentAdmin = () => {
-  const { fetchAllExecutives, executives } = useStateContext();
+  const { fetchAllExecutives, executives, hasPermission, logActivity } = useStateContext();
   const [sectionData, setSectionData] = React.useState({});
   const [isLoading, setIsLoading] = React.useState(true);
   const [savingSection, setSavingSection] = React.useState(null);
@@ -156,6 +156,7 @@ const WebsiteContentAdmin = () => {
     try {
       const docRef = doc(db, 'websiteContent', sectionId);
       await setDoc(docRef, sectionData[sectionId]);
+      await logActivity('Updated', 'Website Content', `Updated ${SECTIONS.find((s) => s.id === sectionId)?.title}`);
       setToast({ open: true, message: `${SECTIONS.find((s) => s.id === sectionId)?.title} saved successfully!` });
     } catch (err) {
       console.error('Error saving:', err);
@@ -170,6 +171,7 @@ const WebsiteContentAdmin = () => {
     try {
       const docRef = doc(db, 'websiteContent', 'heroBanner');
       await setDoc(docRef, heroData);
+      await logActivity('Updated', 'Website Content', 'Updated Hero Banner');
       setToast({ open: true, message: 'Hero Banner saved successfully!' });
     } catch (err) {
       console.error('Error saving hero:', err);
@@ -188,6 +190,7 @@ const WebsiteContentAdmin = () => {
     try {
       const docRef = doc(db, 'websiteContent', 'introduction');
       await setDoc(docRef, introData);
+      await logActivity('Updated', 'Website Content', 'Updated Introduction');
       setToast({ open: true, message: 'Introduction saved successfully!' });
     } catch (err) {
       console.error('Error saving intro:', err);

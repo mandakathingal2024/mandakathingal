@@ -26,7 +26,7 @@ import SuccessToast from './SuccessToast';
 import { useStateContext } from '../../../context/stateContext';
 
 const GmailAccessAdmin = () => {
-  const { gmail, fetchAllGmail, addGmail, deleteDocument } = useStateContext();
+  const { gmail, fetchAllGmail, addGmail, deleteDocument, hasPermission, logActivity } = useStateContext();
   const [isLoading, setIsLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
   const [error, setError] = React.useState(null);
@@ -68,6 +68,7 @@ const GmailAccessAdmin = () => {
       setIsSaving(true);
       try {
         await addGmail({ gmail: newGmail.trim().toLowerCase() });
+        await logActivity('Added', 'Gmail Access', `Registered gmail "${newGmail.trim().toLowerCase()}"`);
         setNewGmail('');
         await fetchAllGmail();
         setToast({ open: true, message: 'Gmail registered successfully!' });
@@ -111,15 +112,17 @@ const GmailAccessAdmin = () => {
               ),
             }}
           />
-          <Button
-            variant="contained"
-            startIcon={isSaving ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : <PersonAddAltIcon />}
-            onClick={handleRegister}
-            disabled={!newGmail || !newGmail.includes('@') || isSaving}
-            sx={{ alignSelf: { xs: 'flex-start', sm: 'auto' }, minWidth: 120 }}
-          >
-            {isSaving ? 'Adding...' : 'Register'}
-          </Button>
+          {hasPermission('add') && (
+            <Button
+              variant="contained"
+              startIcon={isSaving ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : <PersonAddAltIcon />}
+              onClick={handleRegister}
+              disabled={!newGmail || !newGmail.includes('@') || isSaving}
+              sx={{ alignSelf: { xs: 'flex-start', sm: 'auto' }, minWidth: 120 }}
+            >
+              {isSaving ? 'Adding...' : 'Register'}
+            </Button>
+          )}
         </Box>
       </Paper>
 
@@ -166,15 +169,17 @@ const GmailAccessAdmin = () => {
                     </Typography>
                   </TableCell>
                   <TableCell align="center">
-                    <Tooltip title="Remove access">
-                      <IconButton
-                        size="small"
-                        onClick={() => setDeleteTarget(row)}
-                        sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' } }}
-                      >
-                        <DeleteOutlineIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
+                    {hasPermission('delete') && (
+                      <Tooltip title="Remove access">
+                        <IconButton
+                          size="small"
+                          onClick={() => setDeleteTarget(row)}
+                          sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' } }}
+                        >
+                          <DeleteOutlineIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -199,6 +204,7 @@ const GmailAccessAdmin = () => {
         onCancel={() => setDeleteTarget(null)}
         onConfirm={async () => {
           await deleteDocument('gmail', deleteTarget.id);
+          await logActivity('Deleted', 'Gmail Access', `Removed gmail access for "${deleteTarget.gmail}"`);
           setDeleteTarget(null);
           await fetchAllGmail();
           setToast({ open: true, message: 'Access removed successfully.' });
