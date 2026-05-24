@@ -27,6 +27,7 @@ import WebIcon from '@mui/icons-material/Web';
 import Image from 'next/image';
 import ConfirmDialog from './ConfirmDialog';
 import SuccessToast from './SuccessToast';
+import UploadImage from './UploadImage';
 import { useStateContext } from '../../../context/stateContext';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../../context/firebaseConfig';
@@ -79,14 +80,38 @@ const WebsiteContentAdmin = () => {
   const [isLoading, setIsLoading] = React.useState(true);
   const [savingSection, setSavingSection] = React.useState(null);
   const [toast, setToast] = React.useState({ open: false, message: '' });
-  const [expanded, setExpanded] = React.useState('editorial');
+  const [expanded, setExpanded] = React.useState('heroBanner');
   const [deleteTarget, setDeleteTarget] = React.useState(null); // { sectionId, index, name }
+  const [heroData, setHeroData] = React.useState({
+    bgImage: '',
+    badgeEn: 'Family Association',
+    badgeMl: 'കുടുംബസമിതി',
+    titleEn: 'Mandakathingal',
+    titleMl: 'മണ്ടകത്തിങ്ങൽ',
+    subtitleEn: 'Preserving our roots, celebrating our bonds — a community united by heritage and love.',
+    subtitleMl: 'നമ്മുടെ വേരുകൾ സംരക്ഷിക്കുക, നമ്മുടെ ബന്ധങ്ങൾ ആഘോഷിക്കുക — പൈതൃകവും സ്നേഹവും ഒന്നിച്ച ഒരു സമൂഹം.',
+    btn1TextEn: 'Explore Family', btn1TextMl: 'കുടുംബം കാണുക', btn1Link: '/members',
+    btn2TextEn: 'Our Story', btn2TextMl: 'ഞങ്ങളുടെ കഥ', btn2Link: '/our-story',
+    stat1Num: '150+', stat1LabelEn: 'Family Members', stat1LabelMl: 'കുടുംബാംഗങ്ങൾ',
+    stat2Num: '15+', stat2LabelEn: 'Years United', stat2LabelMl: 'വർഷങ്ങൾ',
+    stat3Num: '50+', stat3LabelEn: 'Events Hosted', stat3LabelMl: 'പരിപാടികൾ',
+  });
+  const [savingHero, setSavingHero] = React.useState(false);
 
   // Fetch executives and website content on mount
   React.useEffect(() => {
     const init = async () => {
       try {
         await fetchAllExecutives();
+
+        // Fetch hero banner
+        const heroRef = doc(db, 'websiteContent', 'heroBanner');
+        const heroSnap = await getDoc(heroRef);
+        if (heroSnap.exists()) {
+          setHeroData((prev) => ({ ...prev, ...heroSnap.data() }));
+        }
+
+        // Fetch team sections
         const data = {};
         for (const section of SECTIONS) {
           const docRef = doc(db, 'websiteContent', section.id);
@@ -119,6 +144,24 @@ const WebsiteContentAdmin = () => {
     } finally {
       setSavingSection(null);
     }
+  };
+
+  const handleSaveHero = async () => {
+    setSavingHero(true);
+    try {
+      const docRef = doc(db, 'websiteContent', 'heroBanner');
+      await setDoc(docRef, heroData);
+      setToast({ open: true, message: 'Hero Banner saved successfully!' });
+    } catch (err) {
+      console.error('Error saving hero:', err);
+      setToast({ open: true, message: 'Failed to save. Please try again.' });
+    } finally {
+      setSavingHero(false);
+    }
+  };
+
+  const updateHeroField = (field, value) => {
+    setHeroData((prev) => ({ ...prev, [field]: value }));
   };
 
   const updateSectionField = (sectionId, field, value) => {
@@ -192,10 +235,115 @@ const WebsiteContentAdmin = () => {
         <Box>
           <Typography variant="h5">Website Content</Typography>
           <Typography variant="body2" color="text.secondary">
-            Manage home page sections — Editorial, Advisory Board & Committee
+            Manage home page sections — Hero Banner, Editorial, Advisory Board & Committee
           </Typography>
         </Box>
       </Box>
+
+      {/* Hero Banner Accordion */}
+      <Accordion
+        expanded={expanded === 'heroBanner'}
+        onChange={(_, isExpanded) => setExpanded(isExpanded ? 'heroBanner' : false)}
+        sx={{
+          mb: 2, border: '1px solid #F0E8E0', borderRadius: '8px !important',
+          '&:before': { display: 'none' }, boxShadow: 'none',
+          '&.Mui-expanded': { margin: '0 0 16px 0' },
+        }}
+      >
+        <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ backgroundColor: expanded === 'heroBanner' ? 'rgba(92,61,46,0.04)' : 'transparent', borderRadius: '8px', '& .MuiAccordionSummary-content': { my: 1.5 } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#2C1810' }}>Hero Banner</Typography>
+            <Typography variant="caption" sx={{ backgroundColor: 'rgba(212,163,115,0.2)', color: '#5C3D2E', px: 1, py: 0.25, borderRadius: 1, fontWeight: 600 }}>
+              Home Page
+            </Typography>
+          </Box>
+        </AccordionSummary>
+        <AccordionDetails sx={{ px: { xs: 2, sm: 3 }, pb: 3 }}>
+          {/* Background Image */}
+          <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.65rem', letterSpacing: '0.05em' }}>
+            Background Image
+          </Typography>
+          <Box sx={{ mb: 2 }}>
+            <UploadImage
+              folderName="website"
+              setMember={(fn) => {
+                const result = fn({});
+                if (result.memberImgUrl !== undefined) updateHeroField('bgImage', result.memberImgUrl);
+              }}
+              imageType="member"
+              existingUrl={heroData.bgImage}
+            />
+          </Box>
+
+          <Divider sx={{ borderColor: '#F0E8E0', mb: 2 }} />
+
+          {/* Badge & Title */}
+          <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.65rem', letterSpacing: '0.05em' }}>
+            Badge & Title
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 2 }}>
+            <TextField size="small" fullWidth label="Badge (English)" value={heroData.badgeEn} onChange={(e) => updateHeroField('badgeEn', e.target.value)} />
+            <TextField size="small" fullWidth label="Badge (Malayalam)" value={heroData.badgeMl} onChange={(e) => updateHeroField('badgeMl', e.target.value)} />
+          </Box>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 2 }}>
+            <TextField size="small" fullWidth label="Title (English)" value={heroData.titleEn} onChange={(e) => updateHeroField('titleEn', e.target.value)} />
+            <TextField size="small" fullWidth label="Title (Malayalam)" value={heroData.titleMl} onChange={(e) => updateHeroField('titleMl', e.target.value)} />
+          </Box>
+
+          {/* Subtitle */}
+          <Typography variant="subtitle2" sx={{ mt: 2, mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.65rem', letterSpacing: '0.05em' }}>
+            Subtitle
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 2 }}>
+            <TextField size="small" fullWidth label="Subtitle (English)" value={heroData.subtitleEn} onChange={(e) => updateHeroField('subtitleEn', e.target.value)} multiline rows={2} />
+            <TextField size="small" fullWidth label="Subtitle (Malayalam)" value={heroData.subtitleMl} onChange={(e) => updateHeroField('subtitleMl', e.target.value)} multiline rows={2} />
+          </Box>
+
+          <Divider sx={{ borderColor: '#F0E8E0', mb: 2 }} />
+
+          {/* Buttons */}
+          <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.65rem', letterSpacing: '0.05em' }}>
+            Buttons
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 1.5 }}>
+            <TextField size="small" fullWidth label="Button 1 Text (EN)" value={heroData.btn1TextEn} onChange={(e) => updateHeroField('btn1TextEn', e.target.value)} />
+            <TextField size="small" fullWidth label="Button 1 Text (ML)" value={heroData.btn1TextMl} onChange={(e) => updateHeroField('btn1TextMl', e.target.value)} />
+            <TextField size="small" fullWidth label="Button 1 Link" value={heroData.btn1Link} onChange={(e) => updateHeroField('btn1Link', e.target.value)} />
+          </Box>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 2 }}>
+            <TextField size="small" fullWidth label="Button 2 Text (EN)" value={heroData.btn2TextEn} onChange={(e) => updateHeroField('btn2TextEn', e.target.value)} />
+            <TextField size="small" fullWidth label="Button 2 Text (ML)" value={heroData.btn2TextMl} onChange={(e) => updateHeroField('btn2TextMl', e.target.value)} />
+            <TextField size="small" fullWidth label="Button 2 Link" value={heroData.btn2Link} onChange={(e) => updateHeroField('btn2Link', e.target.value)} />
+          </Box>
+
+          <Divider sx={{ borderColor: '#F0E8E0', mb: 2 }} />
+
+          {/* Stats */}
+          <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.65rem', letterSpacing: '0.05em' }}>
+            Stats Bar
+          </Typography>
+          {[1, 2, 3].map((n) => (
+            <Box key={n} sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 1.5 }}>
+              <TextField size="small" sx={{ maxWidth: 120 }} label={`Stat ${n} Number`} value={heroData[`stat${n}Num`]} onChange={(e) => updateHeroField(`stat${n}Num`, e.target.value)} />
+              <TextField size="small" fullWidth label={`Label (English)`} value={heroData[`stat${n}LabelEn`]} onChange={(e) => updateHeroField(`stat${n}LabelEn`, e.target.value)} />
+              <TextField size="small" fullWidth label={`Label (Malayalam)`} value={heroData[`stat${n}LabelMl`]} onChange={(e) => updateHeroField(`stat${n}LabelMl`, e.target.value)} />
+            </Box>
+          ))}
+
+          {/* Save */}
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+            <Button
+              variant="contained"
+              startIcon={savingHero ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : <SaveIcon />}
+              onClick={handleSaveHero}
+              disabled={savingHero}
+              sx={{ textTransform: 'none', fontWeight: 600 }}
+            >
+              {savingHero ? 'Saving...' : 'Save Hero Banner'}
+            </Button>
+          </Box>
+        </AccordionDetails>
+      </Accordion>
 
       {SECTIONS.map((section) => {
         const data = sectionData[section.id] || section.defaultData;
