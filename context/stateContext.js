@@ -27,6 +27,7 @@ export const StateContext =({children})=>{
     const [isAuthorised,setIsAuthorised]=useState(true)
     const [deniedEmail,setDeniedEmail]=useState(null)
     const [gmail,setGmail]=useState(null)
+    const [isGmailLoading,setIsGmailLoading]=useState(true)
 
 
     // Hydrate auth and page state from localStorage after mount (avoids SSR flash)
@@ -421,21 +422,24 @@ export const StateContext =({children})=>{
 
       const googleSignIn = async () => {
         const provider = new GoogleAuthProvider()
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-        if (isMobile) {
-          // Use redirect on mobile (popups are blocked/unreliable)
-          await signInWithRedirect(auth, provider)
-        } else {
-          try {
-            const res = await signInWithPopup(auth, provider)
-            setuser({ gmail: res.user.email })
-          } catch (error) {
-            // Popup blocked on desktop — fall back to redirect
-            if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user') {
+        try {
+          // Try popup first (works on most mobile and all desktop browsers)
+          const res = await signInWithPopup(auth, provider)
+          console.log('Popup sign-in success:', res.user.email)
+          setuser({ gmail: res.user.email })
+        } catch (error) {
+          console.error('Popup sign-in failed, trying redirect:', error.code)
+          // Popup blocked or closed — fall back to redirect
+          if (error.code === 'auth/popup-blocked' ||
+              error.code === 'auth/popup-closed-by-user' ||
+              error.code === 'auth/cancelled-popup-request') {
+            try {
               await signInWithRedirect(auth, provider)
-            } else {
-              console.error('Google sign-in error:', error)
+            } catch (redirectError) {
+              console.error('Redirect sign-in also failed:', redirectError)
             }
+          } else {
+            console.error('Google sign-in error:', error)
           }
         }
       }
@@ -481,10 +485,12 @@ export const StateContext =({children})=>{
       useEffect(()=>{
         getRedirectResult(auth).then((result) => {
           if(result && result.user){
+            console.log('Redirect result received:', result.user.email)
             setuser({ gmail: result.user.email })
           }
         }).catch((error) => {
           console.error('Redirect sign-in error:', error)
+          setIsGmailLoading(false)
         })
       },[])
 
@@ -492,10 +498,13 @@ export const StateContext =({children})=>{
       useEffect(()=>{
         const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
           if(firebaseUser){
+            console.log('Auth state changed - signed in:', firebaseUser.email)
             setuser({ gmail: firebaseUser.email })
           } else {
+            console.log('Auth state changed - no user')
             setuser(null)
             setIsGmailAuthenticated(false)
+            setIsGmailLoading(false)
           }
         })
         return () => unsubscribe()
@@ -503,7 +512,10 @@ export const StateContext =({children})=>{
 
       useEffect(()=>{
         if(user){
-          getGmail(user.gmail)
+          setIsGmailLoading(true)
+          getGmail(user.gmail).finally(() => {
+            setIsGmailLoading(false)
+          })
         }
       },[user])
 
@@ -554,7 +566,8 @@ export const StateContext =({children})=>{
         setIsAuthorised,
         deniedEmail,
         gmail,
-        fetchAllGmail
+        fetchAllGmail,
+        isGmailLoading
         }}>
             {children}
         </Context.Provider>

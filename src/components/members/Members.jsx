@@ -8,7 +8,7 @@ import { MembersSkeleton } from '../Skeleton'
 
 const Members = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const { getMembersWithNewBranchRelation, newBranchData, isGmailAuthenticated, googleSignIn, googleSignOut, isAuthorised, deniedEmail } = useStateContext()
+  const { getMembersWithNewBranchRelation, newBranchData, isGmailAuthenticated, googleSignIn, googleSignOut, isAuthorised, deniedEmail, isGmailLoading } = useStateContext()
   const [search, setSearch] = useState('')
 
   const [error, setError] = useState(null);
@@ -57,7 +57,19 @@ const Members = () => {
       </section>
 
       <section id="features" className="features">
-        {isGmailAuthenticated ? (
+        {isGmailLoading ? (
+          <div className="auth-gate">
+            <div className="auth-gate-card" style={{ textAlign: 'center' }}>
+              <div style={{
+                width: '40px', height: '40px', border: '3px solid #E8DDD4',
+                borderTopColor: 'var(--color-primary)', borderRadius: '50%',
+                animation: 'spin 0.8s linear infinite', margin: '0 auto 16px'
+              }} />
+              <p style={{ color: 'var(--color-text-muted)', margin: 0 }}>Verifying access...</p>
+              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            </div>
+          </div>
+        ) : isGmailAuthenticated ? (
           <div className="container">
             <div className="member-search">
               <svg className="member-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
