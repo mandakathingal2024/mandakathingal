@@ -48,7 +48,7 @@ const Executive = () => {
           <hr className="section-divider" />
 
           <div className="team-grid">
-            {executives && executives.map((executive) => (
+            {executives && [...executives].sort((a, b) => (Number(a.sortOrder) || 999) - (Number(b.sortOrder) || 999)).map((executive) => (
               <div key={executive.id} className="team-card">
                 <div className="team-card-img-wrapper">
                   <Image

@@ -48,6 +48,7 @@ const ExecutiveAdmin = () => {
     executiveImgUrl: '',
     name: '',
     role: '',
+    sortOrder: '',
   });
   const { addExecutive, fetchAllExecutives, deleteDocument, updateDocument, executives } = useStateContext();
   const [isEdit, setIsEdit] = React.useState(false);
@@ -58,16 +59,24 @@ const ExecutiveAdmin = () => {
   const [toast, setToast] = React.useState({ open: false, message: '' });
   const [search, setSearch] = React.useState('');
 
-  // Client-side case-insensitive search
+  // Client-side search + sort by sortOrder
   const filteredExecutives = React.useMemo(() => {
     if (!executives) return [];
-    if (!search.trim()) return executives;
-    const q = search.trim().toLowerCase();
-    return executives.filter((exec) => {
-      const name = (exec.name || '').toLowerCase();
-      const role = (exec.role || '').toLowerCase();
-      return name.includes(q) || role.includes(q);
+    let list = [...executives];
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      list = list.filter((exec) => {
+        const name = (exec.name || '').toLowerCase();
+        const role = (exec.role || '').toLowerCase();
+        return name.includes(q) || role.includes(q);
+      });
+    }
+    list.sort((a, b) => {
+      const aOrder = Number(a.sortOrder) || 999;
+      const bOrder = Number(b.sortOrder) || 999;
+      return aOrder - bOrder;
     });
+    return list;
   }, [search, executives]);
 
   React.useEffect(() => {
@@ -97,7 +106,7 @@ const ExecutiveAdmin = () => {
   const handleClose = () => {
     setOpen(false);
     setIsEdit(false);
-    setExecutive({ executiveImgUrl: '', name: '', role: '' });
+    setExecutive({ executiveImgUrl: '', name: '', role: '', sortOrder: '' });
   };
 
   const handleSubmit = async () => {
@@ -184,6 +193,17 @@ const ExecutiveAdmin = () => {
                 size="small"
                 placeholder="e.g. President, Secretary"
               />
+              <TextField
+                fullWidth
+                label="Sort Order"
+                name="sortOrder"
+                type="number"
+                value={executive.sortOrder}
+                onChange={handleChange}
+                size="small"
+                placeholder="e.g. 1, 2, 3..."
+                helperText="Lower number appears first on the website"
+              />
             </Box>
           </Box>
 
@@ -208,8 +228,8 @@ const ExecutiveAdmin = () => {
           <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell sx={{ width: 60 }}>Sl No</TableCell>
-                <TableCell sx={{ width: 120 }}>Photo</TableCell>
+                <TableCell sx={{ width: 60 }}>Order</TableCell>
+                <TableCell sx={{ width: 80 }}>Photo</TableCell>
                 <TableCell>Name</TableCell>
                 <TableCell>Role</TableCell>
                 <TableCell sx={{ width: 110 }} align="center">Actions</TableCell>
@@ -219,7 +239,9 @@ const ExecutiveAdmin = () => {
               {filteredExecutives.map((row, index) => (
                 <TableRow key={row.id || index}>
                   <TableCell>
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>{index + 1}</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: row.sortOrder ? '#5C3D2E' : 'text.disabled' }}>
+                      {row.sortOrder || '—'}
+                    </Typography>
                   </TableCell>
                   <TableCell>
                     <Box sx={{ width: 64, height: 64, borderRadius: '50%', overflow: 'hidden', border: '2px solid #F0E8E0' }}>
