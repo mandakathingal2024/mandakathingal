@@ -208,7 +208,7 @@ export default function Dashboard() {
               <Chip
                 label={
                   isMobile
-                    ? (adminUser.role === 'superAdmin' ? 'Super Admin' : adminUser.role === 'admin' ? 'Admin' : 'Viewer')
+                    ? `${adminUser.name} • ${adminUser.role === 'superAdmin' ? 'SA' : adminUser.role === 'admin' ? 'Admin' : 'Viewer'}`
                     : `${adminUser.name} • ${adminUser.role === 'superAdmin' ? 'Super Admin' : adminUser.role === 'admin' ? 'Admin' : 'Viewer'}`
                 }
                 size="small"
@@ -217,8 +217,9 @@ export default function Dashboard() {
                   color: adminUser.role === 'superAdmin' ? '#B71C1C' : adminUser.role === 'admin' ? '#1565C0' : '#2E7D32',
                   fontWeight: 600,
                   fontSize: { xs: '0.6rem', sm: '0.7rem' },
-                  maxWidth: { xs: 100, sm: 'none' },
+                  maxWidth: { xs: 150, sm: 'none' },
                   flexShrink: 0,
+                  '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
                 }}
               />
             )}
