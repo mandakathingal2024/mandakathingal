@@ -47,44 +47,9 @@ export async function POST(request) {
       }
     }
 
-    // Fallback: check env vars (backward compatibility)
-    const userName = process.env.USER_NAME;
-    const password = process.env.PASSWORD;
-    if (userName === req.userName && password === req.password) {
-      const data = {
-        isAuthenticated: true,
-        admin: {
-          id: 'env-super-admin',
-          name: 'Super Admin',
-          username: req.userName,
-          role: 'superAdmin',
-          permissions: { add: true, edit: true, view: true, delete: true },
-        },
-      };
-      return new Response(JSON.stringify(data), { status: 200 });
-    }
-
     return new Response(JSON.stringify({ isAuthenticated: false }), { status: 200 });
   } catch (error) {
     console.error('Authentication error:', error);
-
-    // If Firestore fails, fall back to env var check
-    const userName = process.env.USER_NAME;
-    const password = process.env.PASSWORD;
-    if (userName === req.userName && password === req.password) {
-      const data = {
-        isAuthenticated: true,
-        admin: {
-          id: 'env-super-admin',
-          name: 'Super Admin',
-          username: req.userName,
-          role: 'superAdmin',
-          permissions: { add: true, edit: true, view: true, delete: true },
-        },
-      };
-      return new Response(JSON.stringify(data), { status: 200 });
-    }
-
     return new Response(JSON.stringify({ isAuthenticated: false }), { status: 200 });
   }
 }
