@@ -186,33 +186,39 @@ export default function Dashboard() {
       <Box sx={{ display: 'flex', minHeight: '100vh' }}>
         <CssBaseline />
         <AppBar position="absolute" open={!isMobile && open}>
-          <Toolbar sx={{ pr: '24px' }}>
+          <Toolbar sx={{ pr: { xs: '8px', sm: '24px' }, minHeight: { xs: 56 } }}>
             <IconButton
               edge="start"
               color="inherit"
               aria-label="open drawer"
               onClick={toggleDrawer}
-              sx={{ marginRight: '20px', ...(!isMobile && open && { display: 'none' }) }}
+              sx={{ marginRight: { xs: '8px', sm: '20px' }, ...(!isMobile && open && { display: 'none' }) }}
             >
               <MenuIcon />
             </IconButton>
-            <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'baseline', gap: 1 }}>
-              <Typography component="h1" variant="h6" color="inherit" noWrap sx={{ fontFamily: 'var(--font-playfair), "Playfair Display", Georgia, serif', fontWeight: 800, letterSpacing: '3px', textTransform: 'uppercase', fontSize: { xs: '1rem', sm: '1.15rem' } }}>
+            <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'baseline', gap: { xs: 0.5, sm: 1 }, minWidth: 0 }}>
+              <Typography component="h1" variant="h6" color="inherit" noWrap sx={{ fontFamily: 'var(--font-playfair), "Playfair Display", Georgia, serif', fontWeight: 800, letterSpacing: { xs: '1.5px', sm: '3px' }, textTransform: 'uppercase', fontSize: { xs: '0.85rem', sm: '1.15rem' } }}>
                 Mandakathingal
               </Typography>
-              <Typography component="span" sx={{ fontSize: { xs: '0.6rem', sm: '0.7rem' }, fontWeight: 600, color: '#D4A373', letterSpacing: '1.5px', textTransform: 'uppercase' }}>
+              <Typography component="span" sx={{ fontSize: { xs: '0.55rem', sm: '0.7rem' }, fontWeight: 600, color: '#D4A373', letterSpacing: '1.5px', textTransform: 'uppercase', display: { xs: 'none', sm: 'inline' } }}>
                 Admin
               </Typography>
             </Box>
             {adminUser && (
               <Chip
-                label={`${adminUser.name} • ${adminUser.role === 'superAdmin' ? 'Super Admin' : adminUser.role === 'admin' ? 'Admin' : 'Viewer'}`}
+                label={
+                  isMobile
+                    ? (adminUser.role === 'superAdmin' ? 'Super Admin' : adminUser.role === 'admin' ? 'Admin' : 'Viewer')
+                    : `${adminUser.name} • ${adminUser.role === 'superAdmin' ? 'Super Admin' : adminUser.role === 'admin' ? 'Admin' : 'Viewer'}`
+                }
                 size="small"
                 sx={{
                   backgroundColor: adminUser.role === 'superAdmin' ? 'rgba(183,28,28,0.08)' : adminUser.role === 'admin' ? 'rgba(21,101,192,0.08)' : 'rgba(46,125,50,0.08)',
                   color: adminUser.role === 'superAdmin' ? '#B71C1C' : adminUser.role === 'admin' ? '#1565C0' : '#2E7D32',
                   fontWeight: 600,
-                  fontSize: '0.7rem',
+                  fontSize: { xs: '0.6rem', sm: '0.7rem' },
+                  maxWidth: { xs: 100, sm: 'none' },
+                  flexShrink: 0,
                 }}
               />
             )}

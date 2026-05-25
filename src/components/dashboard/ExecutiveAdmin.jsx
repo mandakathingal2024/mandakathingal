@@ -135,10 +135,10 @@ const ExecutiveAdmin = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3 } }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h5">Executives</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, mb: 2, flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 1.5, sm: 0 } }}>
+        <Typography variant="h5" sx={{ fontSize: { xs: '1.3rem', sm: '1.5rem' } }}>Executives</Typography>
         {hasPermission('add') && (
-          <Button variant="contained" startIcon={<PersonAddIcon />} onClick={handleOpen}>
+          <Button variant="contained" startIcon={<PersonAddIcon />} onClick={handleOpen} sx={{ flexShrink: 0 }}>
             Add Executive
           </Button>
         )}
