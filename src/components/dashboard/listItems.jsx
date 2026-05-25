@@ -33,6 +33,7 @@ const ListItems = ({ onNavigate, onLogout, installPrompt, onInstall }) => {
 
   const isSuperAdmin = adminUser?.role === 'superAdmin';
   const canViewActivityLog = isSuperAdmin || adminUser?.permissions?.viewActivityLog;
+  const visiblePages = isSuperAdmin ? null : (adminUser?.permissions?.visiblePages || []);
 
   const navigate = (page) => {
     setPageValue(page);
@@ -53,7 +54,9 @@ const ListItems = ({ onNavigate, onLogout, installPrompt, onInstall }) => {
 
   return (
     <Box sx={{ pt: 1 }}>
-      {navItems.map((item) => (
+      {navItems
+        .filter((item) => item.page === 0 || !visiblePages || visiblePages.includes(item.page))
+        .map((item) => (
         <ListItemButton
           key={item.page}
           onClick={() => navigate(item.page)}
@@ -73,24 +76,28 @@ const ListItems = ({ onNavigate, onLogout, installPrompt, onInstall }) => {
         </ListItemButton>
       ))}
 
-      <Divider sx={{ borderColor: 'rgba(255,255,255,0.08)', my: 1.5, mx: 2 }} />
+      {(!visiblePages || visiblePages.includes(5)) && (
+        <>
+          <Divider sx={{ borderColor: 'rgba(255,255,255,0.08)', my: 1.5, mx: 2 }} />
 
-      <ListItemButton
-        onClick={() => navigate(5)}
-        sx={{ ...defaultStyle, ...(pageValue === 5 ? activeStyle : {}) }}
-      >
-        <ListItemIcon sx={{ color: pageValue === 5 ? '#D4A373' : '#9B8B7E', minWidth: 40 }}>
-          <EmailIcon />
-        </ListItemIcon>
-        <ListItemText
-          primary="Gmail Access"
-          primaryTypographyProps={{
-            fontSize: '0.875rem',
-            fontWeight: pageValue === 5 ? 600 : 400,
-            color: pageValue === 5 ? '#FFFFFF' : '#C4B5A8',
-          }}
-        />
-      </ListItemButton>
+          <ListItemButton
+            onClick={() => navigate(5)}
+            sx={{ ...defaultStyle, ...(pageValue === 5 ? activeStyle : {}) }}
+          >
+            <ListItemIcon sx={{ color: pageValue === 5 ? '#D4A373' : '#9B8B7E', minWidth: 40 }}>
+              <EmailIcon />
+            </ListItemIcon>
+            <ListItemText
+              primary="Gmail Access"
+              primaryTypographyProps={{
+                fontSize: '0.875rem',
+                fontWeight: pageValue === 5 ? 600 : 400,
+                color: pageValue === 5 ? '#FFFFFF' : '#C4B5A8',
+              }}
+            />
+          </ListItemButton>
+        </>
+      )}
 
       {/* Super Admin only: Admin Management */}
       {isSuperAdmin && (

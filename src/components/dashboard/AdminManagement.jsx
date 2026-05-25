@@ -68,12 +68,23 @@ const ACTIVITY_LOG_MODULES = [
 
 const ALL_MODULES = ACTIVITY_LOG_MODULES.map((m) => m.key);
 
+const SIDEBAR_PAGES = [
+  { key: 1, label: 'Gallery' },
+  { key: 2, label: 'Members' },
+  { key: 3, label: 'Events' },
+  { key: 4, label: 'Executives' },
+  { key: 5, label: 'Gmail Access' },
+  { key: 6, label: 'Website Content' },
+];
+
+const ALL_PAGES = SIDEBAR_PAGES.map((p) => p.key);
+
 const EMPTY_ADMIN = {
   name: '',
   username: '',
   password: '',
   role: 'admin',
-  permissions: { add: true, edit: true, view: true, delete: false, viewActivityLog: false, activityLogModules: [] },
+  permissions: { add: true, edit: true, view: true, delete: false, viewActivityLog: false, activityLogModules: [], visiblePages: [...ALL_PAGES] },
 };
 
 const ROLE_CONFIG = {
@@ -151,13 +162,33 @@ const AdminManagement = () => {
     });
   };
 
+  const handlePageToggle = (pageKey) => {
+    const current = adminData.permissions.visiblePages || [];
+    const updated = current.includes(pageKey)
+      ? current.filter((p) => p !== pageKey)
+      : [...current, pageKey];
+    setAdminData({
+      ...adminData,
+      permissions: { ...adminData.permissions, visiblePages: updated },
+    });
+  };
+
+  const handleSelectAllPages = () => {
+    const current = adminData.permissions.visiblePages || [];
+    const allSelected = current.length === ALL_PAGES.length;
+    setAdminData({
+      ...adminData,
+      permissions: { ...adminData.permissions, visiblePages: allSelected ? [] : [...ALL_PAGES] },
+    });
+  };
+
   const handleRoleChange = (e) => {
     const role = e.target.value;
     let permissions;
     if (role === 'superAdmin') {
-      permissions = { add: true, edit: true, view: true, delete: true, viewActivityLog: true, activityLogModules: [...ALL_MODULES] };
+      permissions = { add: true, edit: true, view: true, delete: true, viewActivityLog: true, activityLogModules: [...ALL_MODULES], visiblePages: [...ALL_PAGES] };
     } else if (role === 'viewer') {
-      permissions = { add: false, edit: false, view: true, delete: false, viewActivityLog: false, activityLogModules: [] };
+      permissions = { add: false, edit: false, view: true, delete: false, viewActivityLog: false, activityLogModules: [], visiblePages: [...ALL_PAGES] };
     } else {
       permissions = adminData.permissions;
     }
@@ -336,7 +367,7 @@ const AdminManagement = () => {
             {adminData.role === 'admin' && (
               <Paper variant="outlined" sx={{ p: 2, borderColor: '#E0D6CC' }}>
                 <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.65rem', letterSpacing: '0.05em', mb: 1, display: 'block' }}>
-                  Custom Permissions
+                  Data Permissions
                 </Typography>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0 }}>
                   <FormControlLabel
@@ -356,6 +387,40 @@ const AdminManagement = () => {
                     label={<Typography variant="body2">Delete</Typography>}
                   />
                 </Box>
+              </Paper>
+            )}
+
+            {(adminData.role === 'admin' || adminData.role === 'viewer') && (
+              <Paper variant="outlined" sx={{ p: 2, mt: 2, borderColor: '#E0D6CC' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.65rem', letterSpacing: '0.05em' }}>
+                    Visible Sections
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    onClick={handleSelectAllPages}
+                    sx={{ color: '#5C3D2E', fontWeight: 600, fontSize: '0.65rem', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                  >
+                    {(adminData.permissions.visiblePages || []).length === ALL_PAGES.length ? 'Deselect All' : 'Select All'}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0 }}>
+                  {SIDEBAR_PAGES.map((pg) => (
+                    <FormControlLabel
+                      key={pg.key}
+                      control={
+                        <Checkbox
+                          checked={(adminData.permissions.visiblePages || []).includes(pg.key)}
+                          onChange={() => handlePageToggle(pg.key)}
+                          size="small"
+                          sx={{ color: '#D4A373', '&.Mui-checked': { color: '#5C3D2E' }, py: 0.3 }}
+                        />
+                      }
+                      label={<Typography variant="body2" sx={{ fontSize: '0.8rem' }}>{pg.label}</Typography>}
+                    />
+                  ))}
+                </Box>
+
                 <Divider sx={{ my: 1.5, borderColor: '#E0D6CC' }} />
                 <FormControlLabel
                   control={<Checkbox checked={adminData.permissions.viewActivityLog || false} onChange={() => handlePermissionChange('viewActivityLog')} size="small" sx={{ color: '#D4A373', '&.Mui-checked': { color: '#5C3D2E' } }} />}
@@ -366,7 +431,7 @@ const AdminManagement = () => {
                   <Box sx={{ ml: 1, mt: 0.5, pl: 2, borderLeft: '2px solid #E0D6CC' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
                       <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.6rem', letterSpacing: '0.05em' }}>
-                        Visible Modules
+                        Activity Log Modules
                       </Typography>
                       <Typography
                         variant="caption"
@@ -406,7 +471,7 @@ const AdminManagement = () => {
             )}
 
             {adminData.role === 'viewer' && (
-              <Paper variant="outlined" sx={{ p: 2, borderColor: '#E0D6CC', backgroundColor: 'rgba(46,125,50,0.03)' }}>
+              <Paper variant="outlined" sx={{ p: 2, mt: 2, borderColor: '#E0D6CC', backgroundColor: 'rgba(46,125,50,0.03)' }}>
                 <Typography variant="body2" sx={{ color: '#2E7D32', fontWeight: 500 }}>
                   Viewer can only view data across all sections. No add, edit, or delete permissions.
                 </Typography>

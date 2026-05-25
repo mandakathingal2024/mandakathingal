@@ -162,6 +162,7 @@ export default function Dashboard() {
   const [installPrompt, setInstallPrompt] = React.useState(null);
   const toggleDrawer = () => setOpen(!open);
   const { pageValue, handleLogOut, adminUser } = useStateContext();
+  const canSeePage = (page) => adminUser?.role === 'superAdmin' || !adminUser?.permissions?.visiblePages || adminUser.permissions.visiblePages.includes(page);
 
   // Capture PWA install prompt
   React.useEffect(() => {
@@ -263,12 +264,12 @@ export default function Dashboard() {
         <Box component="main" sx={{ backgroundColor: 'background.default', flexGrow: 1, height: '100vh', overflow: 'auto' }}>
           <Toolbar />
           {pageValue === 0 && <DashboardHome />}
-          {pageValue === 1 && <GalleryAdmin />}
-          {pageValue === 2 && <MembersAdmin />}
-          {pageValue === 3 && <EventsAdmin />}
-          {pageValue === 4 && <ExecutiveAdmin />}
-          {pageValue === 5 && <GmailAccessAdmin />}
-          {pageValue === 6 && <WebsiteContentAdmin />}
+          {pageValue === 1 && canSeePage(1) && <GalleryAdmin />}
+          {pageValue === 2 && canSeePage(2) && <MembersAdmin />}
+          {pageValue === 3 && canSeePage(3) && <EventsAdmin />}
+          {pageValue === 4 && canSeePage(4) && <ExecutiveAdmin />}
+          {pageValue === 5 && canSeePage(5) && <GmailAccessAdmin />}
+          {pageValue === 6 && canSeePage(6) && <WebsiteContentAdmin />}
           {pageValue === 7 && adminUser?.role === 'superAdmin' && <AdminManagement />}
           {pageValue === 8 && (adminUser?.role === 'superAdmin' || adminUser?.permissions?.viewActivityLog) && <ActivityLog />}
           {pageValue === 9 && <ProfileAdmin />}
