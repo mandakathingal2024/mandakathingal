@@ -59,6 +59,11 @@ const adminTheme = createTheme({
         root: { borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' },
       },
     },
+    MuiDrawer: {
+      styleOverrides: {
+        paper: { borderRadius: 0 },
+      },
+    },
     MuiTableHead: {
       styleOverrides: {
         root: {
@@ -146,12 +151,13 @@ const drawerSx = {
     backgroundColor: '#2C1810',
     color: '#E8DDD4',
     borderRight: 'none',
+    borderRadius: 0,
   },
 };
 
 export default function Dashboard() {
   const isMobile = useMediaQuery(adminTheme.breakpoints.down('md'));
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = React.useState(true);
   const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
   const [installPrompt, setInstallPrompt] = React.useState(null);
   const toggleDrawer = () => setOpen(!open);
