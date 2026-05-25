@@ -29,6 +29,7 @@ export const StateContext =({children})=>{
     const [deniedEmail,setDeniedEmail]=useState(null)
     const [gmail,setGmail]=useState(null)
     const [isGmailLoading,setIsGmailLoading]=useState(true)
+    const [logoutMessage, setLogoutMessage] = useState('')
 
 
     // Hydrate auth and page state from localStorage after mount (avoids SSR flash)
@@ -36,13 +37,93 @@ export const StateContext =({children})=>{
       const savedAuth = localStorage.getItem('adminAuth') === 'true'
       const savedPage = localStorage.getItem('adminPage')
       const savedAdmin = localStorage.getItem('adminUser')
-      if (savedAuth) setIsAuthenticated(true)
-      if (savedPage !== null) setPageValue(Number(savedPage))
-      if (savedAdmin) {
-        try { setAdminUser(JSON.parse(savedAdmin)) } catch (e) {}
+      const savedLogoutMsg = localStorage.getItem('logoutMessage')
+
+      if (savedLogoutMsg) {
+        setLogoutMessage(savedLogoutMsg)
+        localStorage.removeItem('logoutMessage')
       }
-      setIsAuthLoading(false)
+
+      if (savedAuth && savedAdmin) {
+        try {
+          const parsed = JSON.parse(savedAdmin)
+          setAdminUser(parsed)
+          setIsAuthenticated(true)
+          if (savedPage !== null) setPageValue(Number(savedPage))
+
+          // Verify session against Firestore
+          verifySession(parsed)
+        } catch (e) {
+          setIsAuthLoading(false)
+        }
+      } else {
+        setIsAuthLoading(false)
+      }
     }, [])
+
+    // Verify that the admin session is still valid
+    async function verifySession(admin) {
+      try {
+        const adminsRef = collection(db, 'admins')
+
+        // Try finding by id first, then username
+        let snap = await getDocs(query(adminsRef, where('id', '==', admin.id)))
+        if (snap.empty) {
+          snap = await getDocs(query(adminsRef, where('username', '==', admin.username)))
+        }
+
+        if (snap.empty) {
+          // Admin account deleted
+          forceLogout('Your admin account has been removed. Please contact the Super Admin.')
+          return
+        }
+
+        const firestoreAdmin = snap.docs[0].data()
+
+        if (firestoreAdmin.isActive === false) {
+          // Admin deactivated
+          forceLogout('Your admin account has been deactivated. Please contact the Super Admin.')
+          return
+        }
+
+        const storedVersion = admin.sessionVersion || 0
+        const currentVersion = firestoreAdmin.sessionVersion || 0
+        if (storedVersion !== currentVersion) {
+          // Password or credentials changed
+          forceLogout('Your password was changed. Please log in again with your new credentials.')
+          return
+        }
+
+        // Session valid — sync latest data from Firestore
+        const updatedAdmin = {
+          ...admin,
+          name: firestoreAdmin.name,
+          username: firestoreAdmin.username,
+          role: firestoreAdmin.role,
+          permissions: firestoreAdmin.permissions || admin.permissions,
+          sessionVersion: currentVersion,
+        }
+        setAdminUser(updatedAdmin)
+        localStorage.setItem('adminUser', JSON.stringify(updatedAdmin))
+        setIsAuthLoading(false)
+      } catch (error) {
+        console.error('Session verification error:', error)
+        // On network error, allow existing session to continue
+        setIsAuthLoading(false)
+      }
+    }
+
+    function forceLogout(message) {
+      setIsAuthenticated(false)
+      setPageValue(0)
+      setAdminUser(null)
+      localStorage.removeItem('adminAuth')
+      localStorage.removeItem('adminPage')
+      localStorage.removeItem('adminUser')
+      localStorage.setItem('logoutMessage', message)
+      setLogoutMessage(message)
+      setIsAuthLoading(false)
+    }
 
     // Persist pageValue to localStorage whenever it changes
     useEffect(() => {
@@ -143,6 +224,7 @@ export const StateContext =({children})=>{
       localStorage.removeItem('adminAuth')
       localStorage.removeItem('adminPage')
       localStorage.removeItem('adminUser')
+      localStorage.setItem('logoutMessage', 'You have been logged out successfully.')
     }
 
     // Permission helper
@@ -624,7 +706,9 @@ export const StateContext =({children})=>{
         adminUser,
         setAdminUser,
         hasPermission,
-        logActivity
+        logActivity,
+        logoutMessage,
+        setLogoutMessage
         }}>
             {children}
         </Context.Provider>

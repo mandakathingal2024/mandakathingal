@@ -40,6 +40,7 @@ export async function POST(request) {
             username: admin.username,
             role: admin.role,
             permissions: admin.permissions || { add: true, edit: true, view: true, delete: true },
+            sessionVersion: admin.sessionVersion || 0,
           },
         };
         return new Response(JSON.stringify(data), { status: 200 });

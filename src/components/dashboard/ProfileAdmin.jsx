@@ -163,8 +163,15 @@ const ProfileAdmin = () => {
         return;
       }
 
+      const newVersion = (currentData.sessionVersion || 0) + 1;
       const docRef = doc(db, adminDoc.ref.path);
-      await updateDoc(docRef, { password: passwords.newPass });
+      await updateDoc(docRef, { password: passwords.newPass, sessionVersion: newVersion });
+
+      // Update own session version so we don't get force-logged out
+      const updatedAdmin = { ...adminUser, sessionVersion: newVersion };
+      setAdminUser(updatedAdmin);
+      localStorage.setItem('adminUser', JSON.stringify(updatedAdmin));
+
       await logActivity('Updated', 'Profile', 'Changed account password');
       setPasswords({ current: '', newPass: '', confirm: '' });
       setShowPasswordSection(false);

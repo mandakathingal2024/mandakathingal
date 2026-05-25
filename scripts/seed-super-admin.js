@@ -58,6 +58,7 @@ async function seed() {
       delete: true,
     },
     isActive: true,
+    sessionVersion: 0,
     createdAt: serverTimestamp(),
     createdBy: 'System',
   };

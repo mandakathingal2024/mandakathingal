@@ -12,6 +12,8 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
 import LoginIcon from '@mui/icons-material/Login';
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { useStateContext } from '../../../context/stateContext';
 import { useRouter } from 'next/navigation';
@@ -49,7 +51,7 @@ export default function SignInSide() {
   const [showPassword, setShowPassword] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState('');
-  const { authenticateUser, isAuthenticated, isAuthLoading } = useStateContext();
+  const { authenticateUser, isAuthenticated, isAuthLoading, logoutMessage, setLogoutMessage } = useStateContext();
   const router = useRouter();
 
   // Register service worker for PWA install (scoped to admin only)
@@ -355,6 +357,28 @@ export default function SignInSide() {
           </Box>
         </Box>
       </Box>
+
+      {/* Logout / Session expired alert */}
+      <Snackbar
+        open={!!logoutMessage}
+        autoHideDuration={5000}
+        onClose={() => setLogoutMessage('')}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setLogoutMessage('')}
+          severity={logoutMessage?.includes('successfully') ? 'success' : 'warning'}
+          variant="filled"
+          sx={{
+            width: '100%',
+            fontWeight: 600,
+            borderRadius: 2,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+          }}
+        >
+          {logoutMessage}
+        </Alert>
+      </Snackbar>
     </ThemeProvider>
   );
 }

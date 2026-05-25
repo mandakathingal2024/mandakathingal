@@ -68,7 +68,7 @@ const ROLE_CONFIG = {
 };
 
 const AdminManagement = () => {
-  const { adminUser, logActivity, updateDocument, deleteDocument } = useStateContext();
+  const { adminUser, setAdminUser, logActivity, updateDocument, deleteDocument } = useStateContext();
   const [admins, setAdmins] = React.useState([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [open, setOpen] = React.useState(false);
@@ -162,9 +162,29 @@ const AdminManagement = () => {
 
       if (isEdit) {
         const updateData = { ...adminData };
-        if (!updateData.password) delete updateData.password;
         delete updateData.docId;
+
+        // If password is being changed, bump sessionVersion to force re-login
+        if (updateData.password) {
+          const adminsRef = collection(db, 'admins');
+          const snap = await getDocs(query(adminsRef, where('id', '==', updateData.id)));
+          if (!snap.empty) {
+            const current = snap.docs[0].data();
+            updateData.sessionVersion = (current.sessionVersion || 0) + 1;
+          }
+        } else {
+          delete updateData.password;
+        }
+
         await updateDocument('admins', updateData);
+
+        // If we changed our own password, sync sessionVersion locally
+        if (updateData.password && updateData.id === adminUser?.id) {
+          const updatedSelf = { ...adminUser, sessionVersion: updateData.sessionVersion };
+          setAdminUser(updatedSelf);
+          localStorage.setItem('adminUser', JSON.stringify(updatedSelf));
+        }
+
         await logActivity('Updated', 'Admins', `Updated admin "${name}" (${ROLE_CONFIG[role]?.label})`);
         setToast({ open: true, message: 'Admin updated successfully!' });
       } else {
@@ -176,6 +196,7 @@ const AdminManagement = () => {
           role,
           permissions,
           isActive: true,
+          sessionVersion: 0,
           createdAt: serverTimestamp(),
           createdBy: adminUser?.name || 'Unknown',
         };
