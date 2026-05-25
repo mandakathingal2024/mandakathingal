@@ -54,12 +54,26 @@ const modalStyle = {
   p: 0,
 };
 
+const ACTIVITY_LOG_MODULES = [
+  { key: 'Gallery', label: 'Gallery' },
+  { key: 'Members', label: 'Members' },
+  { key: 'Events', label: 'Events' },
+  { key: 'Executives', label: 'Executives' },
+  { key: 'Gmail Access', label: 'Gmail Access' },
+  { key: 'Website Content', label: 'Website Content' },
+  { key: 'Auth', label: 'Login / Logout' },
+  { key: 'Profile', label: 'Profile Changes' },
+  { key: 'Admins', label: 'Admin Management' },
+];
+
+const ALL_MODULES = ACTIVITY_LOG_MODULES.map((m) => m.key);
+
 const EMPTY_ADMIN = {
   name: '',
   username: '',
   password: '',
   role: 'admin',
-  permissions: { add: true, edit: true, view: true, delete: false, viewActivityLog: false },
+  permissions: { add: true, edit: true, view: true, delete: false, viewActivityLog: false, activityLogModules: [] },
 };
 
 const ROLE_CONFIG = {
@@ -105,12 +119,35 @@ const AdminManagement = () => {
   };
 
   const handlePermissionChange = (perm) => {
+    const updated = { ...adminData.permissions, [perm]: !adminData.permissions[perm] };
+    // If turning off viewActivityLog, clear module selections
+    if (perm === 'viewActivityLog' && !updated.viewActivityLog) {
+      updated.activityLogModules = [];
+    }
+    // If turning on viewActivityLog with no modules selected, select all
+    if (perm === 'viewActivityLog' && updated.viewActivityLog && (!updated.activityLogModules || updated.activityLogModules.length === 0)) {
+      updated.activityLogModules = [...ALL_MODULES];
+    }
+    setAdminData({ ...adminData, permissions: updated });
+  };
+
+  const handleModuleToggle = (moduleKey) => {
+    const current = adminData.permissions.activityLogModules || [];
+    const updated = current.includes(moduleKey)
+      ? current.filter((m) => m !== moduleKey)
+      : [...current, moduleKey];
     setAdminData({
       ...adminData,
-      permissions: {
-        ...adminData.permissions,
-        [perm]: !adminData.permissions[perm],
-      },
+      permissions: { ...adminData.permissions, activityLogModules: updated },
+    });
+  };
+
+  const handleSelectAllModules = () => {
+    const current = adminData.permissions.activityLogModules || [];
+    const allSelected = current.length === ALL_MODULES.length;
+    setAdminData({
+      ...adminData,
+      permissions: { ...adminData.permissions, activityLogModules: allSelected ? [] : [...ALL_MODULES] },
     });
   };
 
@@ -118,9 +155,9 @@ const AdminManagement = () => {
     const role = e.target.value;
     let permissions;
     if (role === 'superAdmin') {
-      permissions = { add: true, edit: true, view: true, delete: true, viewActivityLog: true };
+      permissions = { add: true, edit: true, view: true, delete: true, viewActivityLog: true, activityLogModules: [...ALL_MODULES] };
     } else if (role === 'viewer') {
-      permissions = { add: false, edit: false, view: true, delete: false, viewActivityLog: false };
+      permissions = { add: false, edit: false, view: true, delete: false, viewActivityLog: false, activityLogModules: [] };
     } else {
       permissions = adminData.permissions;
     }
@@ -324,6 +361,39 @@ const AdminManagement = () => {
                   control={<Checkbox checked={adminData.permissions.viewActivityLog || false} onChange={() => handlePermissionChange('viewActivityLog')} size="small" sx={{ color: '#D4A373', '&.Mui-checked': { color: '#5C3D2E' } }} />}
                   label={<Typography variant="body2" sx={{ fontWeight: 500 }}>View Activity Log</Typography>}
                 />
+
+                {adminData.permissions.viewActivityLog && (
+                  <Box sx={{ ml: 1, mt: 0.5, pl: 2, borderLeft: '2px solid #E0D6CC' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.6rem', letterSpacing: '0.05em' }}>
+                        Visible Modules
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        onClick={handleSelectAllModules}
+                        sx={{ color: '#5C3D2E', fontWeight: 600, fontSize: '0.65rem', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                      >
+                        {(adminData.permissions.activityLogModules || []).length === ALL_MODULES.length ? 'Deselect All' : 'Select All'}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0 }}>
+                      {ACTIVITY_LOG_MODULES.map((mod) => (
+                        <FormControlLabel
+                          key={mod.key}
+                          control={
+                            <Checkbox
+                              checked={(adminData.permissions.activityLogModules || []).includes(mod.key)}
+                              onChange={() => handleModuleToggle(mod.key)}
+                              size="small"
+                              sx={{ color: '#D4A373', '&.Mui-checked': { color: '#5C3D2E' }, py: 0.3 }}
+                            />
+                          }
+                          label={<Typography variant="body2" sx={{ fontSize: '0.8rem' }}>{mod.label}</Typography>}
+                        />
+                      ))}
+                    </Box>
+                  </Box>
+                )}
               </Paper>
             )}
 

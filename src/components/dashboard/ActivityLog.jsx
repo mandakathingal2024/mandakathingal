@@ -25,6 +25,7 @@ import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../../../context/firebaseConfig';
+import { useStateContext } from '../../../context/stateContext';
 
 const ACTION_COLORS = {
   Added: { color: '#2E7D32', bg: 'rgba(46,125,50,0.08)' },
@@ -37,11 +38,15 @@ const ACTION_COLORS = {
 const ActivityLog = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { adminUser } = useStateContext();
   const [activities, setActivities] = React.useState([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [search, setSearch] = React.useState('');
   const [filterModule, setFilterModule] = React.useState('all');
   const [filterAdmin, setFilterAdmin] = React.useState('all');
+
+  const isSuperAdmin = adminUser?.role === 'superAdmin';
+  const allowedModules = isSuperAdmin ? null : (adminUser?.permissions?.activityLogModules || []);
 
   React.useEffect(() => {
     const fetchActivities = async () => {
@@ -49,7 +54,13 @@ const ActivityLog = () => {
         const activityRef = collection(db, 'activityLog');
         const q = query(activityRef, orderBy('createdAt', 'desc'));
         const snap = await getDocs(q);
-        const data = snap.docs.map((doc) => ({ docId: doc.id, ...doc.data() }));
+        let data = snap.docs.map((doc) => ({ docId: doc.id, ...doc.data() }));
+
+        // Filter by allowed modules for non-super admins
+        if (allowedModules) {
+          data = data.filter((a) => allowedModules.includes(a.module));
+        }
+
         setActivities(data);
       } catch (err) {
         console.error('Error fetching activity log:', err);
