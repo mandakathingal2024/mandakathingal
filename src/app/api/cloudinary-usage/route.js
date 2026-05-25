@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
+import { getSessionFromRequest } from '../../../lib/auth';
 
-export async function GET() {
+export async function GET(request) {
+  const session = getSessionFromRequest(request);
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   const apiKey = process.env.CLOUDINARY_API_KEY;
   const apiSecret = process.env.CLOUDINARY_API_SECRET;

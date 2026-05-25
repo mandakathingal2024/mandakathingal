@@ -85,9 +85,9 @@ export default function SignInSide() {
     setError('');
     setIsLoading(true);
     try {
-      const success = await authenticateUser(credentials);
-      if (!success) {
-        setError('Invalid username or password. Please try again.');
+      const result = await authenticateUser(credentials);
+      if (!result.success) {
+        setError(result.error || 'Invalid username or password. Please try again.');
       }
     } catch (err) {
       setError('Something went wrong. Please try again.');

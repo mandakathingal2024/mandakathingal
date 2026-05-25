@@ -140,8 +140,8 @@ const ProfileAdmin = () => {
       setPasswordError('Please enter a new password.');
       return;
     }
-    if (passwords.newPass.length < 4) {
-      setPasswordError('New password must be at least 4 characters.');
+    if (passwords.newPass.length < 6) {
+      setPasswordError('New password must be at least 6 characters.');
       return;
     }
     if (passwords.newPass !== passwords.confirm) {
@@ -151,21 +151,48 @@ const ProfileAdmin = () => {
 
     setIsSavingPassword(true);
     try {
+      const token = localStorage.getItem('adminToken');
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      // Verify current password server-side (supports bcrypt + legacy)
+      const verifyRes = await fetch('/api/admin/verify-password', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ currentPassword: passwords.current, adminId: adminUser.id, username: adminUser.username }),
+      });
+      const verifyData = await verifyRes.json();
+      if (!verifyData.valid) {
+        setPasswordError(verifyData.error || 'Current password is incorrect.');
+        setIsSavingPassword(false);
+        return;
+      }
+
+      // Hash new password server-side
+      const hashRes = await fetch('/api/admin/hash-password', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ password: passwords.newPass }),
+      });
+      const hashData = await hashRes.json();
+      if (!hashData.hashed) {
+        setPasswordError(hashData.error || 'Failed to process new password.');
+        setIsSavingPassword(false);
+        return;
+      }
+
+      // Update Firestore with hashed password
       const adminDoc = await findAdminDoc();
       if (!adminDoc) {
         setPasswordError('Admin account not found. Please log out and log back in.');
+        setIsSavingPassword(false);
         return;
       }
 
       const currentData = adminDoc.data();
-      if (currentData.password !== passwords.current) {
-        setPasswordError('Current password is incorrect.');
-        return;
-      }
-
       const newVersion = (currentData.sessionVersion || 0) + 1;
       const docRef = doc(db, adminDoc.ref.path);
-      await updateDoc(docRef, { password: passwords.newPass, sessionVersion: newVersion });
+      await updateDoc(docRef, { password: hashData.hashed, sessionVersion: newVersion });
 
       // Update own session version so we don't get force-logged out
       const updatedAdmin = { ...adminUser, sessionVersion: newVersion };
@@ -177,7 +204,6 @@ const ProfileAdmin = () => {
       setShowPasswordSection(false);
       setToast({ open: true, message: 'Password changed successfully!' });
     } catch (err) {
-      console.error('Error changing password:', err);
       setPasswordError('Something went wrong. Please try again.');
     } finally {
       setIsSavingPassword(false);

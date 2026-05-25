@@ -1,6 +1,8 @@
 'use server'
 import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
+import bcrypt from 'bcryptjs';
+import { createSessionToken, buildSessionCookie } from '../../../lib/auth';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -19,8 +21,68 @@ function getDb() {
   return getFirestore(app);
 }
 
+// Simple in-memory rate limiter (resets on serverless cold start)
+const loginAttempts = new Map();
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_MS = 5 * 60 * 1000; // 5 minutes
+
+function checkRateLimit(username) {
+  const key = username.toLowerCase();
+  const record = loginAttempts.get(key);
+  if (!record) return { allowed: true };
+
+  if (record.lockedUntil && Date.now() < record.lockedUntil) {
+    const remainingSec = Math.ceil((record.lockedUntil - Date.now()) / 1000);
+    return { allowed: false, remainingSec };
+  }
+
+  // Reset if lockout expired
+  if (record.lockedUntil && Date.now() >= record.lockedUntil) {
+    loginAttempts.delete(key);
+    return { allowed: true };
+  }
+
+  if (record.count >= MAX_ATTEMPTS) {
+    record.lockedUntil = Date.now() + LOCKOUT_MS;
+    return { allowed: false, remainingSec: Math.ceil(LOCKOUT_MS / 1000) };
+  }
+
+  return { allowed: true };
+}
+
+function recordFailedAttempt(username) {
+  const key = username.toLowerCase();
+  const record = loginAttempts.get(key) || { count: 0 };
+  record.count += 1;
+  if (record.count >= MAX_ATTEMPTS) {
+    record.lockedUntil = Date.now() + LOCKOUT_MS;
+  }
+  loginAttempts.set(key, record);
+}
+
+function clearAttempts(username) {
+  loginAttempts.delete(username.toLowerCase());
+}
+
 export async function POST(request) {
   const req = await request.json();
+
+  if (!req.userName || !req.password) {
+    return new Response(JSON.stringify({ isAuthenticated: false }), { status: 200 });
+  }
+
+  // Rate limit check
+  const rateCheck = checkRateLimit(req.userName);
+  if (!rateCheck.allowed) {
+    return new Response(
+      JSON.stringify({
+        isAuthenticated: false,
+        error: `Too many login attempts. Please try again in ${rateCheck.remainingSec} seconds.`,
+        locked: true,
+      }),
+      { status: 429 }
+    );
+  }
 
   try {
     const db = getDb();
@@ -29,24 +91,61 @@ export async function POST(request) {
     const snapshot = await getDocs(q);
 
     if (!snapshot.empty) {
-      const admin = snapshot.docs[0].data();
+      const adminDoc = snapshot.docs[0];
+      const admin = adminDoc.data();
 
-      if (admin.password === req.password && admin.isActive !== false) {
+      if (admin.isActive === false) {
+        recordFailedAttempt(req.userName);
+        return new Response(JSON.stringify({ isAuthenticated: false }), { status: 200 });
+      }
+
+      // Support both hashed and legacy plaintext passwords
+      let passwordValid = false;
+      if (admin.password.startsWith('$2a$') || admin.password.startsWith('$2b$')) {
+        // Bcrypt hashed password
+        passwordValid = await bcrypt.compare(req.password, admin.password);
+      } else {
+        // Legacy plaintext — verify and auto-migrate to bcrypt
+        passwordValid = admin.password === req.password;
+        if (passwordValid) {
+          try {
+            const hashed = await bcrypt.hash(req.password, 10);
+            const docRef = doc(db, adminDoc.ref.path);
+            await updateDoc(docRef, { password: hashed });
+          } catch (e) {
+            console.error('Auto-hash migration failed:', e);
+          }
+        }
+      }
+
+      if (passwordValid) {
+        clearAttempts(req.userName);
+
+        const adminData = {
+          id: admin.id,
+          name: admin.name,
+          username: admin.username,
+          role: admin.role,
+          permissions: admin.permissions || { add: true, edit: true, view: true, delete: true },
+          sessionVersion: admin.sessionVersion || 0,
+        };
+
+        // Create signed session token
+        const token = createSessionToken(adminData);
+
         const data = {
           isAuthenticated: true,
-          admin: {
-            id: admin.id,
-            name: admin.name,
-            username: admin.username,
-            role: admin.role,
-            permissions: admin.permissions || { add: true, edit: true, view: true, delete: true },
-            sessionVersion: admin.sessionVersion || 0,
-          },
+          admin: adminData,
+          token, // Client stores this for API calls
         };
-        return new Response(JSON.stringify(data), { status: 200 });
+
+        const response = new Response(JSON.stringify(data), { status: 200 });
+        response.headers.set('Set-Cookie', buildSessionCookie(token));
+        return response;
       }
     }
 
+    recordFailedAttempt(req.userName);
     return new Response(JSON.stringify({ isAuthenticated: false }), { status: 200 });
   } catch (error) {
     console.error('Authentication error:', error);

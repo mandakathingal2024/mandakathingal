@@ -219,6 +219,12 @@ const AdminManagement = () => {
     const { name, username, password, role, permissions } = adminData;
     if (!name || !username || (!isEdit && !password)) return;
 
+    // Enforce minimum password length
+    if (password && password.length < 6) {
+      alert('Password must be at least 6 characters.');
+      return;
+    }
+
     setIsSaving(true);
     try {
       // Check if username already exists (for both add and edit)
@@ -229,12 +235,34 @@ const AdminManagement = () => {
         return;
       }
 
+      // Hash password server-side if provided
+      let hashedPassword = null;
+      if (password) {
+        const token = localStorage.getItem('adminToken');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const hashRes = await fetch('/api/admin/hash-password', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ password }),
+        });
+        const hashData = await hashRes.json();
+        if (!hashData.hashed) {
+          alert(hashData.error || 'Failed to hash password.');
+          setIsSaving(false);
+          return;
+        }
+        hashedPassword = hashData.hashed;
+      }
+
       if (isEdit) {
         const updateData = { ...adminData };
         delete updateData.docId;
 
-        // If password is being changed, bump sessionVersion to force re-login
-        if (updateData.password) {
+        // If password is being changed, store hashed version and bump sessionVersion
+        if (hashedPassword) {
+          updateData.password = hashedPassword;
           const adminsRef = collection(db, 'admins');
           const snap = await getDocs(query(adminsRef, where('id', '==', updateData.id)));
           if (!snap.empty) {
@@ -248,7 +276,7 @@ const AdminManagement = () => {
         await updateDocument('admins', updateData);
 
         // If we changed our own password, sync sessionVersion locally
-        if (updateData.password && updateData.id === adminUser?.id) {
+        if (hashedPassword && updateData.id === adminUser?.id) {
           const updatedSelf = { ...adminUser, sessionVersion: updateData.sessionVersion };
           setAdminUser(updatedSelf);
           localStorage.setItem('adminUser', JSON.stringify(updatedSelf));
@@ -261,7 +289,7 @@ const AdminManagement = () => {
           id: uuidv4(),
           name,
           username,
-          password,
+          password: hashedPassword,
           role,
           permissions,
           isActive: true,

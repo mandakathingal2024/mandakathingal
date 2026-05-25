@@ -107,19 +107,22 @@ export const StateContext =({children})=>{
         localStorage.setItem('adminUser', JSON.stringify(updatedAdmin))
         setIsAuthLoading(false)
       } catch (error) {
-        console.error('Session verification error:', error)
         // On network error, allow existing session to continue
         setIsAuthLoading(false)
       }
     }
 
     function forceLogout(message) {
+      // Clear server-side session cookie
+      fetch('/api/logout', { method: 'POST' }).catch(() => {})
+
       setIsAuthenticated(false)
       setPageValue(0)
       setAdminUser(null)
       localStorage.removeItem('adminAuth')
       localStorage.removeItem('adminPage')
       localStorage.removeItem('adminUser')
+      localStorage.removeItem('adminToken')
       localStorage.setItem('logoutMessage', message)
       setLogoutMessage(message)
       setIsAuthLoading(false)
@@ -144,16 +147,24 @@ export const StateContext =({children})=>{
 
         try {
           const response = await fetch(url, options);
-          if (!response.ok) {
-            throw new Error(`Error: ${response.statusText}`);
-          }
           const responseData = await response.json();
+
+          // Handle rate limiting (429)
+          if (response.status === 429) {
+            return { success: false, error: responseData.error, locked: true };
+          }
+
           setIsAuthenticated(responseData.isAuthenticated)
           if (responseData.isAuthenticated) {
             localStorage.setItem('adminAuth', 'true')
             if (responseData.admin) {
               setAdminUser(responseData.admin)
               localStorage.setItem('adminUser', JSON.stringify(responseData.admin))
+
+              // Store session token for API authorization
+              if (responseData.token) {
+                localStorage.setItem('adminToken', responseData.token)
+              }
 
               // Log login activity
               try {
@@ -168,14 +179,13 @@ export const StateContext =({children})=>{
                   createdAt: serverTimestamp(),
                 })
               } catch (e) {
-                console.error('Error logging login activity:', e)
+                // Activity logging is non-critical
               }
             }
           }
-          return responseData.isAuthenticated;
+          return { success: responseData.isAuthenticated };
         } catch (error) {
-          console.error('Error:', error.message);
-          return false;
+          return { success: false, error: 'Something went wrong. Please try again.' };
         }
     }
     async function addMember(obj) {
@@ -183,51 +193,42 @@ export const StateContext =({children})=>{
         const membersCollectionRef = collection(db, "members");
         const uniqueId = uuidv4();
         const docRef = await addDoc(membersCollectionRef, {...obj, id: uniqueId, createdAt: serverTimestamp()});
-        console.log("Document written with ID: ", docRef.id);
       } catch (error) {
         console.error("Error adding document: ", error);
       }
     }
     async function addGallery(obj) {
       try {
-        console.log(obj);
-        const galleryCollectionRef = collection(db, "gallery"); // Get a reference to the 'members' collection
+        const galleryCollectionRef = collection(db, "gallery");
         const uniqueId = uuidv4();
-        const docRef = await addDoc(galleryCollectionRef, {...obj,id:uniqueId}); // Add the object to the collection, generating a unique ID
-        console.log("Document written with ID: ", docRef.id); // Log the generated ID
+        const docRef = await addDoc(galleryCollectionRef, {...obj,id:uniqueId});
       } catch (error) {
         console.error("Error adding document: ", error);
       }
     }
     async function addEvent(obj) {
       try {
-        console.log(obj);
         const eventCollectionRef = collection(db, "events");
         const uniqueId = uuidv4();
         const docRef = await addDoc(eventCollectionRef, {...obj, id: uniqueId, createdAt: serverTimestamp()});
-        console.log("Document written with ID: ", docRef.id);
       } catch (error) {
         console.error("Error adding document: ", error);
       }
     }
     async function addExecutive(obj) {
       try {
-        console.log(obj);
-        const executiveCollectionRef = collection(db, "executives"); // Get a reference to the 'members' collection
+        const executiveCollectionRef = collection(db, "executives");
         const uniqueId = uuidv4();
-        const docRef = await addDoc(executiveCollectionRef, {...obj,id:uniqueId}); // Add the object to the collection, generating a unique ID
-        console.log("Document written with ID: ", docRef.id); // Log the generated ID
+        const docRef = await addDoc(executiveCollectionRef, {...obj,id:uniqueId});
       } catch (error) {
         console.error("Error adding document: ", error);
       }
     }
     async function addGmail(obj) {
       try {
-        console.log(obj);
-        const gmailCollectionRef = collection(db, "gmail"); // Get a reference to the 'members' collection
+        const gmailCollectionRef = collection(db, "gmail");
         const uniqueId = uuidv4();
-        const docRef = await addDoc(gmailCollectionRef, {...obj,id:uniqueId}); // Add the object to the collection, generating a unique ID
-        console.log("Document written with ID: ", docRef.id); // Log the generated ID
+        const docRef = await addDoc(gmailCollectionRef, {...obj,id:uniqueId});
       } catch (error) {
         console.error("Error adding document: ", error);
       }
@@ -248,15 +249,24 @@ export const StateContext =({children})=>{
             createdAt: serverTimestamp(),
           })
         } catch (e) {
-          console.error('Error logging logout activity:', e)
+          // Activity logging is non-critical
         }
       }
+
+      // Clear server-side session cookie
+      try {
+        await fetch('/api/logout', { method: 'POST' })
+      } catch (e) {
+        // Continue with local cleanup even if server call fails
+      }
+
       setIsAuthenticated(false)
       setPageValue(0)
       setAdminUser(null)
       localStorage.removeItem('adminAuth')
       localStorage.removeItem('adminPage')
       localStorage.removeItem('adminUser')
+      localStorage.removeItem('adminToken')
       localStorage.setItem('logoutMessage', 'You have been logged out successfully.')
     }
 
@@ -286,8 +296,6 @@ export const StateContext =({children})=>{
     }
 
     async function searchMembersByName(inputString) {
-      console.log('search');
-      
       if(inputString!==''){
         const membersCollectionRef = collection(db, "members");
       
@@ -307,10 +315,8 @@ export const StateContext =({children})=>{
           const foundDocuments = [];
       
           querySnapshot.forEach((doc) => {
-            foundDocuments.push(doc.data()); // Add the document data to the array
+            foundDocuments.push(doc.data());
           });
-          console.log(foundDocuments);
-          
           return foundDocuments; // Return the array of found documents
         } catch (error) {
           console.error("Error searching members: ", error);
@@ -334,7 +340,6 @@ export const StateContext =({children})=>{
         querySnapshot.forEach((doc) => {
           membersArray.push({ id: doc.id, ...doc.data() });
         });
-        console.log(membersArray);
         setNewBranchData(membersArray)
         setMembers(membersArray)
         return membersArray;
@@ -417,7 +422,6 @@ export const StateContext =({children})=>{
             id: doc.id,
             ...doc.data(),
           }));
-          console.log(eventsData);
           setEvents(eventsData)
           return eventsData;
         } catch (error) {
@@ -434,7 +438,6 @@ export const StateContext =({children})=>{
             id: doc.id,
             ...doc.data(),
           }));
-          console.log(galleryData);
           setGallery(galleryData)
           return galleryData;
         } catch (error) {
@@ -451,7 +454,6 @@ export const StateContext =({children})=>{
             id: doc.id,
             ...doc.data(),
           }));
-          console.log(executivesData);
           setExecutives(executivesData)
           return executivesData;
         } catch (error) {
@@ -468,7 +470,6 @@ export const StateContext =({children})=>{
             id: doc.id,
             ...doc.data(),
           }));
-          console.log(gmailData);
           setGmail(gmailData)
           return gmailData;
         } catch (error) {
@@ -484,7 +485,6 @@ export const StateContext =({children})=>{
           if (!querySnapshot.empty) {
             querySnapshot.forEach(async (doc) => {
               await deleteDoc(doc.ref);
-              console.log('Document deleted successfully!');
             });
             if(collectionName==='gallery'){
               setGallery((gallery)=>{
@@ -511,16 +511,12 @@ export const StateContext =({children})=>{
               if (!querySnapshotMembers.empty){
                 querySnapshotMembers.forEach(async (doc) => {
                   await deleteDocument('members',doc.data().id);
-                  console.log(doc.data().name);
-                  console.log(doc.data().uniqueText);
                 });
               }
               setMembers((members)=>{
                 return members?.filter((member)=>member.id!==id)
               })
             }
-          } else {
-            console.log('No documents found matching the criteria.');
           }
         } catch (error) {
           console.error('Error deleting document:', error);
@@ -558,10 +554,6 @@ export const StateContext =({children})=>{
       
             // Update the document
             await updateDoc(docRef, updatedData);
-      
-            console.log("Document updated successfully!");
-          } else {
-            console.log("Document not found.");
           }
         } catch (error) {
           console.error("Error updating document:", error);   
@@ -578,9 +570,6 @@ export const StateContext =({children})=>{
           if (!querySnapshot.empty) {
             const docRef = doc(db, querySnapshot.docs[0].ref.path);
             await updateDoc(docRef, updatedData);
-            console.log(`${collectionName} document updated successfully!`);
-          } else {
-            console.log("Document not found.");
           }
         } catch (error) {
           console.error("Error updating document:", error);
@@ -592,10 +581,9 @@ export const StateContext =({children})=>{
         try {
           // Try popup first (works on most mobile and all desktop browsers)
           const res = await signInWithPopup(auth, provider)
-          console.log('Popup sign-in success:', res.user.email)
           setuser({ gmail: res.user.email })
         } catch (error) {
-          console.error('Popup sign-in failed, trying redirect:', error.code)
+          // Popup blocked or closed — fall back to redirect
           // Popup blocked or closed — fall back to redirect
           if (error.code === 'auth/popup-blocked' ||
               error.code === 'auth/popup-closed-by-user' ||
@@ -603,10 +591,8 @@ export const StateContext =({children})=>{
             try {
               await signInWithRedirect(auth, provider)
             } catch (redirectError) {
-              console.error('Redirect sign-in also failed:', redirectError)
+              // Redirect failed silently
             }
-          } else {
-            console.error('Google sign-in error:', error)
           }
         }
       }
@@ -652,11 +638,9 @@ export const StateContext =({children})=>{
       useEffect(()=>{
         getRedirectResult(auth).then((result) => {
           if(result && result.user){
-            console.log('Redirect result received:', result.user.email)
             setuser({ gmail: result.user.email })
           }
-        }).catch((error) => {
-          console.error('Redirect sign-in error:', error)
+        }).catch(() => {
           setIsGmailLoading(false)
         })
       },[])
@@ -665,10 +649,8 @@ export const StateContext =({children})=>{
       useEffect(()=>{
         const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
           if(firebaseUser){
-            console.log('Auth state changed - signed in:', firebaseUser.email)
             setuser({ gmail: firebaseUser.email })
           } else {
-            console.log('Auth state changed - no user')
             setuser(null)
             setIsGmailAuthenticated(false)
             setIsGmailLoading(false)

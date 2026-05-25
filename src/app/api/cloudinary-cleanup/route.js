@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
+import { getSessionFromRequest } from '../../../lib/auth';
 
 // Initialize Firebase Admin (reuse if already initialized)
 function getAdminDb() {
@@ -74,7 +75,11 @@ async function getAllImageUrls(db) {
 }
 
 // GET: Scan and return orphaned images (dry run)
-export async function GET() {
+export async function GET(request) {
+  const session = getSessionFromRequest(request);
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   const apiKey = process.env.CLOUDINARY_API_KEY;
   const apiSecret = process.env.CLOUDINARY_API_SECRET;
@@ -123,7 +128,11 @@ export async function GET() {
 }
 
 // POST: Delete all orphaned images
-export async function POST() {
+export async function POST(request) {
+  const session = getSessionFromRequest(request);
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   const apiKey = process.env.CLOUDINARY_API_KEY;
   const apiSecret = process.env.CLOUDINARY_API_SECRET;
