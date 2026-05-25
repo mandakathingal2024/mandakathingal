@@ -32,6 +32,7 @@ const ListItems = ({ onNavigate, onLogout, installPrompt, onInstall }) => {
   const { setPageValue, pageValue, adminUser } = useStateContext();
 
   const isSuperAdmin = adminUser?.role === 'superAdmin';
+  const canViewActivityLog = isSuperAdmin || adminUser?.permissions?.viewActivityLog;
 
   const navigate = (page) => {
     setPageValue(page);
@@ -91,7 +92,7 @@ const ListItems = ({ onNavigate, onLogout, installPrompt, onInstall }) => {
         />
       </ListItemButton>
 
-      {/* Super Admin only sections */}
+      {/* Super Admin only: Admin Management */}
       {isSuperAdmin && (
         <>
           <Divider sx={{ borderColor: 'rgba(255,255,255,0.08)', my: 1.5, mx: 2 }} />
@@ -112,7 +113,13 @@ const ListItems = ({ onNavigate, onLogout, installPrompt, onInstall }) => {
               }}
             />
           </ListItemButton>
+        </>
+      )}
 
+      {/* Activity Log: Super Admin + admins with viewActivityLog permission */}
+      {canViewActivityLog && (
+        <>
+          {!isSuperAdmin && <Divider sx={{ borderColor: 'rgba(255,255,255,0.08)', my: 1.5, mx: 2 }} />}
           <ListItemButton
             onClick={() => navigate(8)}
             sx={{ ...defaultStyle, ...(pageValue === 8 ? activeStyle : {}) }}

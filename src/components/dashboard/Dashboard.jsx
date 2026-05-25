@@ -263,7 +263,7 @@ export default function Dashboard() {
           {pageValue === 5 && <GmailAccessAdmin />}
           {pageValue === 6 && <WebsiteContentAdmin />}
           {pageValue === 7 && adminUser?.role === 'superAdmin' && <AdminManagement />}
-          {pageValue === 8 && adminUser?.role === 'superAdmin' && <ActivityLog />}
+          {pageValue === 8 && (adminUser?.role === 'superAdmin' || adminUser?.permissions?.viewActivityLog) && <ActivityLog />}
           {pageValue === 9 && <ProfileAdmin />}
         </Box>
       </Box>

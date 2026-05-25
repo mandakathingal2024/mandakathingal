@@ -17,8 +17,12 @@ import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import CircularProgress from '@mui/material/CircularProgress';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { useTheme } from '@mui/material/styles';
 import SearchIcon from '@mui/icons-material/Search';
 import HistoryIcon from '@mui/icons-material/History';
+import LoginIcon from '@mui/icons-material/Login';
+import LogoutIcon from '@mui/icons-material/Logout';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../../../context/firebaseConfig';
 
@@ -26,9 +30,13 @@ const ACTION_COLORS = {
   Added: { color: '#2E7D32', bg: 'rgba(46,125,50,0.08)' },
   Updated: { color: '#1565C0', bg: 'rgba(21,101,192,0.08)' },
   Deleted: { color: '#B71C1C', bg: 'rgba(183,28,28,0.08)' },
+  'Logged In': { color: '#6A1B9A', bg: 'rgba(106,27,154,0.08)' },
+  'Logged Out': { color: '#E65100', bg: 'rgba(230,81,0,0.08)' },
 };
 
 const ActivityLog = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [activities, setActivities] = React.useState([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [search, setSearch] = React.useState('');
@@ -92,13 +100,9 @@ const ActivityLog = () => {
     const now = new Date();
     const diff = now - date;
 
-    // Less than 1 minute
     if (diff < 60 * 1000) return 'Just now';
-    // Less than 1 hour
     if (diff < 60 * 60 * 1000) return `${Math.floor(diff / (60 * 1000))}m ago`;
-    // Less than 24 hours
     if (diff < 24 * 60 * 60 * 1000) return `${Math.floor(diff / (60 * 60 * 1000))}h ago`;
-    // Less than 7 days
     if (diff < 7 * 24 * 60 * 60 * 1000) return `${Math.floor(diff / (24 * 60 * 60 * 1000))}d ago`;
 
     return date.toLocaleDateString('en-IN', {
@@ -110,16 +114,46 @@ const ActivityLog = () => {
     });
   };
 
+  const formatFullTime = (timestamp) => {
+    if (!timestamp?.seconds) return '—';
+    const date = new Date(timestamp.seconds * 1000);
+    return date.toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const getActionIcon = (action) => {
+    if (action === 'Logged In') return <LoginIcon sx={{ fontSize: 14 }} />;
+    if (action === 'Logged Out') return <LogoutIcon sx={{ fontSize: 14 }} />;
+    return null;
+  };
+
+  const emptyState = (
+    <Box sx={{ p: 6, textAlign: 'center' }}>
+      <HistoryIcon sx={{ fontSize: 48, color: '#D4A373', mb: 1 }} />
+      <Typography variant="h6" sx={{ color: 'text.secondary', mb: 0.5 }}>
+        {search || filterModule !== 'all' || filterAdmin !== 'all' ? 'No matching activities' : 'No activities yet'}
+      </Typography>
+      <Typography variant="body2" color="text.secondary">
+        {search ? 'Try a different search term.' : 'Activities will appear here as admins perform actions.'}
+      </Typography>
+    </Box>
+  );
+
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3 } }}>
       <Box sx={{ mb: 3 }}>
-        <Typography variant="h5">Activity Log</Typography>
+        <Typography variant="h5" sx={{ fontSize: { xs: '1.3rem', sm: '1.5rem' } }}>Activity Log</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
           Track all admin actions across the dashboard
         </Typography>
       </Box>
 
-      <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', alignItems: 'center' }}>
+      <Box sx={{ display: 'flex', gap: 1.5, mb: 3, flexWrap: 'wrap', alignItems: 'center' }}>
         <TextField
           placeholder="Search activities..."
           value={search}
@@ -134,43 +168,80 @@ const ActivityLog = () => {
             ),
           }}
         />
-        <FormControl size="small" sx={{ minWidth: 150 }}>
-          <InputLabel>Module</InputLabel>
-          <Select value={filterModule} label="Module" onChange={(e) => setFilterModule(e.target.value)}>
-            <MenuItem value="all">All Modules</MenuItem>
-            {uniqueModules.map((m) => (
-              <MenuItem key={m} value={m}>{m}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <FormControl size="small" sx={{ minWidth: 150 }}>
-          <InputLabel>Admin</InputLabel>
-          <Select value={filterAdmin} label="Admin" onChange={(e) => setFilterAdmin(e.target.value)}>
-            <MenuItem value="all">All Admins</MenuItem>
-            {uniqueAdmins.map((a) => (
-              <MenuItem key={a} value={a}>{a}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <Box sx={{ display: 'flex', gap: 1.5, flexGrow: { xs: 1, sm: 0 } }}>
+          <FormControl size="small" sx={{ minWidth: { xs: 0, sm: 150 }, flex: { xs: 1, sm: 'none' } }}>
+            <InputLabel>Module</InputLabel>
+            <Select value={filterModule} label="Module" onChange={(e) => setFilterModule(e.target.value)}>
+              <MenuItem value="all">All Modules</MenuItem>
+              {uniqueModules.map((m) => (
+                <MenuItem key={m} value={m}>{m}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl size="small" sx={{ minWidth: { xs: 0, sm: 150 }, flex: { xs: 1, sm: 'none' } }}>
+            <InputLabel>Admin</InputLabel>
+            <Select value={filterAdmin} label="Admin" onChange={(e) => setFilterAdmin(e.target.value)}>
+              <MenuItem value="all">All Admins</MenuItem>
+              {uniqueAdmins.map((a) => (
+                <MenuItem key={a} value={a}>{a}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
       </Box>
 
-      <Paper sx={{ overflow: 'hidden' }}>
-        {isLoading ? (
-          <Box sx={{ p: 6, textAlign: 'center' }}>
-            <CircularProgress size={32} sx={{ color: '#D4A373' }} />
-            <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>Loading activity log...</Typography>
-          </Box>
-        ) : filteredActivities.length === 0 ? (
-          <Box sx={{ p: 6, textAlign: 'center' }}>
-            <HistoryIcon sx={{ fontSize: 48, color: '#D4A373', mb: 1 }} />
-            <Typography variant="h6" sx={{ color: 'text.secondary', mb: 0.5 }}>
-              {search || filterModule !== 'all' || filterAdmin !== 'all' ? 'No matching activities' : 'No activities yet'}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {search ? 'Try a different search term.' : 'Activities will appear here as admins perform actions.'}
-            </Typography>
-          </Box>
-        ) : (
+      {isLoading ? (
+        <Paper sx={{ p: 6, textAlign: 'center' }}>
+          <CircularProgress size={32} sx={{ color: '#D4A373' }} />
+          <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>Loading activity log...</Typography>
+        </Paper>
+      ) : filteredActivities.length === 0 ? (
+        <Paper>{emptyState}</Paper>
+      ) : isMobile ? (
+        /* Mobile Card Layout */
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {filteredActivities.map((row, index) => (
+            <Paper key={row.id || index} sx={{ p: 2, borderLeft: `3px solid ${ACTION_COLORS[row.action]?.color || '#9E9E9E'}` }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 700, fontSize: '0.85rem' }}>
+                    {row.adminName}
+                  </Typography>
+                  <Chip
+                    icon={getActionIcon(row.action)}
+                    label={row.action}
+                    size="small"
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: '0.6rem',
+                      height: 22,
+                      backgroundColor: ACTION_COLORS[row.action]?.bg || 'rgba(0,0,0,0.06)',
+                      color: ACTION_COLORS[row.action]?.color || 'text.primary',
+                      '& .MuiChip-icon': { color: 'inherit', fontSize: 14 },
+                    }}
+                  />
+                </Box>
+                <Chip
+                  label={row.module}
+                  size="small"
+                  variant="outlined"
+                  sx={{ fontSize: '0.6rem', height: 20, borderColor: '#E0D6CC', color: 'text.secondary' }}
+                />
+              </Box>
+              {row.details && (
+                <Typography variant="body2" sx={{ fontSize: '0.8rem', color: 'text.secondary', mb: 0.5 }}>
+                  {row.details}
+                </Typography>
+              )}
+              <Typography variant="caption" sx={{ color: '#9B8B7E', fontSize: '0.7rem' }}>
+                {formatFullTime(row.createdAt)}
+              </Typography>
+            </Paper>
+          ))}
+        </Box>
+      ) : (
+        /* Desktop Table Layout */
+        <Paper sx={{ overflow: 'hidden' }}>
           <Box sx={{ overflowX: 'auto' }}>
             <Table size="small">
               <TableHead>
@@ -178,7 +249,7 @@ const ActivityLog = () => {
                   <TableCell>Admin</TableCell>
                   <TableCell>Action</TableCell>
                   <TableCell>Module</TableCell>
-                  <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Details</TableCell>
+                  <TableCell>Details</TableCell>
                   <TableCell align="right">Time</TableCell>
                 </TableRow>
               </TableHead>
@@ -192,6 +263,7 @@ const ActivityLog = () => {
                     </TableCell>
                     <TableCell>
                       <Chip
+                        icon={getActionIcon(row.action)}
                         label={row.action}
                         size="small"
                         sx={{
@@ -199,6 +271,7 @@ const ActivityLog = () => {
                           fontSize: '0.65rem',
                           backgroundColor: ACTION_COLORS[row.action]?.bg || 'rgba(0,0,0,0.06)',
                           color: ACTION_COLORS[row.action]?.color || 'text.primary',
+                          '& .MuiChip-icon': { color: 'inherit' },
                         }}
                       />
                     </TableCell>
@@ -207,7 +280,7 @@ const ActivityLog = () => {
                         {row.module}
                       </Typography>
                     </TableCell>
-                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' }, maxWidth: 300 }}>
+                    <TableCell sx={{ maxWidth: 300 }}>
                       <Typography variant="body2" sx={{ fontSize: '0.8rem', color: 'text.secondary', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {row.details}
                       </Typography>
@@ -222,8 +295,8 @@ const ActivityLog = () => {
               </TableBody>
             </Table>
           </Box>
-        )}
-      </Paper>
+        </Paper>
+      )}
     </Container>
   );
 };

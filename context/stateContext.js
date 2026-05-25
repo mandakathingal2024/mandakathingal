@@ -154,6 +154,22 @@ export const StateContext =({children})=>{
             if (responseData.admin) {
               setAdminUser(responseData.admin)
               localStorage.setItem('adminUser', JSON.stringify(responseData.admin))
+
+              // Log login activity
+              try {
+                const activityRef = collection(db, 'activityLog')
+                await addDoc(activityRef, {
+                  id: uuidv4(),
+                  adminId: responseData.admin.id,
+                  adminName: responseData.admin.name,
+                  action: 'Logged In',
+                  module: 'Auth',
+                  details: `${responseData.admin.name} logged in`,
+                  createdAt: serverTimestamp(),
+                })
+              } catch (e) {
+                console.error('Error logging login activity:', e)
+              }
             }
           }
           return responseData.isAuthenticated;
@@ -217,7 +233,24 @@ export const StateContext =({children})=>{
       }
     }
  
-    const handleLogOut=()=>{
+    const handleLogOut=async()=>{
+      // Log logout activity before clearing session
+      if (adminUser) {
+        try {
+          const activityRef = collection(db, 'activityLog')
+          await addDoc(activityRef, {
+            id: uuidv4(),
+            adminId: adminUser.id,
+            adminName: adminUser.name,
+            action: 'Logged Out',
+            module: 'Auth',
+            details: `${adminUser.name} logged out`,
+            createdAt: serverTimestamp(),
+          })
+        } catch (e) {
+          console.error('Error logging logout activity:', e)
+        }
+      }
       setIsAuthenticated(false)
       setPageValue(0)
       setAdminUser(null)

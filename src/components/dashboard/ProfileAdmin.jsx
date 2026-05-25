@@ -239,6 +239,7 @@ const ProfileAdmin = () => {
             { key: 'add', label: 'Add' },
             { key: 'edit', label: 'Edit' },
             { key: 'delete', label: 'Delete' },
+            { key: 'viewActivityLog', label: 'Activity Log' },
           ].map((perm) => {
             const has = adminUser.role === 'superAdmin' || adminUser.permissions?.[perm.key];
             return (

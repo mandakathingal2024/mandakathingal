@@ -21,6 +21,7 @@ import InputLabel from '@mui/material/InputLabel';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import Chip from '@mui/material/Chip';
+import Divider from '@mui/material/Divider';
 import Tooltip from '@mui/material/Tooltip';
 import InputAdornment from '@mui/material/InputAdornment';
 import AddIcon from '@mui/icons-material/Add';
@@ -58,7 +59,7 @@ const EMPTY_ADMIN = {
   username: '',
   password: '',
   role: 'admin',
-  permissions: { add: true, edit: true, view: true, delete: false },
+  permissions: { add: true, edit: true, view: true, delete: false, viewActivityLog: false },
 };
 
 const ROLE_CONFIG = {
@@ -117,9 +118,9 @@ const AdminManagement = () => {
     const role = e.target.value;
     let permissions;
     if (role === 'superAdmin') {
-      permissions = { add: true, edit: true, view: true, delete: true };
+      permissions = { add: true, edit: true, view: true, delete: true, viewActivityLog: true };
     } else if (role === 'viewer') {
-      permissions = { add: false, edit: false, view: true, delete: false };
+      permissions = { add: false, edit: false, view: true, delete: false, viewActivityLog: false };
     } else {
       permissions = adminData.permissions;
     }
@@ -318,6 +319,11 @@ const AdminManagement = () => {
                     label={<Typography variant="body2">Delete</Typography>}
                   />
                 </Box>
+                <Divider sx={{ my: 1.5, borderColor: '#E0D6CC' }} />
+                <FormControlLabel
+                  control={<Checkbox checked={adminData.permissions.viewActivityLog || false} onChange={() => handlePermissionChange('viewActivityLog')} size="small" sx={{ color: '#D4A373', '&.Mui-checked': { color: '#5C3D2E' } }} />}
+                  label={<Typography variant="body2" sx={{ fontWeight: 500 }}>View Activity Log</Typography>}
+                />
               </Paper>
             )}
 
@@ -422,6 +428,7 @@ const AdminManagement = () => {
                             {row.permissions?.add && <Chip label="Add" size="small" variant="outlined" sx={{ height: 22, fontSize: '0.6rem' }} />}
                             {row.permissions?.edit && <Chip label="Edit" size="small" variant="outlined" sx={{ height: 22, fontSize: '0.6rem' }} />}
                             {row.permissions?.delete && <Chip label="Delete" size="small" variant="outlined" sx={{ height: 22, fontSize: '0.6rem' }} />}
+                            {row.permissions?.viewActivityLog && <Chip label="Activity Log" size="small" variant="outlined" sx={{ height: 22, fontSize: '0.6rem', borderColor: '#7B1FA2', color: '#7B1FA2' }} />}
                           </Box>
                         )}
                       </TableCell>
