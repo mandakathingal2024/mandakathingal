@@ -152,6 +152,14 @@ const AdminManagement = () => {
 
     setIsSaving(true);
     try {
+      // Check if username already exists (for both add and edit)
+      const existingUser = admins.find((a) => a.username === username && a.id !== adminData.id);
+      if (existingUser) {
+        alert('Username already exists. Please choose a different one.');
+        setIsSaving(false);
+        return;
+      }
+
       if (isEdit) {
         const updateData = { ...adminData };
         if (!updateData.password) delete updateData.password;
@@ -160,13 +168,6 @@ const AdminManagement = () => {
         await logActivity('Updated', 'Admins', `Updated admin "${name}" (${ROLE_CONFIG[role]?.label})`);
         setToast({ open: true, message: 'Admin updated successfully!' });
       } else {
-        // Check if username already exists
-        const existing = admins.find((a) => a.username === username);
-        if (existing) {
-          alert('Username already exists. Please choose a different one.');
-          setIsSaving(false);
-          return;
-        }
         const newAdmin = {
           id: uuidv4(),
           name,
@@ -230,7 +231,6 @@ const AdminManagement = () => {
               <TextField
                 fullWidth required label="Username" name="username"
                 value={adminData.username} onChange={handleChange} size="small"
-                disabled={isEdit && isSuperAdmin(adminData)}
                 placeholder="e.g. shahin_admin"
                 InputProps={{
                   startAdornment: (

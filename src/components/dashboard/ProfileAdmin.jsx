@@ -13,6 +13,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import InputAdornment from '@mui/material/InputAdornment';
 import Avatar from '@mui/material/Avatar';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
+import AlternateEmailIcon from '@mui/icons-material/AlternateEmail';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
@@ -33,7 +34,9 @@ const ROLE_CONFIG = {
 const ProfileAdmin = () => {
   const { adminUser, setAdminUser, logActivity } = useStateContext();
   const [editName, setEditName] = React.useState(adminUser?.name || '');
-  const [isSavingName, setIsSavingName] = React.useState(false);
+  const [editUsername, setEditUsername] = React.useState(adminUser?.username || '');
+  const [isSavingProfile, setIsSavingProfile] = React.useState(false);
+  const [profileError, setProfileError] = React.useState('');
   const [showPasswordSection, setShowPasswordSection] = React.useState(false);
   const [passwords, setPasswords] = React.useState({ current: '', newPass: '', confirm: '' });
   const [showCurrent, setShowCurrent] = React.useState(false);
@@ -46,39 +49,83 @@ const ProfileAdmin = () => {
 
   const role = ROLE_CONFIG[adminUser.role] || ROLE_CONFIG.viewer;
 
-  const updateAdminInFirestore = async (updatedFields) => {
-    try {
-      const adminsRef = collection(db, 'admins');
-      const q = query(adminsRef, where('id', '==', adminUser.id));
-      const snap = await getDocs(q);
-      if (!snap.empty) {
-        const docRef = doc(db, snap.docs[0].ref.path);
-        await updateDoc(docRef, updatedFields);
-        return true;
-      }
-      return false;
-    } catch (err) {
-      console.error('Error updating admin:', err);
-      return false;
-    }
+  // Find admin doc by id first, fallback to username (handles env-super-admin case)
+  const findAdminDoc = async () => {
+    const adminsRef = collection(db, 'admins');
+
+    // Try by id first
+    let snap = await getDocs(query(adminsRef, where('id', '==', adminUser.id)));
+    if (!snap.empty) return snap.docs[0];
+
+    // Fallback: find by username
+    snap = await getDocs(query(adminsRef, where('username', '==', adminUser.username)));
+    if (!snap.empty) return snap.docs[0];
+
+    return null;
   };
 
-  const handleSaveName = async () => {
-    if (!editName.trim() || editName === adminUser.name) return;
-    setIsSavingName(true);
-    try {
-      const success = await updateAdminInFirestore({ name: editName.trim() });
-      if (success) {
-        const updatedAdmin = { ...adminUser, name: editName.trim() };
-        setAdminUser(updatedAdmin);
-        localStorage.setItem('adminUser', JSON.stringify(updatedAdmin));
-        await logActivity('Updated', 'Profile', `Updated display name to "${editName.trim()}"`);
-        setToast({ open: true, message: 'Name updated successfully!' });
-      } else {
-        setToast({ open: true, message: 'Failed to update name. Please try again.' });
+  const handleSaveProfile = async () => {
+    setProfileError('');
+    const newName = editName.trim();
+    const newUsername = editUsername.trim();
+
+    if (!newName) { setProfileError('Display name is required.'); return; }
+    if (!newUsername) { setProfileError('Username is required.'); return; }
+
+    const nameChanged = newName !== adminUser.name;
+    const usernameChanged = newUsername !== adminUser.username;
+    if (!nameChanged && !usernameChanged) return;
+
+    // Check if new username already taken by another admin
+    if (usernameChanged) {
+      const adminsRef = collection(db, 'admins');
+      const existing = await getDocs(query(adminsRef, where('username', '==', newUsername)));
+      if (!existing.empty) {
+        const existingData = existing.docs[0].data();
+        if (existingData.id !== adminUser.id && existingData.username !== adminUser.username) {
+          setProfileError('This username is already taken.');
+          return;
+        }
       }
+    }
+
+    setIsSavingProfile(true);
+    try {
+      const adminDoc = await findAdminDoc();
+      if (!adminDoc) {
+        setProfileError('Admin account not found in database. Please log out and log back in.');
+        return;
+      }
+
+      const updates = {};
+      if (nameChanged) updates.name = newName;
+      if (usernameChanged) updates.username = newUsername;
+
+      const docRef = doc(db, adminDoc.ref.path);
+      await updateDoc(docRef, updates);
+
+      // Also sync the correct Firestore id to local state
+      const firestoreData = adminDoc.data();
+      const updatedAdmin = {
+        ...adminUser,
+        name: newName,
+        username: newUsername,
+        id: firestoreData.id, // sync real id
+      };
+      setAdminUser(updatedAdmin);
+      localStorage.setItem('adminUser', JSON.stringify(updatedAdmin));
+
+      const changes = [];
+      if (nameChanged) changes.push(`name to "${newName}"`);
+      if (usernameChanged) changes.push(`username to "${newUsername}"`);
+      await logActivity('Updated', 'Profile', `Updated ${changes.join(' and ')}`);
+
+      setToast({ open: true, message: 'Profile updated successfully!' });
+    } catch (err) {
+      console.error('Error updating profile:', err);
+      setProfileError('Something went wrong. Please try again.');
     } finally {
-      setIsSavingName(false);
+      setIsSavingProfile(false);
     }
   };
 
@@ -104,24 +151,19 @@ const ProfileAdmin = () => {
 
     setIsSavingPassword(true);
     try {
-      // Verify current password by querying Firestore
-      const adminsRef = collection(db, 'admins');
-      const q = query(adminsRef, where('id', '==', adminUser.id));
-      const snap = await getDocs(q);
-
-      if (snap.empty) {
-        setPasswordError('Admin account not found.');
+      const adminDoc = await findAdminDoc();
+      if (!adminDoc) {
+        setPasswordError('Admin account not found. Please log out and log back in.');
         return;
       }
 
-      const currentData = snap.docs[0].data();
+      const currentData = adminDoc.data();
       if (currentData.password !== passwords.current) {
         setPasswordError('Current password is incorrect.');
         return;
       }
 
-      // Update password
-      const docRef = doc(db, snap.docs[0].ref.path);
+      const docRef = doc(db, adminDoc.ref.path);
       await updateDoc(docRef, { password: passwords.newPass });
       await logActivity('Updated', 'Profile', 'Changed account password');
       setPasswords({ current: '', newPass: '', confirm: '' });
@@ -135,6 +177,8 @@ const ProfileAdmin = () => {
     }
   };
 
+  const hasProfileChanges = editName.trim() !== adminUser.name || editUsername.trim() !== adminUser.username;
+
   return (
     <Container maxWidth="md" sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3 } }}>
       <Box sx={{ mb: 3 }}>
@@ -147,7 +191,6 @@ const ProfileAdmin = () => {
       {/* Profile Card */}
       <Paper sx={{ p: { xs: 3, sm: 4 }, mb: 3 }}>
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'center', sm: 'flex-start' }, gap: 3 }}>
-          {/* Avatar */}
           <Avatar
             sx={{
               width: 80, height: 80,
@@ -161,7 +204,6 @@ const ProfileAdmin = () => {
             {adminUser.name?.charAt(0)?.toUpperCase() || 'A'}
           </Avatar>
 
-          {/* Info */}
           <Box sx={{ flexGrow: 1, textAlign: { xs: 'center', sm: 'left' } }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, justifyContent: { xs: 'center', sm: 'flex-start' }, flexWrap: 'wrap' }}>
               <Typography variant="h5" sx={{ fontWeight: 700 }}>{adminUser.name}</Typography>
@@ -180,7 +222,6 @@ const ProfileAdmin = () => {
           </Box>
         </Box>
 
-        {/* Permissions */}
         <Divider sx={{ my: 3, borderColor: '#F0E8E0' }} />
         <Typography variant="subtitle2" sx={{ mb: 1.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
           Your Permissions
@@ -209,17 +250,26 @@ const ProfileAdmin = () => {
         </Box>
       </Paper>
 
-      {/* Edit Name */}
+      {/* Edit Profile */}
       <Paper sx={{ p: { xs: 3, sm: 4 }, mb: 3 }}>
         <Typography variant="subtitle2" sx={{ mb: 2, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
-          Edit Display Name
+          Edit Profile
         </Typography>
-        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+
+        {profileError && (
+          <Box sx={{ mb: 2, p: 1.5, borderRadius: 1, backgroundColor: 'rgba(183,28,28,0.06)', border: '1px solid rgba(183,28,28,0.15)' }}>
+            <Typography variant="body2" sx={{ color: '#B71C1C', fontWeight: 500, fontSize: '0.8rem' }}>
+              {profileError}
+            </Typography>
+          </Box>
+        )}
+
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <TextField
             fullWidth
             label="Display Name"
             value={editName}
-            onChange={(e) => setEditName(e.target.value)}
+            onChange={(e) => { setEditName(e.target.value); setProfileError(''); }}
             size="small"
             InputProps={{
               startAdornment: (
@@ -229,14 +279,29 @@ const ProfileAdmin = () => {
               ),
             }}
           />
+          <TextField
+            fullWidth
+            label="Username"
+            value={editUsername}
+            onChange={(e) => { setEditUsername(e.target.value); setProfileError(''); }}
+            size="small"
+            helperText="This is what you use to log in"
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <AlternateEmailIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                </InputAdornment>
+              ),
+            }}
+          />
           <Button
             variant="contained"
-            onClick={handleSaveName}
-            disabled={!editName.trim() || editName === adminUser.name || isSavingName}
-            startIcon={isSavingName ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : <SaveIcon />}
-            sx={{ minWidth: 130, alignSelf: { xs: 'flex-start', sm: 'auto' } }}
+            onClick={handleSaveProfile}
+            disabled={!hasProfileChanges || !editName.trim() || !editUsername.trim() || isSavingProfile}
+            startIcon={isSavingProfile ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : <SaveIcon />}
+            sx={{ alignSelf: 'flex-start', minWidth: 150 }}
           >
-            {isSavingName ? 'Saving...' : 'Save Name'}
+            {isSavingProfile ? 'Saving...' : 'Save Changes'}
           </Button>
         </Box>
       </Paper>
