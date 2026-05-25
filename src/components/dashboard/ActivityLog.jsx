@@ -105,8 +105,8 @@ const ActivityLog = () => {
     return result;
   }, [activities, search, filterModule, filterAdmin]);
 
-  const formatTime = (timestamp) => {
-    if (!timestamp?.seconds) return '—';
+  const getRelativeTime = (timestamp) => {
+    if (!timestamp?.seconds) return '';
     const date = new Date(timestamp.seconds * 1000);
     const now = new Date();
     const diff = now - date;
@@ -115,17 +115,12 @@ const ActivityLog = () => {
     if (diff < 60 * 60 * 1000) return `${Math.floor(diff / (60 * 1000))}m ago`;
     if (diff < 24 * 60 * 60 * 1000) return `${Math.floor(diff / (60 * 60 * 1000))}h ago`;
     if (diff < 7 * 24 * 60 * 60 * 1000) return `${Math.floor(diff / (24 * 60 * 60 * 1000))}d ago`;
+    if (diff < 30 * 24 * 60 * 60 * 1000) return `${Math.floor(diff / (7 * 24 * 60 * 60 * 1000))}w ago`;
 
-    return date.toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return '';
   };
 
-  const formatFullTime = (timestamp) => {
+  const getDateTime = (timestamp) => {
     if (!timestamp?.seconds) return '—';
     const date = new Date(timestamp.seconds * 1000);
     return date.toLocaleDateString('en-IN', {
@@ -244,9 +239,18 @@ const ActivityLog = () => {
                   {row.details}
                 </Typography>
               )}
-              <Typography variant="caption" sx={{ color: '#9B8B7E', fontSize: '0.7rem' }}>
-                {formatFullTime(row.createdAt)}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                <Typography variant="caption" sx={{ color: '#9B8B7E', fontSize: '0.7rem' }}>
+                  {getDateTime(row.createdAt)}
+                </Typography>
+                {getRelativeTime(row.createdAt) && (
+                  <Chip
+                    label={getRelativeTime(row.createdAt)}
+                    size="small"
+                    sx={{ height: 18, fontSize: '0.6rem', fontWeight: 600, backgroundColor: 'rgba(212,163,115,0.12)', color: '#8B6914' }}
+                  />
+                )}
+              </Box>
             </Paper>
           ))}
         </Box>
@@ -261,7 +265,7 @@ const ActivityLog = () => {
                   <TableCell>Action</TableCell>
                   <TableCell>Module</TableCell>
                   <TableCell>Details</TableCell>
-                  <TableCell align="right">Time</TableCell>
+                  <TableCell align="right">Date & Time</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -297,9 +301,16 @@ const ActivityLog = () => {
                       </Typography>
                     </TableCell>
                     <TableCell align="right">
-                      <Typography variant="caption" sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}>
-                        {formatTime(row.createdAt)}
-                      </Typography>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.3 }}>
+                        <Typography variant="caption" sx={{ color: 'text.secondary', whiteSpace: 'nowrap', fontSize: '0.75rem' }}>
+                          {getDateTime(row.createdAt)}
+                        </Typography>
+                        {getRelativeTime(row.createdAt) && (
+                          <Typography variant="caption" sx={{ color: '#8B6914', fontWeight: 600, fontSize: '0.65rem' }}>
+                            {getRelativeTime(row.createdAt)}
+                          </Typography>
+                        )}
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))}
