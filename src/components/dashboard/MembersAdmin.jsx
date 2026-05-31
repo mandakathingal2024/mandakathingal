@@ -464,7 +464,7 @@ const MembersAdmin = () => {
                       <Tooltip title="Edit">
                         <IconButton
                           size="small"
-                          onClick={async () => { await handleEdit(row); }}
+                          onClick={() => handleEdit(row)}
                           sx={{ color: '#2E7D32', '&:hover': { backgroundColor: 'rgba(46,125,50,0.08)' }, p: { xs: 0.5, sm: 1 } }}
                         >
                           <EditOutlinedIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />

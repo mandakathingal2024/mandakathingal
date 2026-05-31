@@ -60,11 +60,121 @@ const SECTION_LABELS = {
   familyMilestones: 'Family Milestones',
 };
 
+// Separate form modal component — isolates form state from the grid
+// so typing in the form does NOT re-render the entire events grid
+const EventFormModal = React.memo(({ open, onClose, editEvent, onSubmit, isSaving }) => {
+  const [event, setEvent] = React.useState({ ...EMPTY_EVENT });
+  const isEdit = !!editEvent;
+
+  // Reset form state when modal opens/closes or editEvent changes
+  React.useEffect(() => {
+    if (open) {
+      if (editEvent) {
+        setEvent({ ...EMPTY_EVENT, ...editEvent });
+      } else {
+        setEvent({ ...EMPTY_EVENT });
+      }
+    }
+  }, [open, editEvent]);
+
+  const handleChange = React.useCallback((e) => {
+    const { name, value } = e.target;
+    setEvent((prev) => ({ ...prev, [name]: value }));
+  }, []);
+
+  const handleSubmitClick = () => {
+    onSubmit(event, isEdit);
+  };
+
+  return (
+    <Modal open={open} onClose={onClose}>
+      <Box sx={modalStyle}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 3, pb: 2, borderBottom: '1px solid #F0E8E0' }}>
+          <Typography variant="h6">{isEdit ? 'Edit Event' : 'Add Event'}</Typography>
+          <IconButton onClick={onClose} size="small" sx={{ color: 'text.secondary' }}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Box>
+
+        <Box sx={{ p: 3 }}>
+          <Typography variant="subtitle2" sx={{ mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
+            Event Image
+          </Typography>
+          <UploadImage folderName="events" setEvent={setEvent} imageType="event" existingUrl={isEdit ? event.eventImgUrl : ''} />
+
+          <Typography variant="subtitle2" sx={{ mt: 2.5, mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
+            Display Section
+          </Typography>
+          <FormControl fullWidth size="small" sx={{ mt: 1 }}>
+            <InputLabel>Display on Home Page</InputLabel>
+            <Select
+              name="displaySection"
+              value={event.displaySection}
+              label="Display on Home Page"
+              onChange={handleChange}
+            >
+              <MenuItem value="">None</MenuItem>
+              <MenuItem value="recentActivities">Recent Activities</MenuItem>
+              <MenuItem value="familyMilestones">Family Milestones</MenuItem>
+            </Select>
+          </FormControl>
+
+          <Typography variant="subtitle2" sx={{ mt: 2.5, mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
+            Event Details (English)
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+            <TextField fullWidth required label="Title (English)" name="title" value={event.title} onChange={handleChange} size="small" />
+            <TextField fullWidth required label="Description (English)" name="description" value={event.description} onChange={handleChange} size="small" multiline rows={3} />
+          </Box>
+
+          <Typography variant="subtitle2" sx={{ mt: 2.5, mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
+            Event Details (Malayalam)
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+            <TextField fullWidth label="Title (Malayalam)" name="titleMl" value={event.titleMl} onChange={handleChange} size="small" />
+            <TextField fullWidth label="Description (Malayalam)" name="descMl" value={event.descMl} onChange={handleChange} size="small" multiline rows={3} />
+          </Box>
+
+          {event.displaySection === 'familyMilestones' && (
+            <>
+              <Typography variant="subtitle2" sx={{ mt: 2.5, mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
+                Milestone Details
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <TextField fullWidth label="Category (English)" name="category" value={event.category} onChange={handleChange} size="small" placeholder="e.g. Foundation, Reunion" />
+                  <TextField fullWidth label="Category (Malayalam)" name="categoryMl" value={event.categoryMl} onChange={handleChange} size="small" />
+                </Box>
+                <TextField label="Year" name="year" value={event.year} onChange={handleChange} size="small" placeholder="e.g. 2024" sx={{ maxWidth: 120 }} />
+              </Box>
+            </>
+          )}
+        </Box>
+
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, p: 3, pt: 1, borderTop: '1px solid #F0E8E0' }}>
+          <Button variant="outlined" onClick={onClose} sx={{ color: 'text.secondary', borderColor: '#E0D6CC' }}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleSubmitClick}
+            disabled={!event.eventImgUrl || !event.title || !event.description || isSaving}
+            startIcon={isSaving ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : null}
+          >
+            {isSaving ? 'Saving...' : isEdit ? 'Save Changes' : 'Add Event'}
+          </Button>
+        </Box>
+      </Box>
+    </Modal>
+  );
+});
+
+EventFormModal.displayName = 'EventFormModal';
+
 const EventsAdmin = () => {
   const [open, setOpen] = React.useState(false);
-  const [event, setEvent] = React.useState({ ...EMPTY_EVENT });
+  const [editEvent, setEditEvent] = React.useState(null);
   const { addEvent, fetchAllEvents, deleteDocument, updateDocument, events, hasPermission, logActivity } = useStateContext();
-  const [isEdit, setIsEdit] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
   const [error, setError] = React.useState(null);
@@ -120,42 +230,33 @@ const EventsAdmin = () => {
     fetchData();
   }, []);
 
-  if (isLoading) {
-    return <DashboardSkeleton />;
-  }
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setEvent({ ...event, [name]: value });
-  };
-
-  const handleOpen = () => { setIsEdit(false); setOpen(true); };
-  const handleEdit = (row) => {
-    setEvent({
-      ...EMPTY_EVENT,
-      ...row,
-    });
-    setIsEdit(true);
+  const handleOpen = React.useCallback(() => {
+    setEditEvent(null);
     setOpen(true);
-  };
-  const handleClose = () => {
-    setOpen(false);
-    setIsEdit(false);
-    setEvent({ ...EMPTY_EVENT });
-  };
+  }, []);
 
-  const handleSubmit = async () => {
-    const { eventImgUrl, title, description } = event;
+  const handleEdit = React.useCallback((row) => {
+    setEditEvent(row);
+    setOpen(true);
+  }, []);
+
+  const handleClose = React.useCallback(() => {
+    setOpen(false);
+    setEditEvent(null);
+  }, []);
+
+  const handleFormSubmit = React.useCallback(async (eventData, isEdit) => {
+    const { eventImgUrl, title, description } = eventData;
     if (eventImgUrl && title && description) {
       setIsSaving(true);
       try {
         if (isEdit) {
-          await updateDocument('events', event);
-          await logActivity('Updated', 'Events', `Updated event "${event.title}"`);
+          await updateDocument('events', eventData);
+          await logActivity('Updated', 'Events', `Updated event "${eventData.title}"`);
           setToast({ open: true, message: 'Event updated successfully!' });
         } else {
-          await addEvent(event);
-          await logActivity('Added', 'Events', `Added event "${event.title}"`);
+          await addEvent(eventData);
+          await logActivity('Added', 'Events', `Added event "${eventData.title}"`);
           setToast({ open: true, message: 'Event added successfully!' });
         }
         handleClose();
@@ -166,7 +267,11 @@ const EventsAdmin = () => {
         setIsSaving(false);
       }
     }
-  };
+  }, [updateDocument, logActivity, addEvent, fetchAllEvents, handleClose]);
+
+  if (isLoading) {
+    return <DashboardSkeleton />;
+  }
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3 } }}>
@@ -209,85 +314,13 @@ const EventsAdmin = () => {
         </FormControl>
       </Box>
 
-      <Modal open={open} onClose={handleClose}>
-        <Box sx={modalStyle}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 3, pb: 2, borderBottom: '1px solid #F0E8E0' }}>
-            <Typography variant="h6">{isEdit ? 'Edit Event' : 'Add Event'}</Typography>
-            <IconButton onClick={handleClose} size="small" sx={{ color: 'text.secondary' }}>
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          </Box>
-
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle2" sx={{ mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
-              Event Image
-            </Typography>
-            <UploadImage folderName="events" setEvent={setEvent} imageType="event" existingUrl={isEdit ? event.eventImgUrl : ''} />
-
-            <Typography variant="subtitle2" sx={{ mt: 2.5, mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
-              Display Section
-            </Typography>
-            <FormControl fullWidth size="small" sx={{ mt: 1 }}>
-              <InputLabel>Display on Home Page</InputLabel>
-              <Select
-                name="displaySection"
-                value={event.displaySection}
-                label="Display on Home Page"
-                onChange={handleChange}
-              >
-                <MenuItem value="">None</MenuItem>
-                <MenuItem value="recentActivities">Recent Activities</MenuItem>
-                <MenuItem value="familyMilestones">Family Milestones</MenuItem>
-              </Select>
-            </FormControl>
-
-            <Typography variant="subtitle2" sx={{ mt: 2.5, mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
-              Event Details (English)
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-              <TextField fullWidth required label="Title (English)" name="title" value={event.title} onChange={handleChange} size="small" />
-              <TextField fullWidth required label="Description (English)" name="description" value={event.description} onChange={handleChange} size="small" multiline rows={3} />
-            </Box>
-
-            <Typography variant="subtitle2" sx={{ mt: 2.5, mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
-              Event Details (Malayalam)
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-              <TextField fullWidth label="Title (Malayalam)" name="titleMl" value={event.titleMl} onChange={handleChange} size="small" />
-              <TextField fullWidth label="Description (Malayalam)" name="descMl" value={event.descMl} onChange={handleChange} size="small" multiline rows={3} />
-            </Box>
-
-            {event.displaySection === 'familyMilestones' && (
-              <>
-                <Typography variant="subtitle2" sx={{ mt: 2.5, mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
-                  Milestone Details
-                </Typography>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-                  <Box sx={{ display: 'flex', gap: 2 }}>
-                    <TextField fullWidth label="Category (English)" name="category" value={event.category} onChange={handleChange} size="small" placeholder="e.g. Foundation, Reunion" />
-                    <TextField fullWidth label="Category (Malayalam)" name="categoryMl" value={event.categoryMl} onChange={handleChange} size="small" />
-                  </Box>
-                  <TextField label="Year" name="year" value={event.year} onChange={handleChange} size="small" placeholder="e.g. 2024" sx={{ maxWidth: 120 }} />
-                </Box>
-              </>
-            )}
-          </Box>
-
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, p: 3, pt: 1, borderTop: '1px solid #F0E8E0' }}>
-            <Button variant="outlined" onClick={handleClose} sx={{ color: 'text.secondary', borderColor: '#E0D6CC' }}>
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              onClick={handleSubmit}
-              disabled={!event.eventImgUrl || !event.title || !event.description || isSaving}
-              startIcon={isSaving ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : null}
-            >
-              {isSaving ? 'Saving...' : isEdit ? 'Save Changes' : 'Add Event'}
-            </Button>
-          </Box>
-        </Box>
-      </Modal>
+      <EventFormModal
+        open={open}
+        onClose={handleClose}
+        editEvent={editEvent}
+        onSubmit={handleFormSubmit}
+        isSaving={isSaving}
+      />
 
       {/* Card-based event list */}
       {filteredEvents.length === 0 ? (

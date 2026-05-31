@@ -42,16 +42,103 @@ const modalStyle = {
   p: 0,
 };
 
+const EMPTY_EXECUTIVE = { executiveImgUrl: '', name: '', role: '', sortOrder: '' };
+
+const ExecutiveFormModal = React.memo(function ExecutiveFormModal({ open, onClose, editExecutive, onSubmit, isSaving }) {
+  const [executive, setExecutive] = React.useState(EMPTY_EXECUTIVE);
+
+  React.useEffect(() => {
+    if (open) {
+      setExecutive(editExecutive ? { ...editExecutive } : EMPTY_EXECUTIVE);
+    }
+  }, [open, editExecutive]);
+
+  const handleChange = React.useCallback((event) => {
+    const { name, value } = event.target;
+    setExecutive((prev) => ({ ...prev, [name]: value }));
+  }, []);
+
+  const handleSubmitClick = React.useCallback(() => {
+    onSubmit(executive);
+  }, [onSubmit, executive]);
+
+  const isEdit = !!editExecutive;
+
+  return (
+    <Modal open={open} onClose={onClose}>
+      <Box sx={modalStyle}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 3, pb: 2, borderBottom: '1px solid #F0E8E0' }}>
+          <Typography variant="h6">{isEdit ? 'Edit Executive' : 'Add Executive'}</Typography>
+          <IconButton onClick={onClose} size="small" sx={{ color: 'text.secondary' }}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Box>
+
+        <Box sx={{ p: 3 }}>
+          <Typography variant="subtitle2" sx={{ mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
+            Photo
+          </Typography>
+          <UploadImage folderName="executives" setExecutive={setExecutive} imageType="executive" existingUrl={isEdit ? executive.executiveImgUrl : ''} />
+
+          <Typography variant="subtitle2" sx={{ mt: 2.5, mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
+            Details
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+            <TextField
+              fullWidth
+              required
+              label="Name"
+              name="name"
+              value={executive.name}
+              onChange={handleChange}
+              size="small"
+            />
+            <TextField
+              fullWidth
+              required
+              label="Role"
+              name="role"
+              value={executive.role}
+              onChange={handleChange}
+              size="small"
+              placeholder="e.g. President, Secretary"
+            />
+            <TextField
+              fullWidth
+              label="Sort Order"
+              name="sortOrder"
+              type="number"
+              value={executive.sortOrder}
+              onChange={handleChange}
+              size="small"
+              placeholder="e.g. 1, 2, 3..."
+              helperText="Lower number appears first on the website"
+            />
+          </Box>
+        </Box>
+
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, p: 3, pt: 1, borderTop: '1px solid #F0E8E0' }}>
+          <Button variant="outlined" onClick={onClose} sx={{ color: 'text.secondary', borderColor: '#E0D6CC' }}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleSubmitClick}
+            disabled={!executive.executiveImgUrl || !executive.name || !executive.role || isSaving}
+            startIcon={isSaving ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : null}
+          >
+            {isSaving ? 'Saving...' : isEdit ? 'Save Changes' : 'Add Executive'}
+          </Button>
+        </Box>
+      </Box>
+    </Modal>
+  );
+});
+
 const ExecutiveAdmin = () => {
   const [open, setOpen] = React.useState(false);
-  const [executive, setExecutive] = React.useState({
-    executiveImgUrl: '',
-    name: '',
-    role: '',
-    sortOrder: '',
-  });
+  const [editExecutive, setEditExecutive] = React.useState(null);
   const { addExecutive, fetchAllExecutives, deleteDocument, updateDocument, executives, hasPermission, logActivity } = useStateContext();
-  const [isEdit, setIsEdit] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
   const [error, setError] = React.useState(null);
@@ -92,29 +179,27 @@ const ExecutiveAdmin = () => {
     fetchData();
   }, []);
 
-  if (isLoading) {
-    return <DashboardSkeleton />;
-  }
+  const handleOpen = React.useCallback(() => {
+    setEditExecutive(null);
+    setOpen(true);
+  }, []);
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-    setExecutive({ ...executive, [name]: value });
-  };
+  const handleEdit = React.useCallback((row) => {
+    setEditExecutive(row);
+    setOpen(true);
+  }, []);
 
-  const handleOpen = () => { setIsEdit(false); setOpen(true); };
-  const handleEdit = (row) => { setExecutive(row); setIsEdit(true); setOpen(true); };
-  const handleClose = () => {
+  const handleClose = React.useCallback(() => {
     setOpen(false);
-    setIsEdit(false);
-    setExecutive({ executiveImgUrl: '', name: '', role: '', sortOrder: '' });
-  };
+    setEditExecutive(null);
+  }, []);
 
-  const handleSubmit = async () => {
+  const handleSubmit = React.useCallback(async (executive) => {
     const { executiveImgUrl, name, role } = executive;
     if (executiveImgUrl && name && role) {
       setIsSaving(true);
       try {
-        if (isEdit) {
+        if (editExecutive) {
           await updateDocument('executives', executive);
           await logActivity('Updated', 'Executives', `Updated executive "${executive.name}"`);
           setToast({ open: true, message: 'Executive updated successfully!' });
@@ -123,7 +208,8 @@ const ExecutiveAdmin = () => {
           await logActivity('Added', 'Executives', `Added executive "${executive.name}"`);
           setToast({ open: true, message: 'Executive added successfully!' });
         }
-        handleClose();
+        setOpen(false);
+        setEditExecutive(null);
         await fetchAllExecutives();
       } catch (err) {
         console.error(err);
@@ -131,7 +217,30 @@ const ExecutiveAdmin = () => {
         setIsSaving(false);
       }
     }
-  };
+  }, [editExecutive, updateDocument, addExecutive, logActivity, fetchAllExecutives]);
+
+  const handleDeleteConfirm = React.useCallback(async () => {
+    await deleteDocument('executives', deleteTarget.id);
+    await logActivity('Deleted', 'Executives', `Deleted executive "${deleteTarget.name}"`);
+    setDeleteTarget(null);
+    setToast({ open: true, message: 'Executive removed successfully.' });
+  }, [deleteTarget, deleteDocument, logActivity]);
+
+  const handleDeleteCancel = React.useCallback(() => {
+    setDeleteTarget(null);
+  }, []);
+
+  const handleToastClose = React.useCallback(() => {
+    setToast((prev) => ({ ...prev, open: false }));
+  }, []);
+
+  const handleSearchChange = React.useCallback((e) => {
+    setSearch(e.target.value);
+  }, []);
+
+  if (isLoading) {
+    return <DashboardSkeleton />;
+  }
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3 } }}>
@@ -147,7 +256,7 @@ const ExecutiveAdmin = () => {
       <TextField
         placeholder="Search by name or role..."
         value={search}
-        onChange={(e) => setSearch(e.target.value)}
+        onChange={handleSearchChange}
         size="small"
         sx={{ mb: 3, maxWidth: { xs: '100%', sm: 320 }, width: '100%' }}
         InputProps={{
@@ -159,73 +268,13 @@ const ExecutiveAdmin = () => {
         }}
       />
 
-      <Modal open={open} onClose={handleClose}>
-        <Box sx={modalStyle}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 3, pb: 2, borderBottom: '1px solid #F0E8E0' }}>
-            <Typography variant="h6">{isEdit ? 'Edit Executive' : 'Add Executive'}</Typography>
-            <IconButton onClick={handleClose} size="small" sx={{ color: 'text.secondary' }}>
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          </Box>
-
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle2" sx={{ mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
-              Photo
-            </Typography>
-            <UploadImage folderName="executives" setExecutive={setExecutive} imageType="executive" existingUrl={isEdit ? executive.executiveImgUrl : ''} />
-
-            <Typography variant="subtitle2" sx={{ mt: 2.5, mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
-              Details
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-              <TextField
-                fullWidth
-                required
-                label="Name"
-                name="name"
-                value={executive.name}
-                onChange={handleChange}
-                size="small"
-              />
-              <TextField
-                fullWidth
-                required
-                label="Role"
-                name="role"
-                value={executive.role}
-                onChange={handleChange}
-                size="small"
-                placeholder="e.g. President, Secretary"
-              />
-              <TextField
-                fullWidth
-                label="Sort Order"
-                name="sortOrder"
-                type="number"
-                value={executive.sortOrder}
-                onChange={handleChange}
-                size="small"
-                placeholder="e.g. 1, 2, 3..."
-                helperText="Lower number appears first on the website"
-              />
-            </Box>
-          </Box>
-
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, p: 3, pt: 1, borderTop: '1px solid #F0E8E0' }}>
-            <Button variant="outlined" onClick={handleClose} sx={{ color: 'text.secondary', borderColor: '#E0D6CC' }}>
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              onClick={handleSubmit}
-              disabled={!executive.executiveImgUrl || !executive.name || !executive.role || isSaving}
-              startIcon={isSaving ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : null}
-            >
-              {isSaving ? 'Saving...' : isEdit ? 'Save Changes' : 'Add Executive'}
-            </Button>
-          </Box>
-        </Box>
-      </Modal>
+      <ExecutiveFormModal
+        open={open}
+        onClose={handleClose}
+        editExecutive={editExecutive}
+        onSubmit={handleSubmit}
+        isSaving={isSaving}
+      />
 
       <Paper sx={{ overflow: 'hidden' }}>
         <Box sx={{ overflowX: 'auto' }}>
@@ -296,19 +345,14 @@ const ExecutiveAdmin = () => {
         open={!!deleteTarget}
         title="Remove Executive"
         message={`Are you sure you want to remove "${deleteTarget?.name}"? This action cannot be undone.`}
-        onCancel={() => setDeleteTarget(null)}
-        onConfirm={async () => {
-          await deleteDocument('executives', deleteTarget.id);
-          await logActivity('Deleted', 'Executives', `Deleted executive "${deleteTarget.name}"`);
-          setDeleteTarget(null);
-          setToast({ open: true, message: 'Executive removed successfully.' });
-        }}
+        onCancel={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
       />
 
       <SuccessToast
         open={toast.open}
         message={toast.message}
-        onClose={() => setToast({ ...toast, open: false })}
+        onClose={handleToastClose}
       />
     </Container>
   );

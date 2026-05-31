@@ -15,18 +15,27 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import ListItems from './listItems';
 import { useStateContext } from '../../../context/stateContext';
-import GalleryAdmin from './GalleryAdmin';
-import EventsAdmin from './EventsAdmin';
-import MembersAdmin from './MembersAdmin';
-import ExecutiveAdmin from './ExecutiveAdmin';
-import GmailAccessAdmin from './GmailAccessAdmin';
-import DashboardHome from './DashboardHome';
-import WebsiteContentAdmin from './WebsiteContentAdmin';
-import AdminManagement from './AdminManagement';
-import ActivityLog from './ActivityLog';
-import ProfileAdmin from './ProfileAdmin';
 import ConfirmDialog from './ConfirmDialog';
 import Chip from '@mui/material/Chip';
+import CircularProgress from '@mui/material/CircularProgress';
+
+// Lazy-load each admin page — only the visible page's code is loaded
+const DashboardHome = React.lazy(() => import('./DashboardHome'));
+const GalleryAdmin = React.lazy(() => import('./GalleryAdmin'));
+const MembersAdmin = React.lazy(() => import('./MembersAdmin'));
+const EventsAdmin = React.lazy(() => import('./EventsAdmin'));
+const ExecutiveAdmin = React.lazy(() => import('./ExecutiveAdmin'));
+const GmailAccessAdmin = React.lazy(() => import('./GmailAccessAdmin'));
+const WebsiteContentAdmin = React.lazy(() => import('./WebsiteContentAdmin'));
+const AdminManagement = React.lazy(() => import('./AdminManagement'));
+const ActivityLog = React.lazy(() => import('./ActivityLog'));
+const ProfileAdmin = React.lazy(() => import('./ProfileAdmin'));
+
+const PageLoader = () => (
+  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8 }}>
+    <CircularProgress sx={{ color: '#D4A373' }} />
+  </Box>
+);
 
 const adminTheme = createTheme({
   palette: {
@@ -263,16 +272,18 @@ export default function Dashboard() {
 
         <Box component="main" sx={{ backgroundColor: 'background.default', flexGrow: 1, height: '100vh', overflow: 'auto' }}>
           <Toolbar />
-          {pageValue === 0 && <DashboardHome />}
-          {pageValue === 1 && canSeePage(1) && <GalleryAdmin />}
-          {pageValue === 2 && canSeePage(2) && <MembersAdmin />}
-          {pageValue === 3 && canSeePage(3) && <EventsAdmin />}
-          {pageValue === 4 && canSeePage(4) && <ExecutiveAdmin />}
-          {pageValue === 5 && canSeePage(5) && <GmailAccessAdmin />}
-          {pageValue === 6 && canSeePage(6) && <WebsiteContentAdmin />}
-          {pageValue === 7 && adminUser?.role === 'superAdmin' && <AdminManagement />}
-          {pageValue === 8 && (adminUser?.role === 'superAdmin' || adminUser?.permissions?.viewActivityLog) && <ActivityLog />}
-          {pageValue === 9 && <ProfileAdmin />}
+          <React.Suspense fallback={<PageLoader />}>
+            {pageValue === 0 && <DashboardHome />}
+            {pageValue === 1 && canSeePage(1) && <GalleryAdmin />}
+            {pageValue === 2 && canSeePage(2) && <MembersAdmin />}
+            {pageValue === 3 && canSeePage(3) && <EventsAdmin />}
+            {pageValue === 4 && canSeePage(4) && <ExecutiveAdmin />}
+            {pageValue === 5 && canSeePage(5) && <GmailAccessAdmin />}
+            {pageValue === 6 && canSeePage(6) && <WebsiteContentAdmin />}
+            {pageValue === 7 && adminUser?.role === 'superAdmin' && <AdminManagement />}
+            {pageValue === 8 && (adminUser?.role === 'superAdmin' || adminUser?.permissions?.viewActivityLog) && <ActivityLog />}
+            {pageValue === 9 && <ProfileAdmin />}
+          </React.Suspense>
         </Box>
       </Box>
 

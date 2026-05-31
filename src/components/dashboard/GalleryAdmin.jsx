@@ -42,13 +42,59 @@ const modalStyle = {
   p: 0,
 };
 
+const EMPTY_GALLERY = { galleryImgUrl: '', description: '' };
+
+const GalleryFormModal = React.memo(function GalleryFormModal({ open, onClose, editGallery, onSubmit, isSaving }) {
+  const [galleryData, setGalleryData] = React.useState(EMPTY_GALLERY);
+
+  React.useEffect(() => {
+    if (open) {
+      setGalleryData(editGallery ? { ...editGallery } : EMPTY_GALLERY);
+    }
+  }, [open, editGallery]);
+
+  const handleChange = React.useCallback((event) => {
+    const { name, value } = event.target;
+    setGalleryData((prev) => ({ ...prev, [name]: value }));
+  }, []);
+
+  const handleSubmitClick = React.useCallback(() => {
+    onSubmit(galleryData);
+  }, [onSubmit, galleryData]);
+
+  const isEdit = !!editGallery;
+
+  return (
+    <Modal open={open} onClose={onClose}>
+      <Box sx={modalStyle}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 3, pb: 2, borderBottom: '1px solid #F0E8E0' }}>
+          <Typography variant="h6">{isEdit ? 'Edit Gallery Image' : 'Add Gallery Image'}</Typography>
+          <IconButton onClick={onClose} size="small" sx={{ color: 'text.secondary' }}><CloseIcon fontSize="small" /></IconButton>
+        </Box>
+
+        <Box sx={{ p: 3 }}>
+          <Typography variant="subtitle2" sx={{ mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>Image</Typography>
+          <UploadImage folderName="gallery" setGallery={setGalleryData} imageType="gallery" existingUrl={isEdit ? galleryData.galleryImgUrl : ''} />
+
+          <Typography variant="subtitle2" sx={{ mt: 2.5, mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>Details</Typography>
+          <TextField fullWidth required label="Description" name="description" value={galleryData.description} onChange={handleChange} size="small" multiline rows={2} sx={{ mt: 1 }} />
+        </Box>
+
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, p: 3, pt: 1, borderTop: '1px solid #F0E8E0' }}>
+          <Button variant="outlined" onClick={onClose} sx={{ color: 'text.secondary', borderColor: '#E0D6CC' }}>Cancel</Button>
+          <Button variant="contained" onClick={handleSubmitClick} disabled={!galleryData.galleryImgUrl || !galleryData.description || isSaving}
+            startIcon={isSaving ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : null}>
+            {isSaving ? 'Saving...' : isEdit ? 'Save Changes' : 'Add Image'}
+          </Button>
+        </Box>
+      </Box>
+    </Modal>
+  );
+});
+
 const GalleryAdmin = () => {
   const [open, setOpen] = React.useState(false);
-  const [isEdit, setIsEdit] = React.useState(false);
-  const [galleryData, setGalleryData] = React.useState({
-    galleryImgUrl: '',
-    description: '',
-  });
+  const [editGallery, setEditGallery] = React.useState(null);
   const { addGallery, fetchAllGallery, gallery, deleteDocument, updateDocument, hasPermission, logActivity } = useStateContext();
   const [isLoading, setIsLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
@@ -75,23 +121,16 @@ const GalleryAdmin = () => {
     fetchData();
   }, []);
 
-  if (isLoading) return <DashboardSkeleton />;
+  const handleOpen = React.useCallback(() => { setEditGallery(null); setOpen(true); }, []);
+  const handleEdit = React.useCallback((row) => { setEditGallery(row); setOpen(true); }, []);
+  const handleClose = React.useCallback(() => { setOpen(false); setEditGallery(null); }, []);
 
-  const handleOpen = () => { setIsEdit(false); setOpen(true); };
-  const handleEdit = (row) => { setGalleryData(row); setIsEdit(true); setOpen(true); };
-  const handleClose = () => { setOpen(false); setIsEdit(false); setGalleryData({ galleryImgUrl: '', description: '' }); };
-
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-    setGalleryData({ ...galleryData, [name]: value });
-  };
-
-  const handleSubmit = async () => {
+  const handleSubmit = React.useCallback(async (galleryData) => {
     const { galleryImgUrl, description } = galleryData;
     if (galleryImgUrl && description) {
       setIsSaving(true);
       try {
-        if (isEdit) {
+        if (editGallery) {
           await updateDocument('gallery', galleryData);
           await logActivity('Updated', 'Gallery', `Updated gallery image`);
           setToast({ open: true, message: 'Image updated successfully!' });
@@ -100,12 +139,26 @@ const GalleryAdmin = () => {
           await logActivity('Added', 'Gallery', `Added gallery image`);
           setToast({ open: true, message: 'Image added successfully!' });
         }
-        handleClose();
+        setOpen(false);
+        setEditGallery(null);
         await fetchAllGallery();
       } catch (err) { console.error(err); }
       finally { setIsSaving(false); }
     }
-  };
+  }, [editGallery, updateDocument, logActivity, addGallery, fetchAllGallery]);
+
+  const handleDeleteConfirm = React.useCallback(async () => {
+    await deleteDocument('gallery', deleteTarget.id);
+    await logActivity('Deleted', 'Gallery', `Deleted gallery image`);
+    setDeleteTarget(null);
+    setToast({ open: true, message: 'Image deleted successfully.' });
+  }, [deleteTarget, deleteDocument, logActivity]);
+
+  const handleDeleteCancel = React.useCallback(() => setDeleteTarget(null), []);
+  const handleToastClose = React.useCallback(() => setToast((prev) => ({ ...prev, open: false })), []);
+  const handleSearchChange = React.useCallback((e) => setSearch(e.target.value), []);
+
+  if (isLoading) return <DashboardSkeleton />;
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3 } }}>
@@ -117,7 +170,7 @@ const GalleryAdmin = () => {
       <TextField
         placeholder="Search gallery..."
         value={search}
-        onChange={(e) => setSearch(e.target.value)}
+        onChange={handleSearchChange}
         size="small"
         sx={{ mb: 3, maxWidth: { xs: '100%', sm: 320 }, width: '100%' }}
         InputProps={{
@@ -129,30 +182,13 @@ const GalleryAdmin = () => {
         }}
       />
 
-      <Modal open={open} onClose={handleClose}>
-        <Box sx={modalStyle}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 3, pb: 2, borderBottom: '1px solid #F0E8E0' }}>
-            <Typography variant="h6">{isEdit ? 'Edit Gallery Image' : 'Add Gallery Image'}</Typography>
-            <IconButton onClick={handleClose} size="small" sx={{ color: 'text.secondary' }}><CloseIcon fontSize="small" /></IconButton>
-          </Box>
-
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle2" sx={{ mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>Image</Typography>
-            <UploadImage folderName="gallery" setGallery={setGalleryData} imageType="gallery" existingUrl={isEdit ? galleryData.galleryImgUrl : ''} />
-
-            <Typography variant="subtitle2" sx={{ mt: 2.5, mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>Details</Typography>
-            <TextField fullWidth required label="Description" name="description" value={galleryData.description} onChange={handleChange} size="small" multiline rows={2} sx={{ mt: 1 }} />
-          </Box>
-
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, p: 3, pt: 1, borderTop: '1px solid #F0E8E0' }}>
-            <Button variant="outlined" onClick={handleClose} sx={{ color: 'text.secondary', borderColor: '#E0D6CC' }}>Cancel</Button>
-            <Button variant="contained" onClick={handleSubmit} disabled={!galleryData.galleryImgUrl || !galleryData.description || isSaving}
-              startIcon={isSaving ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : null}>
-              {isSaving ? 'Saving...' : isEdit ? 'Save Changes' : 'Add Image'}
-            </Button>
-          </Box>
-        </Box>
-      </Modal>
+      <GalleryFormModal
+        open={open}
+        onClose={handleClose}
+        editGallery={editGallery}
+        onSubmit={handleSubmit}
+        isSaving={isSaving}
+      />
 
       <Paper sx={{ overflow: 'hidden' }}>
         <Box sx={{ overflowX: 'auto' }}>
@@ -208,8 +244,8 @@ const GalleryAdmin = () => {
       </Paper>
 
       <ConfirmDialog open={!!deleteTarget} title="Delete Image" message="Are you sure you want to delete this gallery image? This action cannot be undone."
-        onCancel={() => setDeleteTarget(null)} onConfirm={async () => { await deleteDocument('gallery', deleteTarget.id); await logActivity('Deleted', 'Gallery', `Deleted gallery image`); setDeleteTarget(null); setToast({ open: true, message: 'Image deleted successfully.' }); }} />
-      <SuccessToast open={toast.open} message={toast.message} onClose={() => setToast({ ...toast, open: false })} />
+        onCancel={handleDeleteCancel} onConfirm={handleDeleteConfirm} />
+      <SuccessToast open={toast.open} message={toast.message} onClose={handleToastClose} />
     </Container>
   );
 };

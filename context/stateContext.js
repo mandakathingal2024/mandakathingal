@@ -668,63 +668,37 @@ export const StateContext =({children})=>{
         }
       },[user])
 
+    // Memoize context value so consumers only re-render when actual data changes,
+    // not on every StateContext render caused by unrelated state updates
+    const contextValue = React.useMemo(() => ({
+        isEnglish, setIsEnglish,
+        authenticateUser, isAuthenticated, isAuthLoading,
+        pageValue, setPageValue,
+        addMember, handleLogOut,
+        searchMembersByName, getMembersWithNewBranchRelation,
+        fetchAllMembers, setNewBranchData, newBranchData,
+        getMembersByRelatedTo, viewFamilyData, setViewFamilyData,
+        memberObj, setMemberObj, getMemberById,
+        addGallery, addEvent, fetchAllEvents, setEvents, events,
+        fetchAllGallery, setGallery, gallery,
+        addExecutive, fetchAllExecutives, executives, setExecutives,
+        deleteDocument, members, setMembers, updateMember, updateDocument,
+        addGmail, googleSignIn, googleSignOut,
+        user, isGmailAuthenticated, setIsGmailAuthenticated,
+        isAuthorised, setIsAuthorised, deniedEmail,
+        gmail, fetchAllGmail, isGmailLoading,
+        adminUser, setAdminUser, hasPermission, logActivity,
+        logoutMessage, setLogoutMessage
+    }), [
+        isEnglish, isAuthenticated, isAuthLoading, pageValue,
+        newBranchData, viewFamilyData, memberObj,
+        events, gallery, executives, members,
+        user, isGmailAuthenticated, isAuthorised, deniedEmail,
+        gmail, isGmailLoading, adminUser, logoutMessage
+    ]);
+
     return(
-        <Context.Provider value={{isEnglish,
-        setIsEnglish,
-        authenticateUser,
-        isAuthenticated,
-        isAuthLoading,
-        pageValue,
-        setPageValue,
-        addMember,
-        handleLogOut,
-        searchMembersByName,
-        getMembersWithNewBranchRelation,
-        fetchAllMembers,
-        setNewBranchData,
-        newBranchData,
-        getMembersByRelatedTo,
-        viewFamilyData,
-        setViewFamilyData,
-        memberObj,
-        setMemberObj,
-        getMemberById,
-        addGallery,
-        addEvent,
-        fetchAllEvents,
-        setEvents,
-        events,
-        fetchAllGallery,
-        setGallery,
-        gallery,
-        addExecutive,
-        fetchAllExecutives,
-        executives,
-        setExecutives,
-        deleteDocument,
-        members,
-        setMembers,
-        updateMember,
-        updateDocument,
-        addGmail,
-        googleSignIn,
-        googleSignOut,
-        user,
-        isGmailAuthenticated,
-        setIsGmailAuthenticated,
-        isAuthorised,
-        setIsAuthorised,
-        deniedEmail,
-        gmail,
-        fetchAllGmail,
-        isGmailLoading,
-        adminUser,
-        setAdminUser,
-        hasPermission,
-        logActivity,
-        logoutMessage,
-        setLogoutMessage
-        }}>
+        <Context.Provider value={contextValue}>
             {children}
         </Context.Provider>
     )

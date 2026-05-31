@@ -93,133 +93,111 @@ const ROLE_CONFIG = {
   viewer: { label: 'Viewer', color: '#2E7D32', bg: 'rgba(46,125,50,0.08)' },
 };
 
-const AdminManagement = () => {
-  const { adminUser, setAdminUser, logActivity, updateDocument, deleteDocument } = useStateContext();
-  const [admins, setAdmins] = React.useState([]);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [open, setOpen] = React.useState(false);
-  const [isEdit, setIsEdit] = React.useState(false);
-  const [isSaving, setIsSaving] = React.useState(false);
+/* ------------------------------------------------------------------ */
+/*  AdminFormModal - extracted and memoized to prevent table re-renders */
+/* ------------------------------------------------------------------ */
+const AdminFormModal = React.memo(function AdminFormModal({
+  open,
+  onClose,
+  editAdmin,
+  onSuccess,
+  isSaving,
+  setIsSaving,
+  admins,
+  adminUser,
+  updateDocument,
+  setAdminUser,
+}) {
   const [adminData, setAdminData] = React.useState({ ...EMPTY_ADMIN });
   const [showPassword, setShowPassword] = React.useState(false);
-  const [deleteTarget, setDeleteTarget] = React.useState(null);
-  const [toast, setToast] = React.useState({ open: false, message: '' });
 
-  const fetchAdmins = async () => {
-    try {
-      const adminsRef = collection(db, 'admins');
-      const snap = await getDocs(adminsRef);
-      const data = snap.docs.map((doc) => ({ docId: doc.id, ...doc.data() }));
-      setAdmins(data);
-    } catch (err) {
-      console.error('Error fetching admins:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const isEdit = editAdmin !== null;
 
+  // Initialize form state when modal opens or editAdmin changes
   React.useEffect(() => {
-    fetchAdmins();
+    if (open) {
+      if (editAdmin) {
+        setAdminData({ ...editAdmin, password: '' });
+      } else {
+        setAdminData({ ...EMPTY_ADMIN });
+      }
+      setShowPassword(false);
+    }
+  }, [open, editAdmin]);
+
+  const handleChange = React.useCallback((e) => {
+    const { name, value } = e.target;
+    setAdminData((prev) => ({ ...prev, [name]: value }));
   }, []);
 
-  if (isLoading) return <DashboardSkeleton />;
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setAdminData({ ...adminData, [name]: value });
-  };
-
-  const handlePermissionChange = (perm) => {
-    const updated = { ...adminData.permissions, [perm]: !adminData.permissions[perm] };
-    // If turning off viewActivityLog, clear module selections
-    if (perm === 'viewActivityLog' && !updated.viewActivityLog) {
-      updated.activityLogModules = [];
-    }
-    // If turning on viewActivityLog with no modules selected, select all
-    if (perm === 'viewActivityLog' && updated.viewActivityLog && (!updated.activityLogModules || updated.activityLogModules.length === 0)) {
-      updated.activityLogModules = [...ALL_MODULES];
-    }
-    setAdminData({ ...adminData, permissions: updated });
-  };
-
-  const handleModuleToggle = (moduleKey) => {
-    const current = adminData.permissions.activityLogModules || [];
-    const updated = current.includes(moduleKey)
-      ? current.filter((m) => m !== moduleKey)
-      : [...current, moduleKey];
-    setAdminData({
-      ...adminData,
-      permissions: { ...adminData.permissions, activityLogModules: updated },
+  const handlePermissionChange = React.useCallback((perm) => {
+    setAdminData((prev) => {
+      const updated = { ...prev.permissions, [perm]: !prev.permissions[perm] };
+      if (perm === 'viewActivityLog' && !updated.viewActivityLog) {
+        updated.activityLogModules = [];
+      }
+      if (perm === 'viewActivityLog' && updated.viewActivityLog && (!updated.activityLogModules || updated.activityLogModules.length === 0)) {
+        updated.activityLogModules = [...ALL_MODULES];
+      }
+      return { ...prev, permissions: updated };
     });
-  };
+  }, []);
 
-  const handleSelectAllModules = () => {
-    const current = adminData.permissions.activityLogModules || [];
-    const allSelected = current.length === ALL_MODULES.length;
-    setAdminData({
-      ...adminData,
-      permissions: { ...adminData.permissions, activityLogModules: allSelected ? [] : [...ALL_MODULES] },
+  const handleModuleToggle = React.useCallback((moduleKey) => {
+    setAdminData((prev) => {
+      const current = prev.permissions.activityLogModules || [];
+      const updated = current.includes(moduleKey)
+        ? current.filter((m) => m !== moduleKey)
+        : [...current, moduleKey];
+      return { ...prev, permissions: { ...prev.permissions, activityLogModules: updated } };
     });
-  };
+  }, []);
 
-  const handlePageToggle = (pageKey) => {
-    const current = adminData.permissions.visiblePages || [];
-    const updated = current.includes(pageKey)
-      ? current.filter((p) => p !== pageKey)
-      : [...current, pageKey];
-    setAdminData({
-      ...adminData,
-      permissions: { ...adminData.permissions, visiblePages: updated },
+  const handleSelectAllModules = React.useCallback(() => {
+    setAdminData((prev) => {
+      const current = prev.permissions.activityLogModules || [];
+      const allSelected = current.length === ALL_MODULES.length;
+      return { ...prev, permissions: { ...prev.permissions, activityLogModules: allSelected ? [] : [...ALL_MODULES] } };
     });
-  };
+  }, []);
 
-  const handleSelectAllPages = () => {
-    const current = adminData.permissions.visiblePages || [];
-    const allSelected = current.length === ALL_PAGES.length;
-    setAdminData({
-      ...adminData,
-      permissions: { ...adminData.permissions, visiblePages: allSelected ? [] : [...ALL_PAGES] },
+  const handlePageToggle = React.useCallback((pageKey) => {
+    setAdminData((prev) => {
+      const current = prev.permissions.visiblePages || [];
+      const updated = current.includes(pageKey)
+        ? current.filter((p) => p !== pageKey)
+        : [...current, pageKey];
+      return { ...prev, permissions: { ...prev.permissions, visiblePages: updated } };
     });
-  };
+  }, []);
 
-  const handleRoleChange = (e) => {
+  const handleSelectAllPages = React.useCallback(() => {
+    setAdminData((prev) => {
+      const current = prev.permissions.visiblePages || [];
+      const allSelected = current.length === ALL_PAGES.length;
+      return { ...prev, permissions: { ...prev.permissions, visiblePages: allSelected ? [] : [...ALL_PAGES] } };
+    });
+  }, []);
+
+  const handleRoleChange = React.useCallback((e) => {
     const role = e.target.value;
-    let permissions;
-    if (role === 'superAdmin') {
-      permissions = { add: true, edit: true, view: true, delete: true, viewActivityLog: true, activityLogModules: [...ALL_MODULES], visiblePages: [...ALL_PAGES] };
-    } else if (role === 'viewer') {
-      permissions = { add: false, edit: false, view: true, delete: false, viewActivityLog: false, activityLogModules: [], visiblePages: [...ALL_PAGES] };
-    } else {
-      permissions = adminData.permissions;
-    }
-    setAdminData({ ...adminData, role, permissions });
-  };
-
-  const handleOpen = () => {
-    setIsEdit(false);
-    setAdminData({ ...EMPTY_ADMIN });
-    setShowPassword(false);
-    setOpen(true);
-  };
-
-  const handleEdit = (row) => {
-    setAdminData({ ...row, password: '' });
-    setIsEdit(true);
-    setShowPassword(false);
-    setOpen(true);
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-    setIsEdit(false);
-    setAdminData({ ...EMPTY_ADMIN });
-  };
+    setAdminData((prev) => {
+      let permissions;
+      if (role === 'superAdmin') {
+        permissions = { add: true, edit: true, view: true, delete: true, viewActivityLog: true, activityLogModules: [...ALL_MODULES], visiblePages: [...ALL_PAGES] };
+      } else if (role === 'viewer') {
+        permissions = { add: false, edit: false, view: true, delete: false, viewActivityLog: false, activityLogModules: [], visiblePages: [...ALL_PAGES] };
+      } else {
+        permissions = prev.permissions;
+      }
+      return { ...prev, role, permissions };
+    });
+  }, []);
 
   const handleSubmit = async () => {
     const { name, username, password, role, permissions } = adminData;
     if (!name || !username || (!isEdit && !password)) return;
 
-    // Enforce minimum password length
     if (password && password.length < 6) {
       alert('Password must be at least 6 characters.');
       return;
@@ -227,7 +205,6 @@ const AdminManagement = () => {
 
     setIsSaving(true);
     try {
-      // Check if username already exists (for both add and edit)
       const existingUser = admins.find((a) => a.username === username && a.id !== adminData.id);
       if (existingUser) {
         alert('Username already exists. Please choose a different one.');
@@ -235,7 +212,6 @@ const AdminManagement = () => {
         return;
       }
 
-      // Hash password server-side if provided
       let hashedPassword = null;
       if (password) {
         const token = localStorage.getItem('adminToken');
@@ -260,7 +236,6 @@ const AdminManagement = () => {
         const updateData = { ...adminData };
         delete updateData.docId;
 
-        // If password is being changed, store hashed version and bump sessionVersion
         if (hashedPassword) {
           updateData.password = hashedPassword;
           const adminsRef = collection(db, 'admins');
@@ -275,15 +250,13 @@ const AdminManagement = () => {
 
         await updateDocument('admins', updateData);
 
-        // If we changed our own password, sync sessionVersion locally
         if (hashedPassword && updateData.id === adminUser?.id) {
           const updatedSelf = { ...adminUser, sessionVersion: updateData.sessionVersion };
           setAdminUser(updatedSelf);
           localStorage.setItem('adminUser', JSON.stringify(updatedSelf));
         }
 
-        await logActivity('Updated', 'Admins', `Updated admin "${name}" (${ROLE_CONFIG[role]?.label})`);
-        setToast({ open: true, message: 'Admin updated successfully!' });
+        await onSuccess('edit', name, role);
       } else {
         const newAdmin = {
           id: uuidv4(),
@@ -298,17 +271,275 @@ const AdminManagement = () => {
           createdBy: adminUser?.name || 'Unknown',
         };
         await addDoc(collection(db, 'admins'), newAdmin);
-        await logActivity('Added', 'Admins', `Added new admin "${name}" (${ROLE_CONFIG[role]?.label})`);
-        setToast({ open: true, message: 'Admin added successfully!' });
+        await onSuccess('add', name, role);
       }
-      handleClose();
-      await fetchAdmins();
     } catch (err) {
       console.error('Error saving admin:', err);
     } finally {
       setIsSaving(false);
     }
   };
+
+  const isSuperAdmin = (admin) => admin.role === 'superAdmin';
+
+  return (
+    <Modal open={open} onClose={onClose}>
+      <Box sx={modalStyle}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 3, pb: 2, borderBottom: '1px solid #F0E8E0' }}>
+          <Typography variant="h6">{isEdit ? 'Edit Admin' : 'Add Admin'}</Typography>
+          <IconButton onClick={onClose} size="small" sx={{ color: 'text.secondary' }}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Box>
+
+        <Box sx={{ p: 3 }}>
+          <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
+            Account Details
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              fullWidth required label="Full Name" name="name"
+              value={adminData.name} onChange={handleChange} size="small"
+              placeholder="e.g. Shahin"
+            />
+            <TextField
+              fullWidth required label="Username" name="username"
+              value={adminData.username} onChange={handleChange} size="small"
+              placeholder="e.g. shahin_admin"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <PersonOutlineIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <TextField
+              fullWidth label={isEdit ? 'New Password (leave blank to keep current)' : 'Password'}
+              name="password" required={!isEdit}
+              type={showPassword ? 'text' : 'password'}
+              value={adminData.password} onChange={handleChange} size="small"
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setShowPassword((prev) => !prev)} edge="end" size="small" sx={{ color: '#9B8B7E' }}>
+                      {showPassword ? <VisibilityOffOutlinedIcon fontSize="small" /> : <VisibilityOutlinedIcon fontSize="small" />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Box>
+
+          <Typography variant="subtitle2" sx={{ mt: 3, mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
+            Role & Permissions
+          </Typography>
+          <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+            <InputLabel>Role</InputLabel>
+            <Select
+              value={adminData.role}
+              label="Role"
+              onChange={handleRoleChange}
+              disabled={isEdit && isSuperAdmin(adminData)}
+            >
+              <MenuItem value="superAdmin">Super Admin — Full Access</MenuItem>
+              <MenuItem value="admin">Admin — Custom Permissions</MenuItem>
+              <MenuItem value="viewer">Viewer — View Only</MenuItem>
+            </Select>
+          </FormControl>
+
+          {adminData.role === 'admin' && (
+            <Paper variant="outlined" sx={{ p: 2, borderColor: '#E0D6CC' }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.65rem', letterSpacing: '0.05em', mb: 1, display: 'block' }}>
+                Data Permissions
+              </Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0 }}>
+                <FormControlLabel
+                  control={<Checkbox checked={true} disabled size="small" sx={{ color: '#D4A373', '&.Mui-checked': { color: '#D4A373' } }} />}
+                  label={<Typography variant="body2">View</Typography>}
+                />
+                <FormControlLabel
+                  control={<Checkbox checked={adminData.permissions.add} onChange={() => handlePermissionChange('add')} size="small" sx={{ color: '#D4A373', '&.Mui-checked': { color: '#5C3D2E' } }} />}
+                  label={<Typography variant="body2">Add</Typography>}
+                />
+                <FormControlLabel
+                  control={<Checkbox checked={adminData.permissions.edit} onChange={() => handlePermissionChange('edit')} size="small" sx={{ color: '#D4A373', '&.Mui-checked': { color: '#5C3D2E' } }} />}
+                  label={<Typography variant="body2">Edit</Typography>}
+                />
+                <FormControlLabel
+                  control={<Checkbox checked={adminData.permissions.delete} onChange={() => handlePermissionChange('delete')} size="small" sx={{ color: '#D4A373', '&.Mui-checked': { color: '#5C3D2E' } }} />}
+                  label={<Typography variant="body2">Delete</Typography>}
+                />
+              </Box>
+            </Paper>
+          )}
+
+          {(adminData.role === 'admin' || adminData.role === 'viewer') && (
+            <Paper variant="outlined" sx={{ p: 2, mt: 2, borderColor: '#E0D6CC' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.65rem', letterSpacing: '0.05em' }}>
+                  Visible Sections
+                </Typography>
+                <Typography
+                  variant="caption"
+                  onClick={handleSelectAllPages}
+                  sx={{ color: '#5C3D2E', fontWeight: 600, fontSize: '0.65rem', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                >
+                  {(adminData.permissions.visiblePages || []).length === ALL_PAGES.length ? 'Deselect All' : 'Select All'}
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0 }}>
+                {SIDEBAR_PAGES.map((pg) => (
+                  <FormControlLabel
+                    key={pg.key}
+                    control={
+                      <Checkbox
+                        checked={(adminData.permissions.visiblePages || []).includes(pg.key)}
+                        onChange={() => handlePageToggle(pg.key)}
+                        size="small"
+                        sx={{ color: '#D4A373', '&.Mui-checked': { color: '#5C3D2E' }, py: 0.3 }}
+                      />
+                    }
+                    label={<Typography variant="body2" sx={{ fontSize: '0.8rem' }}>{pg.label}</Typography>}
+                  />
+                ))}
+              </Box>
+
+              <Divider sx={{ my: 1.5, borderColor: '#E0D6CC' }} />
+              <FormControlLabel
+                control={<Checkbox checked={adminData.permissions.viewActivityLog || false} onChange={() => handlePermissionChange('viewActivityLog')} size="small" sx={{ color: '#D4A373', '&.Mui-checked': { color: '#5C3D2E' } }} />}
+                label={<Typography variant="body2" sx={{ fontWeight: 500 }}>View Activity Log</Typography>}
+              />
+
+              {adminData.permissions.viewActivityLog && (
+                <Box sx={{ ml: 1, mt: 0.5, pl: 2, borderLeft: '2px solid #E0D6CC' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.6rem', letterSpacing: '0.05em' }}>
+                      Activity Log Modules
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      onClick={handleSelectAllModules}
+                      sx={{ color: '#5C3D2E', fontWeight: 600, fontSize: '0.65rem', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                    >
+                      {(adminData.permissions.activityLogModules || []).length === ALL_MODULES.length ? 'Deselect All' : 'Select All'}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0 }}>
+                    {ACTIVITY_LOG_MODULES.map((mod) => (
+                      <FormControlLabel
+                        key={mod.key}
+                        control={
+                          <Checkbox
+                            checked={(adminData.permissions.activityLogModules || []).includes(mod.key)}
+                            onChange={() => handleModuleToggle(mod.key)}
+                            size="small"
+                            sx={{ color: '#D4A373', '&.Mui-checked': { color: '#5C3D2E' }, py: 0.3 }}
+                          />
+                        }
+                        label={<Typography variant="body2" sx={{ fontSize: '0.8rem' }}>{mod.label}</Typography>}
+                      />
+                    ))}
+                  </Box>
+                </Box>
+              )}
+            </Paper>
+          )}
+
+          {adminData.role === 'superAdmin' && (
+            <Paper variant="outlined" sx={{ p: 2, borderColor: '#E0D6CC', backgroundColor: 'rgba(183,28,28,0.03)' }}>
+              <Typography variant="body2" sx={{ color: '#B71C1C', fontWeight: 500 }}>
+                Super Admin has full access to all features including admin management and activity log.
+              </Typography>
+            </Paper>
+          )}
+
+          {adminData.role === 'viewer' && (
+            <Paper variant="outlined" sx={{ p: 2, mt: 2, borderColor: '#E0D6CC', backgroundColor: 'rgba(46,125,50,0.03)' }}>
+              <Typography variant="body2" sx={{ color: '#2E7D32', fontWeight: 500 }}>
+                Viewer can only view data across all sections. No add, edit, or delete permissions.
+              </Typography>
+            </Paper>
+          )}
+        </Box>
+
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, p: 3, pt: 1, borderTop: '1px solid #F0E8E0' }}>
+          <Button variant="outlined" onClick={onClose} sx={{ color: 'text.secondary', borderColor: '#E0D6CC' }}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleSubmit}
+            disabled={!adminData.name || !adminData.username || (!isEdit && !adminData.password) || isSaving}
+            startIcon={isSaving ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : null}
+          >
+            {isSaving ? 'Saving...' : isEdit ? 'Save Changes' : 'Add Admin'}
+          </Button>
+        </Box>
+      </Box>
+    </Modal>
+  );
+});
+
+/* ------------------------------------------------------------------ */
+/*  AdminManagement - parent component (table, delete, toast)          */
+/* ------------------------------------------------------------------ */
+const AdminManagement = () => {
+  const { adminUser, setAdminUser, logActivity, updateDocument, deleteDocument } = useStateContext();
+  const [admins, setAdmins] = React.useState([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [open, setOpen] = React.useState(false);
+  const [editAdmin, setEditAdmin] = React.useState(null);
+  const [isSaving, setIsSaving] = React.useState(false);
+  const [deleteTarget, setDeleteTarget] = React.useState(null);
+  const [toast, setToast] = React.useState({ open: false, message: '' });
+
+  const fetchAdmins = async () => {
+    try {
+      const adminsRef = collection(db, 'admins');
+      const snap = await getDocs(adminsRef);
+      const data = snap.docs.map((doc) => ({ docId: doc.id, ...doc.data() }));
+      setAdmins(data);
+    } catch (err) {
+      console.error('Error fetching admins:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchAdmins();
+  }, []);
+
+  const handleOpen = React.useCallback(() => {
+    setEditAdmin(null);
+    setOpen(true);
+  }, []);
+
+  const handleEdit = React.useCallback((row) => {
+    setEditAdmin(row);
+    setOpen(true);
+  }, []);
+
+  const handleClose = React.useCallback(() => {
+    setOpen(false);
+    setEditAdmin(null);
+  }, []);
+
+  const handleSuccess = React.useCallback(async (action, name, role) => {
+    if (action === 'edit') {
+      await logActivity('Updated', 'Admins', `Updated admin "${name}" (${ROLE_CONFIG[role]?.label})`);
+      setToast({ open: true, message: 'Admin updated successfully!' });
+    } else {
+      await logActivity('Added', 'Admins', `Added new admin "${name}" (${ROLE_CONFIG[role]?.label})`);
+      setToast({ open: true, message: 'Admin added successfully!' });
+    }
+    setOpen(false);
+    setEditAdmin(null);
+    await fetchAdmins();
+  }, [logActivity]);
+
+  if (isLoading) return <DashboardSkeleton />;
 
   const isSuperAdmin = (admin) => admin.role === 'superAdmin';
   const isCurrentUser = (admin) => admin.id === adminUser?.id;
@@ -327,201 +558,18 @@ const AdminManagement = () => {
         </Button>
       </Box>
 
-      <Modal open={open} onClose={handleClose}>
-        <Box sx={modalStyle}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 3, pb: 2, borderBottom: '1px solid #F0E8E0' }}>
-            <Typography variant="h6">{isEdit ? 'Edit Admin' : 'Add Admin'}</Typography>
-            <IconButton onClick={handleClose} size="small" sx={{ color: 'text.secondary' }}>
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          </Box>
-
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
-              Account Details
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <TextField
-                fullWidth required label="Full Name" name="name"
-                value={adminData.name} onChange={handleChange} size="small"
-                placeholder="e.g. Shahin"
-              />
-              <TextField
-                fullWidth required label="Username" name="username"
-                value={adminData.username} onChange={handleChange} size="small"
-                placeholder="e.g. shahin_admin"
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <PersonOutlineIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              <TextField
-                fullWidth label={isEdit ? 'New Password (leave blank to keep current)' : 'Password'}
-                name="password" required={!isEdit}
-                type={showPassword ? 'text' : 'password'}
-                value={adminData.password} onChange={handleChange} size="small"
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton onClick={() => setShowPassword(!showPassword)} edge="end" size="small" sx={{ color: '#9B8B7E' }}>
-                        {showPassword ? <VisibilityOffOutlinedIcon fontSize="small" /> : <VisibilityOutlinedIcon fontSize="small" />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Box>
-
-            <Typography variant="subtitle2" sx={{ mt: 3, mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
-              Role & Permissions
-            </Typography>
-            <FormControl fullWidth size="small" sx={{ mb: 2 }}>
-              <InputLabel>Role</InputLabel>
-              <Select
-                value={adminData.role}
-                label="Role"
-                onChange={handleRoleChange}
-                disabled={isEdit && isSuperAdmin(adminData)}
-              >
-                <MenuItem value="superAdmin">Super Admin — Full Access</MenuItem>
-                <MenuItem value="admin">Admin — Custom Permissions</MenuItem>
-                <MenuItem value="viewer">Viewer — View Only</MenuItem>
-              </Select>
-            </FormControl>
-
-            {adminData.role === 'admin' && (
-              <Paper variant="outlined" sx={{ p: 2, borderColor: '#E0D6CC' }}>
-                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.65rem', letterSpacing: '0.05em', mb: 1, display: 'block' }}>
-                  Data Permissions
-                </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0 }}>
-                  <FormControlLabel
-                    control={<Checkbox checked={true} disabled size="small" sx={{ color: '#D4A373', '&.Mui-checked': { color: '#D4A373' } }} />}
-                    label={<Typography variant="body2">View</Typography>}
-                  />
-                  <FormControlLabel
-                    control={<Checkbox checked={adminData.permissions.add} onChange={() => handlePermissionChange('add')} size="small" sx={{ color: '#D4A373', '&.Mui-checked': { color: '#5C3D2E' } }} />}
-                    label={<Typography variant="body2">Add</Typography>}
-                  />
-                  <FormControlLabel
-                    control={<Checkbox checked={adminData.permissions.edit} onChange={() => handlePermissionChange('edit')} size="small" sx={{ color: '#D4A373', '&.Mui-checked': { color: '#5C3D2E' } }} />}
-                    label={<Typography variant="body2">Edit</Typography>}
-                  />
-                  <FormControlLabel
-                    control={<Checkbox checked={adminData.permissions.delete} onChange={() => handlePermissionChange('delete')} size="small" sx={{ color: '#D4A373', '&.Mui-checked': { color: '#5C3D2E' } }} />}
-                    label={<Typography variant="body2">Delete</Typography>}
-                  />
-                </Box>
-              </Paper>
-            )}
-
-            {(adminData.role === 'admin' || adminData.role === 'viewer') && (
-              <Paper variant="outlined" sx={{ p: 2, mt: 2, borderColor: '#E0D6CC' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.65rem', letterSpacing: '0.05em' }}>
-                    Visible Sections
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    onClick={handleSelectAllPages}
-                    sx={{ color: '#5C3D2E', fontWeight: 600, fontSize: '0.65rem', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-                  >
-                    {(adminData.permissions.visiblePages || []).length === ALL_PAGES.length ? 'Deselect All' : 'Select All'}
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0 }}>
-                  {SIDEBAR_PAGES.map((pg) => (
-                    <FormControlLabel
-                      key={pg.key}
-                      control={
-                        <Checkbox
-                          checked={(adminData.permissions.visiblePages || []).includes(pg.key)}
-                          onChange={() => handlePageToggle(pg.key)}
-                          size="small"
-                          sx={{ color: '#D4A373', '&.Mui-checked': { color: '#5C3D2E' }, py: 0.3 }}
-                        />
-                      }
-                      label={<Typography variant="body2" sx={{ fontSize: '0.8rem' }}>{pg.label}</Typography>}
-                    />
-                  ))}
-                </Box>
-
-                <Divider sx={{ my: 1.5, borderColor: '#E0D6CC' }} />
-                <FormControlLabel
-                  control={<Checkbox checked={adminData.permissions.viewActivityLog || false} onChange={() => handlePermissionChange('viewActivityLog')} size="small" sx={{ color: '#D4A373', '&.Mui-checked': { color: '#5C3D2E' } }} />}
-                  label={<Typography variant="body2" sx={{ fontWeight: 500 }}>View Activity Log</Typography>}
-                />
-
-                {adminData.permissions.viewActivityLog && (
-                  <Box sx={{ ml: 1, mt: 0.5, pl: 2, borderLeft: '2px solid #E0D6CC' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-                      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.6rem', letterSpacing: '0.05em' }}>
-                        Activity Log Modules
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        onClick={handleSelectAllModules}
-                        sx={{ color: '#5C3D2E', fontWeight: 600, fontSize: '0.65rem', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-                      >
-                        {(adminData.permissions.activityLogModules || []).length === ALL_MODULES.length ? 'Deselect All' : 'Select All'}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0 }}>
-                      {ACTIVITY_LOG_MODULES.map((mod) => (
-                        <FormControlLabel
-                          key={mod.key}
-                          control={
-                            <Checkbox
-                              checked={(adminData.permissions.activityLogModules || []).includes(mod.key)}
-                              onChange={() => handleModuleToggle(mod.key)}
-                              size="small"
-                              sx={{ color: '#D4A373', '&.Mui-checked': { color: '#5C3D2E' }, py: 0.3 }}
-                            />
-                          }
-                          label={<Typography variant="body2" sx={{ fontSize: '0.8rem' }}>{mod.label}</Typography>}
-                        />
-                      ))}
-                    </Box>
-                  </Box>
-                )}
-              </Paper>
-            )}
-
-            {adminData.role === 'superAdmin' && (
-              <Paper variant="outlined" sx={{ p: 2, borderColor: '#E0D6CC', backgroundColor: 'rgba(183,28,28,0.03)' }}>
-                <Typography variant="body2" sx={{ color: '#B71C1C', fontWeight: 500 }}>
-                  Super Admin has full access to all features including admin management and activity log.
-                </Typography>
-              </Paper>
-            )}
-
-            {adminData.role === 'viewer' && (
-              <Paper variant="outlined" sx={{ p: 2, mt: 2, borderColor: '#E0D6CC', backgroundColor: 'rgba(46,125,50,0.03)' }}>
-                <Typography variant="body2" sx={{ color: '#2E7D32', fontWeight: 500 }}>
-                  Viewer can only view data across all sections. No add, edit, or delete permissions.
-                </Typography>
-              </Paper>
-            )}
-          </Box>
-
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, p: 3, pt: 1, borderTop: '1px solid #F0E8E0' }}>
-            <Button variant="outlined" onClick={handleClose} sx={{ color: 'text.secondary', borderColor: '#E0D6CC' }}>
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              onClick={handleSubmit}
-              disabled={!adminData.name || !adminData.username || (!isEdit && !adminData.password) || isSaving}
-              startIcon={isSaving ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : null}
-            >
-              {isSaving ? 'Saving...' : isEdit ? 'Save Changes' : 'Add Admin'}
-            </Button>
-          </Box>
-        </Box>
-      </Modal>
+      <AdminFormModal
+        open={open}
+        onClose={handleClose}
+        editAdmin={editAdmin}
+        onSuccess={handleSuccess}
+        isSaving={isSaving}
+        setIsSaving={setIsSaving}
+        admins={admins}
+        adminUser={adminUser}
+        updateDocument={updateDocument}
+        setAdminUser={setAdminUser}
+      />
 
       {/* Admins Table */}
       <Paper sx={{ overflow: 'hidden' }}>
