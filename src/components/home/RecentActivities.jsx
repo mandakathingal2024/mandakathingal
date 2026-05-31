@@ -20,7 +20,7 @@ const RecentActivities = () => {
         const filtered = all
           .filter((e) => e.displaySection === 'recentActivities')
           .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
-          .slice(0, 2)
+          .slice(0, 4)
         setActivities(filtered)
       } catch (err) {
         console.error('Error fetching recent activities:', err)
@@ -33,8 +33,8 @@ const RecentActivities = () => {
 
   if (isLoading || activities.length === 0) return null
 
-  // Assign sizes based on position: 1st = large, 2nd = medium
-  const sizes = ['large', 'medium']
+  // Assign sizes based on position: 1st = large, 2nd = medium, rest = small
+  const sizes = ['large', 'medium', 'small', 'small']
 
   return (
     <section id="recent-activities" className="activities-section">
@@ -51,7 +51,7 @@ const RecentActivities = () => {
           {activities.map((activity, index) => (
             <div
               key={activity.id}
-              className={`activity-card activity-card--${sizes[index] || 'small'}`}
+              className={`activity-card activity-card--${sizes[index] || 'small'}${index >= 2 ? ' activity-card--desktop-only' : ''}`}
             >
               <Image
                 src={activity.eventImgUrl}
