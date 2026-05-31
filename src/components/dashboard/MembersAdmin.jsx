@@ -54,18 +54,218 @@ const modalStyle = {
   p: 0,
 };
 
-const MembersAdmin = () => {
-  const [open, setOpen] = React.useState(false);
-  const [member, setMember] = React.useState({
+// Separate form modal component — isolates form state from the table
+// so typing in the form does NOT re-render the entire members table
+const MemberFormModal = React.memo(({ open, onClose, editMember, onSubmit, isSaving, searchMembersByName }) => {
+  const EMPTY = {
     name: '', uniqueText: '', place: '', gender: '',
     memberImgUrl: '', houseImgUrl: '', description: '',
     relatedTo: '', relation: ''
-  });
+  };
+
+  const [member, setMember] = React.useState(EMPTY);
   const [message, setMessage] = React.useState('');
   const [suggestions, setSuggestions] = React.useState([]);
   const [isNewBranch, setIsNewBranch] = React.useState(true);
+  const isEdit = !!editMember;
+
+  // Reset form state when modal opens/closes or editMember changes
+  React.useEffect(() => {
+    if (open) {
+      if (editMember) {
+        setMember(editMember);
+        setIsNewBranch(editMember.relation === 'New Branch');
+      } else {
+        setMember(EMPTY);
+        setIsNewBranch(true);
+      }
+      setMessage('');
+      setSuggestions([]);
+    }
+  }, [open, editMember]);
+
+  const handleChange = React.useCallback((event) => {
+    const { name, value } = event.target;
+    setMember((prev) => ({ ...prev, [name]: value }));
+  }, []);
+
+  const handleSubmitClick = () => {
+    if (isEdit) {
+      onSubmit(member, true);
+    } else {
+      const { name, gender, relation, relatedTo } = member;
+      if (name && gender && relation) {
+        if (relation !== 'New Branch' && !relatedTo) {
+          setMessage('Please select a related member');
+          return;
+        }
+        onSubmit(member, false);
+      } else {
+        setMessage('Please fill all required fields');
+      }
+    }
+  };
+
+  return (
+    <Modal open={open} onClose={onClose}>
+      <Box sx={modalStyle}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 3, pb: 2, borderBottom: '1px solid #F0E8E0' }}>
+          <Typography variant="h6">{isEdit ? 'Edit Member' : 'Add New Member'}</Typography>
+          <IconButton onClick={onClose} size="small" sx={{ color: 'text.secondary' }}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Box>
+
+        <Box sx={{ p: 3 }}>
+          {message && (
+            <Box sx={{ mb: 2, p: 1.5, borderRadius: 1, backgroundColor: 'rgba(211,47,47,0.08)', border: '1px solid rgba(211,47,47,0.2)' }}>
+              <Typography variant="body2" sx={{ color: '#B71C1C', fontWeight: 500 }}>{message}</Typography>
+            </Box>
+          )}
+
+          {/* Basic Info */}
+          <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
+            Basic Information
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+              <TextField
+                fullWidth required label="Name" name="name"
+                value={member.name} onChange={handleChange} size="small"
+              />
+              <TextField
+                fullWidth label="Unique Text (optional)" name="uniqueText"
+                value={member.uniqueText} onChange={handleChange} size="small"
+              />
+            </Box>
+            <TextField
+              fullWidth label="Place" name="place"
+              value={member.place} onChange={handleChange} size="small"
+            />
+
+            <FormControl>
+              <FormLabel sx={{ fontSize: '0.8125rem', fontWeight: 600, color: 'text.secondary', '&.Mui-focused': { color: 'text.secondary' } }}>
+                Gender *
+              </FormLabel>
+              <RadioGroup
+                row name="gender" value={member.gender} onChange={handleChange}
+              >
+                <FormControlLabel value="male" control={<Radio size="small" sx={{ color: '#D4A373', '&.Mui-checked': { color: '#5C3D2E' } }} />} label="Male" />
+                <FormControlLabel value="female" control={<Radio size="small" sx={{ color: '#D4A373', '&.Mui-checked': { color: '#5C3D2E' } }} />} label="Female" />
+              </RadioGroup>
+            </FormControl>
+          </Box>
+
+          {/* Photos */}
+          <Divider sx={{ my: 2.5, borderColor: '#F0E8E0' }} />
+          <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
+            Photos
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.primary', mb: 0.5, display: 'block' }}>Member Photo</Typography>
+              <UploadImage folderName="members" setMember={setMember} imageType="member" existingUrl={isEdit ? member.memberImgUrl : ''} />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.primary', mb: 0.5, display: 'block' }}>House Photo</Typography>
+              <UploadImage folderName="members" setMember={setMember} imageType="house" existingUrl={isEdit ? member.houseImgUrl : ''} />
+            </Box>
+          </Box>
+
+          {/* Description */}
+          <Divider sx={{ my: 2.5, borderColor: '#F0E8E0' }} />
+          <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
+            Description
+          </Typography>
+          <TextField
+            fullWidth label="Description" name="description"
+            value={member.description} onChange={handleChange}
+            size="small" multiline rows={2}
+          />
+
+          {/* Relation - only show on add */}
+          {!isEdit && (
+            <>
+              <Divider sx={{ my: 2.5, borderColor: '#F0E8E0' }} />
+              <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
+                Family Relation
+              </Typography>
+              <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+                <InputLabel>Relation</InputLabel>
+                <Select
+                  value={member.relation} label="Relation" name="relation"
+                  onChange={(e) => {
+                    handleChange(e);
+                    setIsNewBranch(e.target.value === 'New Branch');
+                  }}
+                >
+                  <MenuItem value="New Branch">New Branch</MenuItem>
+                  <MenuItem value="Son Of / Dauhter Of">Son Of / Daughter Of</MenuItem>
+                  <MenuItem value="Wife Of / Husband Of">Wife Of / Husband Of</MenuItem>
+                  <MenuItem value="Late Parent / Additional Member">Late Parent / Additional Member</MenuItem>
+                </Select>
+              </FormControl>
+
+              {!isNewBranch && (
+                <>
+                  <TextField
+                    fullWidth
+                    label="Search Related Member"
+                    name="relatedTo"
+                    placeholder="Type to search..."
+                    value={member.relatedTo}
+                    onChange={async (e) => {
+                      handleChange(e);
+                      if (e.target.value !== '') {
+                        const suggestionList = await searchMembersByName(e.target.value);
+                        setSuggestions(suggestionList);
+                      }
+                    }}
+                    size="small"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                    inputProps={{ list: 'suggestions' }}
+                  />
+                  <datalist id="suggestions">
+                    {suggestions && suggestions.map((m, index) => (
+                      <option key={index} value={m.id}>{`${m.name}-${m.uniqueText}`}</option>
+                    ))}
+                  </datalist>
+                </>
+              )}
+            </>
+          )}
+        </Box>
+
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, p: 3, pt: 1, borderTop: '1px solid #F0E8E0' }}>
+          <Button variant="outlined" onClick={onClose} sx={{ color: 'text.secondary', borderColor: '#E0D6CC' }}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleSubmitClick}
+            disabled={isSaving}
+            startIcon={isSaving ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : null}
+          >
+            {isSaving ? (isEdit ? 'Saving...' : 'Adding...') : (isEdit ? 'Save Changes' : 'Add Member')}
+          </Button>
+        </Box>
+      </Box>
+    </Modal>
+  );
+});
+
+MemberFormModal.displayName = 'MemberFormModal';
+
+const MembersAdmin = () => {
+  const [open, setOpen] = React.useState(false);
+  const [editMember, setEditMember] = React.useState(null);
   const [search, setSearch] = React.useState('');
-  const [isEdit, setIsEdit] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
   const [error, setError] = React.useState(null);
@@ -109,68 +309,29 @@ const MembersAdmin = () => {
     return <DashboardSkeleton />;
   }
 
-  const handleEdit = async (member) => {
-    setOpen(true);
-    setIsEdit(true);
-    setMember(member);
-  };
+  const handleOpen = () => { setEditMember(null); setOpen(true); };
+  const handleEdit = (row) => { setEditMember(row); setOpen(true); };
+  const handleClose = () => { setOpen(false); setEditMember(null); };
 
-  const handleUpdate = async () => {
+  const handleFormSubmit = async (memberData, isEdit) => {
     setIsSaving(true);
     try {
-      await updateMember(member);
-      await logActivity('Updated', 'Members', `Updated member "${member.name}"`);
+      if (isEdit) {
+        await updateMember(memberData);
+        await logActivity('Updated', 'Members', `Updated member "${memberData.name}"`);
+        setToast({ open: true, message: 'Member updated successfully!' });
+      } else {
+        await addMember(memberData);
+        await logActivity('Added', 'Members', `Added member "${memberData.name}"`);
+        setToast({ open: true, message: 'Member added successfully!' });
+      }
       handleClose();
       await fetchAllMembers();
-      setToast({ open: true, message: 'Member updated successfully!' });
     } catch (err) {
       console.error(err);
     } finally {
       setIsSaving(false);
     }
-  };
-
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-    setMember({ ...member, [name]: value });
-  };
-
-  const handleOpen = () => setOpen(true);
-
-  const handleSubmit = async () => {
-    const { name, gender, relation, relatedTo } = member;
-    if (name && gender && relation) {
-      if (relation !== 'New Branch' && !relatedTo) {
-        setMessage('Please select a related member');
-        return;
-      }
-      setIsSaving(true);
-      try {
-        await addMember(member);
-        await logActivity('Added', 'Members', `Added member "${member.name}"`);
-        handleClose();
-        await fetchAllMembers();
-        setToast({ open: true, message: 'Member added successfully!' });
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setIsSaving(false);
-      }
-    } else {
-      setMessage('Please fill all required fields');
-    }
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-    setMessage('');
-    setIsEdit(false);
-    setIsNewBranch(true);
-    setMember({
-      name: '', uniqueText: '', place: '', gender: '',
-      memberImgUrl: '', houseImgUrl: '', description: '',
-      relatedTo: '', relation: ''
-    });
   };
 
   return (
@@ -184,157 +345,15 @@ const MembersAdmin = () => {
         )}
       </Box>
 
-      {/* Add/Edit Modal */}
-      <Modal open={open} onClose={handleClose}>
-        <Box sx={modalStyle}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 3, pb: 2, borderBottom: '1px solid #F0E8E0' }}>
-            <Typography variant="h6">{isEdit ? 'Edit Member' : 'Add New Member'}</Typography>
-            <IconButton onClick={handleClose} size="small" sx={{ color: 'text.secondary' }}>
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          </Box>
-
-          <Box sx={{ p: 3 }}>
-            {message && (
-              <Box sx={{ mb: 2, p: 1.5, borderRadius: 1, backgroundColor: 'rgba(211,47,47,0.08)', border: '1px solid rgba(211,47,47,0.2)' }}>
-                <Typography variant="body2" sx={{ color: '#B71C1C', fontWeight: 500 }}>{message}</Typography>
-              </Box>
-            )}
-
-            {/* Basic Info */}
-            <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
-              Basic Information
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
-                <TextField
-                  fullWidth required label="Name" name="name"
-                  value={member.name} onChange={handleChange} size="small"
-                />
-                <TextField
-                  fullWidth label="Unique Text (optional)" name="uniqueText"
-                  value={member.uniqueText} onChange={handleChange} size="small"
-                />
-              </Box>
-              <TextField
-                fullWidth label="Place" name="place"
-                value={member.place} onChange={handleChange} size="small"
-              />
-
-              <FormControl>
-                <FormLabel sx={{ fontSize: '0.8125rem', fontWeight: 600, color: 'text.secondary', '&.Mui-focused': { color: 'text.secondary' } }}>
-                  Gender *
-                </FormLabel>
-                <RadioGroup
-                  row name="gender" value={member.gender} onChange={handleChange}
-                >
-                  <FormControlLabel value="male" control={<Radio size="small" sx={{ color: '#D4A373', '&.Mui-checked': { color: '#5C3D2E' } }} />} label="Male" />
-                  <FormControlLabel value="female" control={<Radio size="small" sx={{ color: '#D4A373', '&.Mui-checked': { color: '#5C3D2E' } }} />} label="Female" />
-                </RadioGroup>
-              </FormControl>
-            </Box>
-
-            {/* Photos */}
-            <Divider sx={{ my: 2.5, borderColor: '#F0E8E0' }} />
-            <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
-              Photos
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
-              <Box sx={{ flex: 1 }}>
-                <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.primary', mb: 0.5, display: 'block' }}>Member Photo</Typography>
-                <UploadImage folderName="members" setMember={setMember} imageType="member" existingUrl={isEdit ? member.memberImgUrl : ''} />
-              </Box>
-              <Box sx={{ flex: 1 }}>
-                <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.primary', mb: 0.5, display: 'block' }}>House Photo</Typography>
-                <UploadImage folderName="members" setMember={setMember} imageType="house" existingUrl={isEdit ? member.houseImgUrl : ''} />
-              </Box>
-            </Box>
-
-            {/* Description */}
-            <Divider sx={{ my: 2.5, borderColor: '#F0E8E0' }} />
-            <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
-              Description
-            </Typography>
-            <TextField
-              fullWidth label="Description" name="description"
-              value={member.description} onChange={handleChange}
-              size="small" multiline rows={2}
-            />
-
-            {/* Relation - only show on add */}
-            {!isEdit && (
-              <>
-                <Divider sx={{ my: 2.5, borderColor: '#F0E8E0' }} />
-                <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
-                  Family Relation
-                </Typography>
-                <FormControl fullWidth size="small" sx={{ mb: 2 }}>
-                  <InputLabel>Relation</InputLabel>
-                  <Select
-                    value={member.relation} label="Relation" name="relation"
-                    onChange={(e) => {
-                      handleChange(e);
-                      setIsNewBranch(e.target.value === 'New Branch');
-                    }}
-                  >
-                    <MenuItem value="New Branch">New Branch</MenuItem>
-                    <MenuItem value="Son Of / Dauhter Of">Son Of / Daughter Of</MenuItem>
-                    <MenuItem value="Wife Of / Husband Of">Wife Of / Husband Of</MenuItem>
-                    <MenuItem value="Late Parent / Additional Member">Late Parent / Additional Member</MenuItem>
-                  </Select>
-                </FormControl>
-
-                {!isNewBranch && (
-                  <>
-                    <TextField
-                      fullWidth
-                      label="Search Related Member"
-                      name="relatedTo"
-                      placeholder="Type to search..."
-                      value={member.relatedTo}
-                      onChange={async (e) => {
-                        handleChange(e);
-                        if (e.target.value !== '') {
-                          const suggestionList = await searchMembersByName(e.target.value);
-                          setSuggestions(suggestionList);
-                        }
-                      }}
-                      size="small"
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-                          </InputAdornment>
-                        ),
-                      }}
-                      inputProps={{ list: 'suggestions' }}
-                    />
-                    <datalist id="suggestions">
-                      {suggestions && suggestions.map((m, index) => (
-                        <option key={index} value={m.id}>{`${m.name}-${m.uniqueText}`}</option>
-                      ))}
-                    </datalist>
-                  </>
-                )}
-              </>
-            )}
-          </Box>
-
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, p: 3, pt: 1, borderTop: '1px solid #F0E8E0' }}>
-            <Button variant="outlined" onClick={handleClose} sx={{ color: 'text.secondary', borderColor: '#E0D6CC' }}>
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              onClick={isEdit ? handleUpdate : handleSubmit}
-              disabled={isSaving}
-              startIcon={isSaving ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : null}
-            >
-              {isSaving ? (isEdit ? 'Saving...' : 'Adding...') : (isEdit ? 'Save Changes' : 'Add Member')}
-            </Button>
-          </Box>
-        </Box>
-      </Modal>
+      {/* Add/Edit Modal — isolated component, typing won't re-render the table */}
+      <MemberFormModal
+        open={open}
+        onClose={handleClose}
+        editMember={editMember}
+        onSubmit={handleFormSubmit}
+        isSaving={isSaving}
+        searchMembersByName={searchMembersByName}
+      />
 
       {/* Search & Table */}
       <Paper sx={{ overflow: 'hidden' }}>
