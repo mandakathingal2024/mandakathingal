@@ -92,6 +92,69 @@ const GalleryFormModal = React.memo(function GalleryFormModal({ open, onClose, e
   );
 });
 
+// Memoized single table row — skips re-render when unrelated state changes (modal, delete dialog, toast)
+const GalleryRow = React.memo(({ row, index, onEdit, onDelete, canEdit, canDelete }) => (
+  <TableRow>
+    <TableCell><Typography variant="body2" sx={{ fontWeight: 500 }}>{index + 1}</Typography></TableCell>
+    <TableCell>
+      <Box sx={{ width: 80, height: 80, borderRadius: 1, overflow: 'hidden', border: '1px solid #F0E8E0' }}>
+        <Image src={row.galleryImgUrl} width={80} height={80} alt="Gallery" style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
+      </Box>
+    </TableCell>
+    <TableCell><Typography variant="body2">{row.description}</Typography></TableCell>
+    <TableCell align="center">
+      <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+        {canEdit && (
+          <Tooltip title="Edit">
+            <IconButton size="small" onClick={() => onEdit(row)} sx={{ color: '#2E7D32', '&:hover': { backgroundColor: 'rgba(46,125,50,0.08)' } }}>
+              <EditOutlinedIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
+        {canDelete && (
+          <Tooltip title="Delete">
+            <IconButton size="small" onClick={() => onDelete(row)} sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' } }}>
+              <DeleteOutlineIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
+      </Box>
+    </TableCell>
+  </TableRow>
+));
+GalleryRow.displayName = 'GalleryRow';
+
+// Memoized gallery table — only re-renders when the filtered list or permission booleans change
+const GalleryTable = React.memo(({ filteredGallery, search, onEdit, onDelete, canEdit, canDelete }) => (
+  <Paper sx={{ overflow: 'hidden' }}>
+    <Box sx={{ overflowX: 'auto' }}>
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell sx={{ width: 60 }}>Sl No</TableCell>
+            <TableCell sx={{ width: 120 }}>Image</TableCell>
+            <TableCell>Description</TableCell>
+            <TableCell sx={{ width: 110 }} align="center">Actions</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {filteredGallery.map((row, index) => (
+            <GalleryRow key={row.id || index} row={row} index={index} onEdit={onEdit} onDelete={onDelete} canEdit={canEdit} canDelete={canDelete} />
+          ))}
+          {filteredGallery.length === 0 && (
+            <TableRow><TableCell colSpan={4} sx={{ py: 4, textAlign: 'center' }}>
+              <Typography variant="body2" color="text.secondary">
+                {search ? `No images matching "${search}"` : 'No gallery images yet.'}
+              </Typography>
+            </TableCell></TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </Box>
+  </Paper>
+));
+GalleryTable.displayName = 'GalleryTable';
+
 const GalleryAdmin = () => {
   const [open, setOpen] = React.useState(false);
   const [editGallery, setEditGallery] = React.useState(null);
@@ -154,9 +217,13 @@ const GalleryAdmin = () => {
     setToast({ open: true, message: 'Image deleted successfully.' });
   }, [deleteTarget, deleteDocument, logActivity]);
 
+  const handleDelete = React.useCallback((row) => setDeleteTarget(row), []);
   const handleDeleteCancel = React.useCallback(() => setDeleteTarget(null), []);
   const handleToastClose = React.useCallback(() => setToast((prev) => ({ ...prev, open: false })), []);
   const handleSearchChange = React.useCallback((e) => setSearch(e.target.value), []);
+
+  const canEdit = hasPermission('edit');
+  const canDelete = hasPermission('delete');
 
   if (isLoading) return <DashboardSkeleton />;
 
@@ -190,58 +257,14 @@ const GalleryAdmin = () => {
         isSaving={isSaving}
       />
 
-      <Paper sx={{ overflow: 'hidden' }}>
-        <Box sx={{ overflowX: 'auto' }}>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ width: 60 }}>Sl No</TableCell>
-                <TableCell sx={{ width: 120 }}>Image</TableCell>
-                <TableCell>Description</TableCell>
-                <TableCell sx={{ width: 110 }} align="center">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredGallery.map((row, index) => (
-                <TableRow key={row.id || index}>
-                  <TableCell><Typography variant="body2" sx={{ fontWeight: 500 }}>{index + 1}</Typography></TableCell>
-                  <TableCell>
-                    <Box sx={{ width: 80, height: 80, borderRadius: 1, overflow: 'hidden', border: '1px solid #F0E8E0' }}>
-                      <Image src={row.galleryImgUrl} width={80} height={80} alt="Gallery" style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
-                    </Box>
-                  </TableCell>
-                  <TableCell><Typography variant="body2">{row.description}</Typography></TableCell>
-                  <TableCell align="center">
-                    <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
-                      {hasPermission('edit') && (
-                        <Tooltip title="Edit">
-                          <IconButton size="small" onClick={() => handleEdit(row)} sx={{ color: '#2E7D32', '&:hover': { backgroundColor: 'rgba(46,125,50,0.08)' } }}>
-                            <EditOutlinedIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                      {hasPermission('delete') && (
-                        <Tooltip title="Delete">
-                          <IconButton size="small" onClick={() => setDeleteTarget(row)} sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' } }}>
-                            <DeleteOutlineIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {filteredGallery.length === 0 && (
-                <TableRow><TableCell colSpan={4} sx={{ py: 4, textAlign: 'center' }}>
-                  <Typography variant="body2" color="text.secondary">
-                    {search ? `No images matching "${search}"` : 'No gallery images yet.'}
-                  </Typography>
-                </TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </Box>
-      </Paper>
+      <GalleryTable
+        filteredGallery={filteredGallery}
+        search={search}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        canEdit={canEdit}
+        canDelete={canDelete}
+      />
 
       <ConfirmDialog open={!!deleteTarget} title="Delete Image" message="Are you sure you want to delete this gallery image? This action cannot be undone."
         onCancel={handleDeleteCancel} onConfirm={handleDeleteConfirm} />

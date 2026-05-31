@@ -482,6 +482,121 @@ const AdminFormModal = React.memo(function AdminFormModal({
 });
 
 /* ------------------------------------------------------------------ */
+/*  Memoized row + table to avoid re-renders on modal/dialog changes  */
+/* ------------------------------------------------------------------ */
+const AdminRow = React.memo(({ row, index, onEdit, onDelete, isCurrentUser, isSuperAdmin }) => (
+  <TableRow>
+    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
+      <Typography variant="body2" sx={{ fontWeight: 500 }}>{index + 1}</Typography>
+    </TableCell>
+    <TableCell>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Typography variant="body2" sx={{ fontWeight: 600 }}>{row.name}</Typography>
+        {isCurrentUser && (
+          <Chip label="You" size="small" sx={{ height: 20, fontSize: '0.6rem', backgroundColor: 'rgba(212,163,115,0.2)', color: '#5C3D2E' }} />
+        )}
+      </Box>
+    </TableCell>
+    <TableCell>
+      <Typography variant="body2" sx={{ color: 'text.secondary' }}>{row.username}</Typography>
+    </TableCell>
+    <TableCell>
+      <Chip
+        label={ROLE_CONFIG[row.role]?.label || row.role}
+        size="small"
+        sx={{ fontWeight: 600, fontSize: '0.7rem', backgroundColor: ROLE_CONFIG[row.role]?.bg, color: ROLE_CONFIG[row.role]?.color }}
+      />
+    </TableCell>
+    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
+      {row.role === 'superAdmin' ? (
+        <Typography variant="caption" sx={{ color: 'text.secondary' }}>Full Access</Typography>
+      ) : (
+        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+          {row.permissions?.view && <Chip label="View" size="small" variant="outlined" sx={{ height: 22, fontSize: '0.6rem' }} />}
+          {row.permissions?.add && <Chip label="Add" size="small" variant="outlined" sx={{ height: 22, fontSize: '0.6rem' }} />}
+          {row.permissions?.edit && <Chip label="Edit" size="small" variant="outlined" sx={{ height: 22, fontSize: '0.6rem' }} />}
+          {row.permissions?.delete && <Chip label="Delete" size="small" variant="outlined" sx={{ height: 22, fontSize: '0.6rem' }} />}
+          {row.permissions?.viewActivityLog && <Chip label="Activity Log" size="small" variant="outlined" sx={{ height: 22, fontSize: '0.6rem', borderColor: '#7B1FA2', color: '#7B1FA2' }} />}
+        </Box>
+      )}
+    </TableCell>
+    <TableCell align="center">
+      <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+        <Tooltip title="Edit">
+          <IconButton size="small" onClick={() => onEdit(row)}
+            sx={{ color: '#2E7D32', '&:hover': { backgroundColor: 'rgba(46,125,50,0.08)' } }}>
+            <EditOutlinedIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        {!isSuperAdmin && !isCurrentUser && (
+          <Tooltip title="Delete">
+            <IconButton size="small" onClick={() => onDelete(row)}
+              sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' } }}>
+              <DeleteOutlineIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
+      </Box>
+    </TableCell>
+  </TableRow>
+));
+AdminRow.displayName = 'AdminRow';
+
+const AdminsTable = React.memo(({ admins, onEdit, onDelete, adminUserId }) => {
+  const sortedAdmins = React.useMemo(() =>
+    [...admins].sort((a, b) => {
+      const order = { superAdmin: 0, admin: 1, viewer: 2 };
+      return (order[a.role] ?? 3) - (order[b.role] ?? 3);
+    }),
+  [admins]);
+
+  return (
+    <Paper sx={{ overflow: 'hidden' }}>
+      <Box sx={{ overflowX: 'auto' }}>
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Sl No</TableCell>
+              <TableCell>Name</TableCell>
+              <TableCell>Username</TableCell>
+              <TableCell>Role</TableCell>
+              <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Permissions</TableCell>
+              <TableCell align="center">Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {sortedAdmins.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} sx={{ py: 6, textAlign: 'center' }}>
+                  <SecurityIcon sx={{ fontSize: 48, color: '#D4A373', mb: 1 }} />
+                  <Typography variant="h6" sx={{ color: 'text.secondary' }}>No admins yet</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Run the seed script or add the first admin above.
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            ) : (
+              sortedAdmins.map((row, index) => (
+                <AdminRow
+                  key={row.id || index}
+                  row={row}
+                  index={index}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                  isCurrentUser={row.id === adminUserId}
+                  isSuperAdmin={row.role === 'superAdmin'}
+                />
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </Box>
+    </Paper>
+  );
+});
+AdminsTable.displayName = 'AdminsTable';
+
+/* ------------------------------------------------------------------ */
 /*  AdminManagement - parent component (table, delete, toast)          */
 /* ------------------------------------------------------------------ */
 const AdminManagement = () => {
@@ -539,10 +654,20 @@ const AdminManagement = () => {
     await fetchAdmins();
   }, [logActivity]);
 
-  if (isLoading) return <DashboardSkeleton />;
+  const handleDelete = React.useCallback((row) => setDeleteTarget(row), []);
 
-  const isSuperAdmin = (admin) => admin.role === 'superAdmin';
-  const isCurrentUser = (admin) => admin.id === adminUser?.id;
+  const handleDeleteConfirm = React.useCallback(async () => {
+    await deleteDocument('admins', deleteTarget.id);
+    await logActivity('Deleted', 'Admins', `Deleted admin "${deleteTarget.name}"`);
+    setDeleteTarget(null);
+    await fetchAdmins();
+    setToast({ open: true, message: 'Admin deleted successfully.' });
+  }, [deleteTarget, deleteDocument, logActivity]);
+
+  const handleDeleteCancel = React.useCallback(() => setDeleteTarget(null), []);
+  const handleToastClose = React.useCallback(() => setToast((prev) => ({ ...prev, open: false })), []);
+
+  if (isLoading) return <DashboardSkeleton />;
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3 } }}>
@@ -571,128 +696,25 @@ const AdminManagement = () => {
         setAdminUser={setAdminUser}
       />
 
-      {/* Admins Table */}
-      <Paper sx={{ overflow: 'hidden' }}>
-        <Box sx={{ overflowX: 'auto' }}>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Sl No</TableCell>
-                <TableCell>Name</TableCell>
-                <TableCell>Username</TableCell>
-                <TableCell>Role</TableCell>
-                <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Permissions</TableCell>
-                <TableCell align="center">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {admins.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} sx={{ py: 6, textAlign: 'center' }}>
-                    <SecurityIcon sx={{ fontSize: 48, color: '#D4A373', mb: 1 }} />
-                    <Typography variant="h6" sx={{ color: 'text.secondary' }}>No admins yet</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Run the seed script or add the first admin above.
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                [...admins]
-                  .sort((a, b) => {
-                    const order = { superAdmin: 0, admin: 1, viewer: 2 };
-                    return (order[a.role] ?? 3) - (order[b.role] ?? 3);
-                  })
-                  .map((row, index) => (
-                    <TableRow key={row.id || index}>
-                      <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>{index + 1}</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{row.name}</Typography>
-                          {isCurrentUser(row) && (
-                            <Chip label="You" size="small" sx={{ height: 20, fontSize: '0.6rem', backgroundColor: 'rgba(212,163,115,0.2)', color: '#5C3D2E' }} />
-                          )}
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" sx={{ color: 'text.secondary' }}>{row.username}</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={ROLE_CONFIG[row.role]?.label || row.role}
-                          size="small"
-                          sx={{
-                            fontWeight: 600,
-                            fontSize: '0.7rem',
-                            backgroundColor: ROLE_CONFIG[row.role]?.bg,
-                            color: ROLE_CONFIG[row.role]?.color,
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
-                        {row.role === 'superAdmin' ? (
-                          <Typography variant="caption" sx={{ color: 'text.secondary' }}>Full Access</Typography>
-                        ) : (
-                          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                            {row.permissions?.view && <Chip label="View" size="small" variant="outlined" sx={{ height: 22, fontSize: '0.6rem' }} />}
-                            {row.permissions?.add && <Chip label="Add" size="small" variant="outlined" sx={{ height: 22, fontSize: '0.6rem' }} />}
-                            {row.permissions?.edit && <Chip label="Edit" size="small" variant="outlined" sx={{ height: 22, fontSize: '0.6rem' }} />}
-                            {row.permissions?.delete && <Chip label="Delete" size="small" variant="outlined" sx={{ height: 22, fontSize: '0.6rem' }} />}
-                            {row.permissions?.viewActivityLog && <Chip label="Activity Log" size="small" variant="outlined" sx={{ height: 22, fontSize: '0.6rem', borderColor: '#7B1FA2', color: '#7B1FA2' }} />}
-                          </Box>
-                        )}
-                      </TableCell>
-                      <TableCell align="center">
-                        <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
-                          <Tooltip title="Edit">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleEdit(row)}
-                              sx={{ color: '#2E7D32', '&:hover': { backgroundColor: 'rgba(46,125,50,0.08)' } }}
-                            >
-                              <EditOutlinedIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          {!isSuperAdmin(row) && !isCurrentUser(row) && (
-                            <Tooltip title="Delete">
-                              <IconButton
-                                size="small"
-                                onClick={() => setDeleteTarget(row)}
-                                sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' } }}
-                              >
-                                <DeleteOutlineIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))
-              )}
-            </TableBody>
-          </Table>
-        </Box>
-      </Paper>
+      <AdminsTable
+        admins={admins}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        adminUserId={adminUser?.id}
+      />
 
       <ConfirmDialog
         open={!!deleteTarget}
         title="Delete Admin"
         message={`Are you sure you want to delete admin "${deleteTarget?.name}"? They will no longer be able to access the dashboard.`}
-        onCancel={() => setDeleteTarget(null)}
-        onConfirm={async () => {
-          await deleteDocument('admins', deleteTarget.id);
-          await logActivity('Deleted', 'Admins', `Deleted admin "${deleteTarget.name}"`);
-          setDeleteTarget(null);
-          await fetchAdmins();
-          setToast({ open: true, message: 'Admin deleted successfully.' });
-        }}
+        onCancel={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
       />
 
       <SuccessToast
         open={toast.open}
         message={toast.message}
-        onClose={() => setToast({ ...toast, open: false })}
+        onClose={handleToastClose}
       />
     </Container>
   );

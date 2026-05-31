@@ -166,12 +166,17 @@ const drawerSx = {
 
 export default function Dashboard() {
   const isMobile = useMediaQuery(adminTheme.breakpoints.down('md'));
-  const [open, setOpen] = React.useState(true);
+  const [open, setOpen] = React.useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
   const [installPrompt, setInstallPrompt] = React.useState(null);
   const toggleDrawer = () => setOpen(!open);
   const { pageValue, handleLogOut, adminUser } = useStateContext();
   const canSeePage = (page) => adminUser?.role === 'superAdmin' || !adminUser?.permissions?.visiblePages || adminUser.permissions.visiblePages.includes(page);
+
+  // On mobile: always keep sidebar closed. On desktop: open by default.
+  React.useEffect(() => {
+    setOpen(!isMobile);
+  }, [isMobile]);
 
   // Capture PWA install prompt
   React.useEffect(() => {

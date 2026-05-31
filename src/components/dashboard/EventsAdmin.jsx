@@ -171,6 +171,82 @@ const EventFormModal = React.memo(({ open, onClose, editEvent, onSubmit, isSavin
 
 EventFormModal.displayName = 'EventFormModal';
 
+// Memoized single event card — skips re-render when unrelated state changes (modal, delete dialog, toast)
+const EventCard = React.memo(({ row, onEdit, onDelete, canEdit, canDelete }) => (
+  <Grid item xs={12} sm={6} md={4}>
+    <Paper sx={{ overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', transition: 'all 0.2s', '&:hover': { boxShadow: '0 4px 16px rgba(0,0,0,0.1)' } }}>
+      <Box sx={{ position: 'relative', width: '100%', height: 200, backgroundColor: '#F5F0EB' }}>
+        <Image src={row.eventImgUrl} fill alt={row.title} style={{ objectFit: 'cover' }} />
+        {row.displaySection && (
+          <Chip
+            label={SECTION_LABELS[row.displaySection] || row.displaySection}
+            size="small"
+            sx={{
+              position: 'absolute', top: 8, left: 8,
+              backgroundColor: row.displaySection === 'recentActivities' ? 'rgba(46, 125, 50, 0.9)' : 'rgba(21, 101, 192, 0.9)',
+              color: '#fff', fontWeight: 600, fontSize: '0.65rem',
+            }}
+          />
+        )}
+        <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 0.5 }}>
+          {canEdit && (
+            <IconButton size="small" onClick={() => onEdit(row)}
+              sx={{ backgroundColor: 'rgba(255,255,255,0.9)', color: '#2E7D32', '&:hover': { backgroundColor: '#fff' }, boxShadow: '0 1px 4px rgba(0,0,0,0.15)' }}>
+              <EditOutlinedIcon fontSize="small" />
+            </IconButton>
+          )}
+          {canDelete && (
+            <IconButton size="small" onClick={() => onDelete(row)}
+              sx={{ backgroundColor: 'rgba(255,255,255,0.9)', color: '#B71C1C', '&:hover': { backgroundColor: '#fff' }, boxShadow: '0 1px 4px rgba(0,0,0,0.15)' }}>
+              <DeleteOutlineIcon fontSize="small" />
+            </IconButton>
+          )}
+        </Box>
+      </Box>
+      <Box sx={{ p: 2, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5, lineHeight: 1.3 }}>{row.title}</Typography>
+        {row.titleMl && (
+          <Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.5, fontStyle: 'italic', fontSize: '0.8rem' }}>{row.titleMl}</Typography>
+        )}
+        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+          {row.description}
+        </Typography>
+        {row.year && (
+          <Typography variant="caption" sx={{ mt: 'auto', pt: 1, color: '#D4A373', fontWeight: 600 }}>
+            {row.category ? `${row.category} • ${row.year}` : row.year}
+          </Typography>
+        )}
+      </Box>
+    </Paper>
+  </Grid>
+));
+EventCard.displayName = 'EventCard';
+
+// Memoized events grid — only re-renders when the filtered list or permission booleans change
+const EventsGrid = React.memo(({ filteredEvents, search, filterSection, onEdit, onDelete, canEdit, canDelete }) => {
+  if (filteredEvents.length === 0) {
+    return (
+      <Paper sx={{ p: 6, textAlign: 'center' }}>
+        <EventNoteIcon sx={{ fontSize: 48, color: '#D4A373', mb: 1 }} />
+        <Typography variant="h6" sx={{ color: 'text.secondary', mb: 0.5 }}>
+          {search || filterSection !== 'all' ? 'No matching events' : 'No events yet'}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {search ? `No events matching "${search}"` : filterSection !== 'all' ? 'No events in this section.' : 'Add your first event to get started.'}
+        </Typography>
+      </Paper>
+    );
+  }
+  return (
+    <Grid container spacing={{ xs: 2, sm: 3 }}>
+      {filteredEvents.map((row) => (
+        <EventCard key={row.id} row={row} onEdit={onEdit} onDelete={onDelete} canEdit={canEdit} canDelete={canDelete} />
+      ))}
+    </Grid>
+  );
+});
+EventsGrid.displayName = 'EventsGrid';
+
 const EventsAdmin = () => {
   const [open, setOpen] = React.useState(false);
   const [editEvent, setEditEvent] = React.useState(null);
@@ -269,6 +345,23 @@ const EventsAdmin = () => {
     }
   }, [updateDocument, logActivity, addEvent, fetchAllEvents, handleClose]);
 
+  const handleDelete = React.useCallback((row) => setDeleteTarget(row), []);
+
+  const handleDeleteConfirm = React.useCallback(async () => {
+    await deleteDocument('events', deleteTarget.id);
+    await logActivity('Deleted', 'Events', `Deleted event "${deleteTarget.title}"`);
+    setDeleteTarget(null);
+    setToast({ open: true, message: 'Event deleted successfully.' });
+  }, [deleteTarget, deleteDocument, logActivity]);
+
+  const handleDeleteCancel = React.useCallback(() => setDeleteTarget(null), []);
+  const handleToastClose = React.useCallback(() => setToast((prev) => ({ ...prev, open: false })), []);
+  const handleSearchChange = React.useCallback((e) => setSearch(e.target.value), []);
+  const handleFilterChange = React.useCallback((e) => setFilterSection(e.target.value), []);
+
+  const canEdit = hasPermission('edit');
+  const canDelete = hasPermission('delete');
+
   if (isLoading) {
     return <DashboardSkeleton />;
   }
@@ -288,7 +381,7 @@ const EventsAdmin = () => {
         <TextField
           placeholder="Search events..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={handleSearchChange}
           size="small"
           sx={{ maxWidth: { xs: '100%', sm: 280 }, width: '100%' }}
           InputProps={{
@@ -304,7 +397,7 @@ const EventsAdmin = () => {
           <Select
             value={filterSection}
             label="Filter by Section"
-            onChange={(e) => setFilterSection(e.target.value)}
+            onChange={handleFilterChange}
           >
             <MenuItem value="all">All Events</MenuItem>
             <MenuItem value="none">No Section</MenuItem>
@@ -322,109 +415,28 @@ const EventsAdmin = () => {
         isSaving={isSaving}
       />
 
-      {/* Card-based event list */}
-      {filteredEvents.length === 0 ? (
-        <Paper sx={{ p: 6, textAlign: 'center' }}>
-          <EventNoteIcon sx={{ fontSize: 48, color: '#D4A373', mb: 1 }} />
-          <Typography variant="h6" sx={{ color: 'text.secondary', mb: 0.5 }}>
-            {search || filterSection !== 'all' ? 'No matching events' : 'No events yet'}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {search ? `No events matching "${search}"` : filterSection !== 'all' ? 'No events in this section.' : 'Add your first event to get started.'}
-          </Typography>
-        </Paper>
-      ) : (
-        <Grid container spacing={{ xs: 2, sm: 3 }}>
-          {filteredEvents.map((row, index) => (
-            <Grid item xs={12} sm={6} md={4} key={row.id || index}>
-              <Paper sx={{ overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', transition: 'all 0.2s', '&:hover': { boxShadow: '0 4px 16px rgba(0,0,0,0.1)' } }}>
-                {/* Event Image */}
-                <Box sx={{ position: 'relative', width: '100%', height: 200, backgroundColor: '#F5F0EB' }}>
-                  <Image
-                    src={row.eventImgUrl}
-                    fill
-                    alt={row.title}
-                    style={{ objectFit: 'cover' }}
-                  />
-                  {/* Section badge */}
-                  {row.displaySection && (
-                    <Chip
-                      label={SECTION_LABELS[row.displaySection] || row.displaySection}
-                      size="small"
-                      sx={{
-                        position: 'absolute',
-                        top: 8,
-                        left: 8,
-                        backgroundColor: row.displaySection === 'recentActivities' ? 'rgba(46, 125, 50, 0.9)' : 'rgba(21, 101, 192, 0.9)',
-                        color: '#fff',
-                        fontWeight: 600,
-                        fontSize: '0.65rem',
-                      }}
-                    />
-                  )}
-                  <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 0.5 }}>
-                    {hasPermission('edit') && (
-                      <IconButton
-                        size="small"
-                        onClick={() => handleEdit(row)}
-                        sx={{ backgroundColor: 'rgba(255,255,255,0.9)', color: '#2E7D32', '&:hover': { backgroundColor: '#fff' }, boxShadow: '0 1px 4px rgba(0,0,0,0.15)' }}
-                      >
-                        <EditOutlinedIcon fontSize="small" />
-                      </IconButton>
-                    )}
-                    {hasPermission('delete') && (
-                      <IconButton
-                        size="small"
-                        onClick={() => setDeleteTarget(row)}
-                        sx={{ backgroundColor: 'rgba(255,255,255,0.9)', color: '#B71C1C', '&:hover': { backgroundColor: '#fff' }, boxShadow: '0 1px 4px rgba(0,0,0,0.15)' }}
-                      >
-                        <DeleteOutlineIcon fontSize="small" />
-                      </IconButton>
-                    )}
-                  </Box>
-                </Box>
-                {/* Event Info */}
-                <Box sx={{ p: 2, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5, lineHeight: 1.3 }}>
-                    {row.title}
-                  </Typography>
-                  {row.titleMl && (
-                    <Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.5, fontStyle: 'italic', fontSize: '0.8rem' }}>
-                      {row.titleMl}
-                    </Typography>
-                  )}
-                  <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                    {row.description}
-                  </Typography>
-                  {row.year && (
-                    <Typography variant="caption" sx={{ mt: 'auto', pt: 1, color: '#D4A373', fontWeight: 600 }}>
-                      {row.category ? `${row.category} • ${row.year}` : row.year}
-                    </Typography>
-                  )}
-                </Box>
-              </Paper>
-            </Grid>
-          ))}
-        </Grid>
-      )}
+      <EventsGrid
+        filteredEvents={filteredEvents}
+        search={search}
+        filterSection={filterSection}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        canEdit={canEdit}
+        canDelete={canDelete}
+      />
 
       <ConfirmDialog
         open={!!deleteTarget}
         title="Delete Event"
         message={`Are you sure you want to delete "${deleteTarget?.title}"? This action cannot be undone.`}
-        onCancel={() => setDeleteTarget(null)}
-        onConfirm={async () => {
-          await deleteDocument('events', deleteTarget.id);
-          await logActivity('Deleted', 'Events', `Deleted event "${deleteTarget.title}"`);
-          setDeleteTarget(null);
-          setToast({ open: true, message: 'Event deleted successfully.' });
-        }}
+        onCancel={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
       />
 
       <SuccessToast
         open={toast.open}
         message={toast.message}
-        onClose={() => setToast({ ...toast, open: false })}
+        onClose={handleToastClose}
       />
     </Container>
   );

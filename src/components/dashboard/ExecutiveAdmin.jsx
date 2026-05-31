@@ -135,6 +135,81 @@ const ExecutiveFormModal = React.memo(function ExecutiveFormModal({ open, onClos
   );
 });
 
+// Memoized single table row — skips re-render when unrelated state changes (modal, delete dialog, toast)
+const ExecutiveRow = React.memo(({ row, index, onEdit, onDelete, canEdit, canDelete }) => (
+  <TableRow>
+    <TableCell>
+      <Typography variant="body2" sx={{ fontWeight: 600, color: row.sortOrder ? '#5C3D2E' : 'text.disabled' }}>
+        {row.sortOrder || '—'}
+      </Typography>
+    </TableCell>
+    <TableCell>
+      <Box sx={{ width: 64, height: 64, borderRadius: '50%', overflow: 'hidden', border: '2px solid #F0E8E0' }}>
+        <Image src={row.executiveImgUrl} width={64} height={64} alt={row.name} style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
+      </Box>
+    </TableCell>
+    <TableCell>
+      <Typography variant="body2" sx={{ fontWeight: 500 }}>{row.name}</Typography>
+    </TableCell>
+    <TableCell>
+      <Typography variant="body2" color="text.secondary">{row.role}</Typography>
+    </TableCell>
+    <TableCell align="center">
+      <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+        {canEdit && (
+          <Tooltip title="Edit">
+            <IconButton size="small" onClick={() => onEdit(row)} sx={{ color: '#2E7D32', '&:hover': { backgroundColor: 'rgba(46,125,50,0.08)' } }}>
+              <EditOutlinedIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
+        {canDelete && (
+          <Tooltip title="Delete">
+            <IconButton size="small" onClick={() => onDelete(row)} sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' } }}>
+              <DeleteOutlineIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
+      </Box>
+    </TableCell>
+  </TableRow>
+));
+ExecutiveRow.displayName = 'ExecutiveRow';
+
+// Memoized executives table — only re-renders when the filtered list or permission booleans change
+const ExecutivesTable = React.memo(({ filteredExecutives, search, onEdit, onDelete, canEdit, canDelete }) => (
+  <Paper sx={{ overflow: 'hidden' }}>
+    <Box sx={{ overflowX: 'auto' }}>
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell sx={{ width: 60 }}>Order</TableCell>
+            <TableCell sx={{ width: 80 }}>Photo</TableCell>
+            <TableCell>Name</TableCell>
+            <TableCell>Role</TableCell>
+            <TableCell sx={{ width: 110 }} align="center">Actions</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {filteredExecutives.map((row, index) => (
+            <ExecutiveRow key={row.id || index} row={row} index={index} onEdit={onEdit} onDelete={onDelete} canEdit={canEdit} canDelete={canDelete} />
+          ))}
+          {filteredExecutives.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={5} sx={{ py: 4, textAlign: 'center' }}>
+                <Typography variant="body2" color="text.secondary">
+                  {search ? `No executives matching "${search}"` : 'No executives added yet.'}
+                </Typography>
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </Box>
+  </Paper>
+));
+ExecutivesTable.displayName = 'ExecutivesTable';
+
 const ExecutiveAdmin = () => {
   const [open, setOpen] = React.useState(false);
   const [editExecutive, setEditExecutive] = React.useState(null);
@@ -234,9 +309,14 @@ const ExecutiveAdmin = () => {
     setToast((prev) => ({ ...prev, open: false }));
   }, []);
 
+  const handleDelete = React.useCallback((row) => setDeleteTarget(row), []);
+
   const handleSearchChange = React.useCallback((e) => {
     setSearch(e.target.value);
   }, []);
+
+  const canEdit = hasPermission('edit');
+  const canDelete = hasPermission('delete');
 
   if (isLoading) {
     return <DashboardSkeleton />;
@@ -276,70 +356,14 @@ const ExecutiveAdmin = () => {
         isSaving={isSaving}
       />
 
-      <Paper sx={{ overflow: 'hidden' }}>
-        <Box sx={{ overflowX: 'auto' }}>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ width: 60 }}>Order</TableCell>
-                <TableCell sx={{ width: 80 }}>Photo</TableCell>
-                <TableCell>Name</TableCell>
-                <TableCell>Role</TableCell>
-                <TableCell sx={{ width: 110 }} align="center">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredExecutives.map((row, index) => (
-                <TableRow key={row.id || index}>
-                  <TableCell>
-                    <Typography variant="body2" sx={{ fontWeight: 600, color: row.sortOrder ? '#5C3D2E' : 'text.disabled' }}>
-                      {row.sortOrder || '—'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Box sx={{ width: 64, height: 64, borderRadius: '50%', overflow: 'hidden', border: '2px solid #F0E8E0' }}>
-                      <Image src={row.executiveImgUrl} width={64} height={64} alt={row.name} style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>{row.name}</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary">{row.role}</Typography>
-                  </TableCell>
-                  <TableCell align="center">
-                    <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
-                      {hasPermission('edit') && (
-                        <Tooltip title="Edit">
-                          <IconButton size="small" onClick={() => handleEdit(row)} sx={{ color: '#2E7D32', '&:hover': { backgroundColor: 'rgba(46,125,50,0.08)' } }}>
-                            <EditOutlinedIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                      {hasPermission('delete') && (
-                        <Tooltip title="Delete">
-                          <IconButton size="small" onClick={() => setDeleteTarget(row)} sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' } }}>
-                            <DeleteOutlineIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {filteredExecutives.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={5} sx={{ py: 4, textAlign: 'center' }}>
-                    <Typography variant="body2" color="text.secondary">
-                      {search ? `No executives matching "${search}"` : 'No executives added yet.'}
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </Box>
-      </Paper>
+      <ExecutivesTable
+        filteredExecutives={filteredExecutives}
+        search={search}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        canEdit={canEdit}
+        canDelete={canDelete}
+      />
 
       <ConfirmDialog
         open={!!deleteTarget}

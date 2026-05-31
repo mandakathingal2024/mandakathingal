@@ -262,6 +262,94 @@ const MemberFormModal = React.memo(({ open, onClose, editMember, onSubmit, isSav
 
 MemberFormModal.displayName = 'MemberFormModal';
 
+// Memoized row — each row only re-renders if its own data changes
+const MemberRow = React.memo(({ row, index, onEdit, onDelete, onViewFamily, canEdit, canDelete }) => (
+  <TableRow>
+    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
+      <Typography variant="body2" sx={{ fontWeight: 500 }}>{index + 1}</Typography>
+    </TableCell>
+    <TableCell sx={{ px: { xs: 1, sm: 2 } }}>
+      <Box sx={{ width: { xs: 36, sm: 48 }, height: { xs: 36, sm: 48 }, borderRadius: '50%', overflow: 'hidden', border: '2px solid #F0E8E0', flexShrink: 0 }}>
+        <Image
+          src={row.memberImgUrl || '/default-avatar.svg'}
+          width={48} height={48} alt={row.name || 'Member'}
+          style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+        />
+      </Box>
+    </TableCell>
+    <TableCell sx={{ px: { xs: 1, sm: 2 } }}>
+      <Typography variant="body2" sx={{ fontWeight: 500, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>{row.name}</Typography>
+      <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'block', md: 'none' }, fontSize: '0.7rem' }}>
+        {row.uniqueText}
+      </Typography>
+    </TableCell>
+    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
+      <Typography variant="body2" color="text.secondary">{row.uniqueText}</Typography>
+    </TableCell>
+    <TableCell align="center" sx={{ px: { xs: 0.5, sm: 2 } }}>
+      <Box sx={{ display: 'flex', gap: { xs: 0, sm: 0.5 }, justifyContent: 'center' }}>
+        <Tooltip title="View Family">
+          <IconButton size="small" onClick={() => onViewFamily(row.id)}
+            sx={{ color: '#5C3D2E', '&:hover': { backgroundColor: 'rgba(92,61,46,0.08)' }, p: { xs: 0.5, sm: 1 } }}>
+            <AccountTreeIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
+          </IconButton>
+        </Tooltip>
+        {canEdit && (
+        <Tooltip title="Edit">
+          <IconButton size="small" onClick={() => onEdit(row)}
+            sx={{ color: '#2E7D32', '&:hover': { backgroundColor: 'rgba(46,125,50,0.08)' }, p: { xs: 0.5, sm: 1 } }}>
+            <EditOutlinedIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
+          </IconButton>
+        </Tooltip>
+        )}
+        {canDelete && (
+        <Tooltip title="Delete">
+          <IconButton size="small" onClick={() => onDelete(row)}
+            sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' }, p: { xs: 0.5, sm: 1 } }}>
+            <DeleteOutlineIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
+          </IconButton>
+        </Tooltip>
+        )}
+      </Box>
+    </TableCell>
+  </TableRow>
+));
+MemberRow.displayName = 'MemberRow';
+
+// Memoized table — does NOT re-render when modal/dialog/toast state changes
+const MembersTable = React.memo(({ sortedMembers, search, onEdit, onDelete, onViewFamily, canEdit, canDelete }) => (
+  <Box sx={{ overflowX: 'auto' }}>
+    <Table size="small" sx={{ minWidth: { xs: 0, sm: 500 } }}>
+      <TableHead>
+        <TableRow>
+          <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' }, width: 50 }}>Sl No</TableCell>
+          <TableCell sx={{ width: { xs: 44, sm: 80 }, px: { xs: 1, sm: 2 } }}>Photo</TableCell>
+          <TableCell sx={{ px: { xs: 1, sm: 2 } }}>Name</TableCell>
+          <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Unique Text</TableCell>
+          <TableCell sx={{ width: { xs: 'auto', sm: 160 }, px: { xs: 0.5, sm: 2 } }} align="center">Actions</TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {sortedMembers.map((row, index) => (
+          <MemberRow key={row.id || index} row={row} index={index}
+            onEdit={onEdit} onDelete={onDelete} onViewFamily={onViewFamily}
+            canEdit={canEdit} canDelete={canDelete} />
+        ))}
+        {sortedMembers.length === 0 && (
+          <TableRow>
+            <TableCell colSpan={5} sx={{ py: 4, textAlign: 'center' }}>
+              <Typography variant="body2" color="text.secondary">
+                {search ? `No members matching "${search}"` : 'No members found.'}
+              </Typography>
+            </TableCell>
+          </TableRow>
+        )}
+      </TableBody>
+    </Table>
+  </Box>
+));
+MembersTable.displayName = 'MembersTable';
+
 const MembersAdmin = () => {
   const [open, setOpen] = React.useState(false);
   const [editMember, setEditMember] = React.useState(null);
@@ -279,18 +367,38 @@ const MembersAdmin = () => {
     hasPermission, logActivity
   } = useStateContext();
 
-  // Client-side case-insensitive search
-  const filteredMembers = React.useMemo(() => {
+  const canEdit = hasPermission('edit');
+  const canDelete = hasPermission('delete');
+
+  // Client-side search + sort — memoized so table doesn't re-render on unrelated state changes
+  const sortedMembers = React.useMemo(() => {
     if (!members) return [];
-    if (!search.trim()) return members;
-    const q = search.trim().toLowerCase();
-    return members.filter((m) => {
-      const name = (m.name || '').toLowerCase();
-      const place = (m.place || '').toLowerCase();
-      const uniqueText = (m.uniqueText || '').toLowerCase();
-      return name.includes(q) || place.includes(q) || uniqueText.includes(q);
+    let list = members;
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      list = list.filter((m) => {
+        const name = (m.name || '').toLowerCase();
+        const place = (m.place || '').toLowerCase();
+        const uniqueText = (m.uniqueText || '').toLowerCase();
+        return name.includes(q) || place.includes(q) || uniqueText.includes(q);
+      });
+    }
+    return [...list].sort((a, b) => {
+      if (sortBy === 'az') return (a.name || '').localeCompare(b.name || '');
+      if (sortBy === 'za') return (b.name || '').localeCompare(a.name || '');
+      if (sortBy === 'newest') {
+        const aTime = a.createdAt?.seconds || a.createdAt?._seconds || 0;
+        const bTime = b.createdAt?.seconds || b.createdAt?._seconds || 0;
+        return bTime - aTime;
+      }
+      if (sortBy === 'oldest') {
+        const aTime = a.createdAt?.seconds || a.createdAt?._seconds || 0;
+        const bTime = b.createdAt?.seconds || b.createdAt?._seconds || 0;
+        return aTime - bTime;
+      }
+      return 0;
     });
-  }, [search, members]);
+  }, [search, members, sortBy]);
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -305,18 +413,17 @@ const MembersAdmin = () => {
     fetchData();
   }, []);
 
-  if (isLoading) {
-    return <DashboardSkeleton />;
-  }
+  // Stable callbacks — changing modal/dialog state won't create new function refs
+  const handleOpen = React.useCallback(() => { setEditMember(null); setOpen(true); }, []);
+  const handleEdit = React.useCallback((row) => { setEditMember(row); setOpen(true); }, []);
+  const handleClose = React.useCallback(() => { setOpen(false); setEditMember(null); }, []);
+  const handleDelete = React.useCallback((row) => setDeleteTarget(row), []);
+  const handleViewFamily = React.useCallback((id) => getMembersByRelatedTo(id), [getMembersByRelatedTo]);
 
-  const handleOpen = () => { setEditMember(null); setOpen(true); };
-  const handleEdit = (row) => { setEditMember(row); setOpen(true); };
-  const handleClose = () => { setOpen(false); setEditMember(null); };
-
-  const handleFormSubmit = async (memberData, isEdit) => {
+  const handleFormSubmit = React.useCallback(async (memberData, isEditMode) => {
     setIsSaving(true);
     try {
-      if (isEdit) {
+      if (isEditMode) {
         await updateMember(memberData);
         await logActivity('Updated', 'Members', `Updated member "${memberData.name}"`);
         setToast({ open: true, message: 'Member updated successfully!' });
@@ -325,14 +432,30 @@ const MembersAdmin = () => {
         await logActivity('Added', 'Members', `Added member "${memberData.name}"`);
         setToast({ open: true, message: 'Member added successfully!' });
       }
-      handleClose();
+      setOpen(false);
+      setEditMember(null);
       await fetchAllMembers();
     } catch (err) {
       console.error(err);
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [updateMember, addMember, logActivity, fetchAllMembers]);
+
+  const handleDeleteConfirm = React.useCallback(async () => {
+    if (!deleteTarget) return;
+    await deleteDocument('members', deleteTarget.id);
+    await logActivity('Deleted', 'Members', `Deleted member "${deleteTarget.name}"`);
+    setDeleteTarget(null);
+    setToast({ open: true, message: 'Member deleted successfully.' });
+  }, [deleteTarget, deleteDocument, logActivity]);
+
+  const handleDeleteCancel = React.useCallback(() => setDeleteTarget(null), []);
+  const handleToastClose = React.useCallback(() => setToast(prev => ({ ...prev, open: false })), []);
+
+  if (isLoading) {
+    return <DashboardSkeleton />;
+  }
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3 } }}>
@@ -345,7 +468,6 @@ const MembersAdmin = () => {
         )}
       </Box>
 
-      {/* Add/Edit Modal — isolated component, typing won't re-render the table */}
       <MemberFormModal
         open={open}
         onClose={handleClose}
@@ -355,7 +477,6 @@ const MembersAdmin = () => {
         searchMembersByName={searchMembersByName}
       />
 
-      {/* Search & Table */}
       <Paper sx={{ overflow: 'hidden' }}>
         <Box sx={{ p: { xs: 2, sm: 3 }, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1.5, alignItems: { sm: 'center' }, borderBottom: '1px solid #F0E8E0' }}>
           <TextField
@@ -390,133 +511,32 @@ const MembersAdmin = () => {
             variant="outlined"
             size="small"
             startIcon={<RestartAltIcon />}
-            onClick={() => {
-              setSearch('');
-              setSortBy('default');
-            }}
+            onClick={() => { setSearch(''); setSortBy('default'); }}
             sx={{ color: 'text.secondary', borderColor: '#E0D6CC', minWidth: 'fit-content' }}
           >
             Reset
           </Button>
         </Box>
 
-        <Box sx={{ overflowX: 'auto' }}>
-          <Table size="small" sx={{ minWidth: { xs: 0, sm: 500 } }}>
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' }, width: 50 }}>Sl No</TableCell>
-                <TableCell sx={{ width: { xs: 44, sm: 80 }, px: { xs: 1, sm: 2 } }}>Photo</TableCell>
-                <TableCell sx={{ px: { xs: 1, sm: 2 } }}>Name</TableCell>
-                <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Unique Text</TableCell>
-                <TableCell sx={{ width: { xs: 'auto', sm: 160 }, px: { xs: 0.5, sm: 2 } }} align="center">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredMembers.length > 0 && [...filteredMembers].sort((a, b) => {
-                if (sortBy === 'az') return (a.name || '').localeCompare(b.name || '');
-                if (sortBy === 'za') return (b.name || '').localeCompare(a.name || '');
-                if (sortBy === 'newest') {
-                  const aTime = a.createdAt?.seconds || a.createdAt?._seconds || 0;
-                  const bTime = b.createdAt?.seconds || b.createdAt?._seconds || 0;
-                  return bTime - aTime;
-                }
-                if (sortBy === 'oldest') {
-                  const aTime = a.createdAt?.seconds || a.createdAt?._seconds || 0;
-                  const bTime = b.createdAt?.seconds || b.createdAt?._seconds || 0;
-                  return aTime - bTime;
-                }
-                return 0;
-              }).map((row, index) => (
-                <TableRow key={row.id || index}>
-                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>{index + 1}</Typography>
-                  </TableCell>
-                  <TableCell sx={{ px: { xs: 1, sm: 2 } }}>
-                    <Box sx={{ width: { xs: 36, sm: 48 }, height: { xs: 36, sm: 48 }, borderRadius: '50%', overflow: 'hidden', border: '2px solid #F0E8E0', flexShrink: 0 }}>
-                      <Image
-                        src={row.memberImgUrl ? row.memberImgUrl : '/default-avatar.svg'}
-                        width={48} height={48} alt={row.name || 'Member'}
-                        style={{ objectFit: 'cover', width: '100%', height: '100%' }}
-                      />
-                    </Box>
-                  </TableCell>
-                  <TableCell sx={{ px: { xs: 1, sm: 2 } }}>
-                    <Typography variant="body2" sx={{ fontWeight: 500, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>{row.name}</Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'block', md: 'none' }, fontSize: '0.7rem' }}>
-                      {row.uniqueText}
-                    </Typography>
-                  </TableCell>
-                  <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
-                    <Typography variant="body2" color="text.secondary">{row.uniqueText}</Typography>
-                  </TableCell>
-                  <TableCell align="center" sx={{ px: { xs: 0.5, sm: 2 } }}>
-                    <Box sx={{ display: 'flex', gap: { xs: 0, sm: 0.5 }, justifyContent: 'center' }}>
-                      <Tooltip title="View Family">
-                        <IconButton
-                          size="small"
-                          onClick={async () => { await getMembersByRelatedTo(row.id); }}
-                          sx={{ color: '#5C3D2E', '&:hover': { backgroundColor: 'rgba(92,61,46,0.08)' }, p: { xs: 0.5, sm: 1 } }}
-                        >
-                          <AccountTreeIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
-                        </IconButton>
-                      </Tooltip>
-                      {hasPermission('edit') && (
-                      <Tooltip title="Edit">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleEdit(row)}
-                          sx={{ color: '#2E7D32', '&:hover': { backgroundColor: 'rgba(46,125,50,0.08)' }, p: { xs: 0.5, sm: 1 } }}
-                        >
-                          <EditOutlinedIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
-                        </IconButton>
-                      </Tooltip>
-                      )}
-                      {hasPermission('delete') && (
-                      <Tooltip title="Delete">
-                        <IconButton
-                          size="small"
-                          onClick={() => setDeleteTarget(row)}
-                          sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' }, p: { xs: 0.5, sm: 1 } }}
-                        >
-                          <DeleteOutlineIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
-                        </IconButton>
-                      </Tooltip>
-                      )}
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {filteredMembers.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={5} sx={{ py: 4, textAlign: 'center' }}>
-                    <Typography variant="body2" color="text.secondary">
-                      {search ? `No members matching "${search}"` : 'No members found.'}
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </Box>
+        <MembersTable
+          sortedMembers={sortedMembers} search={search}
+          onEdit={handleEdit} onDelete={handleDelete} onViewFamily={handleViewFamily}
+          canEdit={canEdit} canDelete={canDelete}
+        />
       </Paper>
 
       <ConfirmDialog
         open={!!deleteTarget}
         title="Delete Member"
         message={`Are you sure you want to delete "${deleteTarget?.name}"? This action cannot be undone.`}
-        onCancel={() => setDeleteTarget(null)}
-        onConfirm={async () => {
-          await deleteDocument('members', deleteTarget.id);
-          await logActivity('Deleted', 'Members', `Deleted member "${deleteTarget.name}"`);
-          setDeleteTarget(null);
-          setToast({ open: true, message: 'Member deleted successfully.' });
-        }}
+        onCancel={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
       />
 
       <SuccessToast
         open={toast.open}
         message={toast.message}
-        onClose={() => setToast({ ...toast, open: false })}
+        onClose={handleToastClose}
       />
     </Container>
   );
