@@ -2,7 +2,7 @@
 import Image from 'next/image'
 import React, { useEffect, useState } from 'react'
 import { useStateContext } from '../../../context/stateContext'
-import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore'
+import { collection, getDocs } from 'firebase/firestore'
 import { db } from '../../../context/firebaseConfig'
 
 const Milestones = () => {
@@ -14,15 +14,14 @@ const Milestones = () => {
     const fetchMilestones = async () => {
       try {
         const eventsRef = collection(db, 'events')
-        const q = query(
-          eventsRef,
-          where('displaySection', '==', 'familyMilestones'),
-          orderBy('createdAt', 'desc'),
-          limit(4)
-        )
-        const snap = await getDocs(q)
-        const data = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
-        setMilestones(data)
+        const snap = await getDocs(eventsRef)
+        const all = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+        // Filter and sort client-side to avoid needing a Firestore composite index
+        const filtered = all
+          .filter((e) => e.displaySection === 'familyMilestones')
+          .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
+          .slice(0, 4)
+        setMilestones(filtered)
       } catch (err) {
         console.error('Error fetching milestones:', err)
       } finally {
