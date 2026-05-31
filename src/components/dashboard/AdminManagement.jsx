@@ -489,22 +489,26 @@ const AdminRow = React.memo(({ row, index, onEdit, onDelete, isCurrentUser, isSu
     <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
       <Typography variant="body2" sx={{ fontWeight: 500 }}>{index + 1}</Typography>
     </TableCell>
-    <TableCell>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Typography variant="body2" sx={{ fontWeight: 600 }}>{row.name}</Typography>
+    <TableCell sx={{ px: { xs: 1, sm: 2 } }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+        <Typography variant="body2" sx={{ fontWeight: 600, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>{row.name}</Typography>
         {isCurrentUser && (
-          <Chip label="You" size="small" sx={{ height: 20, fontSize: '0.6rem', backgroundColor: 'rgba(212,163,115,0.2)', color: '#5C3D2E' }} />
+          <Chip label="You" size="small" sx={{ height: 20, fontSize: '0.6rem', backgroundColor: 'rgba(212,163,115,0.2)', color: '#5C3D2E', flexShrink: 0 }} />
         )}
       </Box>
+      {/* Show username below name on mobile */}
+      <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'block', sm: 'none' }, fontSize: '0.7rem' }}>
+        @{row.username}
+      </Typography>
     </TableCell>
-    <TableCell>
+    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
       <Typography variant="body2" sx={{ color: 'text.secondary' }}>{row.username}</Typography>
     </TableCell>
-    <TableCell>
+    <TableCell sx={{ px: { xs: 1, sm: 2 } }}>
       <Chip
         label={ROLE_CONFIG[row.role]?.label || row.role}
         size="small"
-        sx={{ fontWeight: 600, fontSize: '0.7rem', backgroundColor: ROLE_CONFIG[row.role]?.bg, color: ROLE_CONFIG[row.role]?.color }}
+        sx={{ fontWeight: 600, fontSize: { xs: '0.6rem', sm: '0.7rem' }, backgroundColor: ROLE_CONFIG[row.role]?.bg, color: ROLE_CONFIG[row.role]?.color }}
       />
     </TableCell>
     <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
@@ -520,19 +524,19 @@ const AdminRow = React.memo(({ row, index, onEdit, onDelete, isCurrentUser, isSu
         </Box>
       )}
     </TableCell>
-    <TableCell align="center">
-      <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+    <TableCell align="center" sx={{ px: { xs: 0.5, sm: 2 } }}>
+      <Box sx={{ display: 'flex', gap: { xs: 0, sm: 0.5 }, justifyContent: 'center' }}>
         <Tooltip title="Edit">
           <IconButton size="small" onClick={() => onEdit(row)}
-            sx={{ color: '#2E7D32', '&:hover': { backgroundColor: 'rgba(46,125,50,0.08)' } }}>
-            <EditOutlinedIcon fontSize="small" />
+            sx={{ color: '#2E7D32', '&:hover': { backgroundColor: 'rgba(46,125,50,0.08)' }, p: { xs: 0.5, sm: 1 } }}>
+            <EditOutlinedIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
           </IconButton>
         </Tooltip>
         {!isSuperAdmin && !isCurrentUser && (
           <Tooltip title="Delete">
             <IconButton size="small" onClick={() => onDelete(row)}
-              sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' } }}>
-              <DeleteOutlineIcon fontSize="small" />
+              sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' }, p: { xs: 0.5, sm: 1 } }}>
+              <DeleteOutlineIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
             </IconButton>
           </Tooltip>
         )}
@@ -553,15 +557,15 @@ const AdminsTable = React.memo(({ admins, onEdit, onDelete, adminUserId }) => {
   return (
     <Paper sx={{ overflow: 'hidden' }}>
       <Box sx={{ overflowX: 'auto' }}>
-        <Table size="small">
+        <Table size="small" sx={{ minWidth: { xs: 0, sm: 500 } }}>
           <TableHead>
             <TableRow>
               <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Sl No</TableCell>
-              <TableCell>Name</TableCell>
-              <TableCell>Username</TableCell>
-              <TableCell>Role</TableCell>
+              <TableCell sx={{ px: { xs: 1, sm: 2 } }}>Name</TableCell>
+              <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Username</TableCell>
+              <TableCell sx={{ px: { xs: 1, sm: 2 } }}>Role</TableCell>
               <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Permissions</TableCell>
-              <TableCell align="center">Actions</TableCell>
+              <TableCell sx={{ px: { xs: 0.5, sm: 2 } }} align="center">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>

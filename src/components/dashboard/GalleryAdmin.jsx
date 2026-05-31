@@ -95,26 +95,30 @@ const GalleryFormModal = React.memo(function GalleryFormModal({ open, onClose, e
 // Memoized single table row — skips re-render when unrelated state changes (modal, delete dialog, toast)
 const GalleryRow = React.memo(({ row, index, onEdit, onDelete, canEdit, canDelete }) => (
   <TableRow>
-    <TableCell><Typography variant="body2" sx={{ fontWeight: 500 }}>{index + 1}</Typography></TableCell>
-    <TableCell>
-      <Box sx={{ width: 80, height: 80, borderRadius: 1, overflow: 'hidden', border: '1px solid #F0E8E0' }}>
+    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
+      <Typography variant="body2" sx={{ fontWeight: 500 }}>{index + 1}</Typography>
+    </TableCell>
+    <TableCell sx={{ px: { xs: 1, sm: 2 } }}>
+      <Box sx={{ width: { xs: 56, sm: 80 }, height: { xs: 56, sm: 80 }, borderRadius: 1, overflow: 'hidden', border: '1px solid #F0E8E0', flexShrink: 0 }}>
         <Image src={row.galleryImgUrl} width={80} height={80} alt="Gallery" style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
       </Box>
     </TableCell>
-    <TableCell><Typography variant="body2">{row.description}</Typography></TableCell>
-    <TableCell align="center">
-      <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+    <TableCell sx={{ px: { xs: 1, sm: 2 } }}>
+      <Typography variant="body2" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' }, wordBreak: 'break-word' }}>{row.description}</Typography>
+    </TableCell>
+    <TableCell align="center" sx={{ px: { xs: 0.5, sm: 2 } }}>
+      <Box sx={{ display: 'flex', gap: { xs: 0, sm: 0.5 }, justifyContent: 'center' }}>
         {canEdit && (
           <Tooltip title="Edit">
-            <IconButton size="small" onClick={() => onEdit(row)} sx={{ color: '#2E7D32', '&:hover': { backgroundColor: 'rgba(46,125,50,0.08)' } }}>
-              <EditOutlinedIcon fontSize="small" />
+            <IconButton size="small" onClick={() => onEdit(row)} sx={{ color: '#2E7D32', '&:hover': { backgroundColor: 'rgba(46,125,50,0.08)' }, p: { xs: 0.5, sm: 1 } }}>
+              <EditOutlinedIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
             </IconButton>
           </Tooltip>
         )}
         {canDelete && (
           <Tooltip title="Delete">
-            <IconButton size="small" onClick={() => onDelete(row)} sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' } }}>
-              <DeleteOutlineIcon fontSize="small" />
+            <IconButton size="small" onClick={() => onDelete(row)} sx={{ color: '#B71C1C', '&:hover': { backgroundColor: 'rgba(183,28,28,0.08)' }, p: { xs: 0.5, sm: 1 } }}>
+              <DeleteOutlineIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
             </IconButton>
           </Tooltip>
         )}
@@ -128,13 +132,13 @@ GalleryRow.displayName = 'GalleryRow';
 const GalleryTable = React.memo(({ filteredGallery, search, onEdit, onDelete, canEdit, canDelete }) => (
   <Paper sx={{ overflow: 'hidden' }}>
     <Box sx={{ overflowX: 'auto' }}>
-      <Table size="small">
+      <Table size="small" sx={{ minWidth: { xs: 0, sm: 500 } }}>
         <TableHead>
           <TableRow>
-            <TableCell sx={{ width: 60 }}>Sl No</TableCell>
-            <TableCell sx={{ width: 120 }}>Image</TableCell>
-            <TableCell>Description</TableCell>
-            <TableCell sx={{ width: 110 }} align="center">Actions</TableCell>
+            <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' }, width: 60 }}>Sl No</TableCell>
+            <TableCell sx={{ width: { xs: 64, sm: 120 }, px: { xs: 1, sm: 2 } }}>Image</TableCell>
+            <TableCell sx={{ px: { xs: 1, sm: 2 } }}>Description</TableCell>
+            <TableCell sx={{ width: { xs: 'auto', sm: 110 }, px: { xs: 0.5, sm: 2 } }} align="center">Actions</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
