@@ -28,6 +28,7 @@ import Image from 'next/image';
 import ConfirmDialog from './ConfirmDialog';
 import SuccessToast from './SuccessToast';
 import UploadImage from './UploadImage';
+import { WebsiteContentSkeleton } from '../Skeleton';
 import { useStateContext } from '../../../context/stateContext';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../../context/firebaseConfig';
@@ -259,13 +260,7 @@ const WebsiteContentAdmin = () => {
   };
 
   if (isLoading) {
-    return (
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3 } }}>
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-          <CircularProgress sx={{ color: '#D4A373' }} />
-        </Box>
-      </Container>
-    );
+    return <WebsiteContentSkeleton />;
   }
 
   return (

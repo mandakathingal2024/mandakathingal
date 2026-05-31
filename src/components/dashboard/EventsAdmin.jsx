@@ -1,6 +1,6 @@
 'use client'
 import * as React from 'react';
-import { DashboardSkeleton } from '../Skeleton';
+import { EventsAdminSkeleton } from '../Skeleton';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
@@ -363,7 +363,7 @@ const EventsAdmin = () => {
   const canDelete = hasPermission('delete');
 
   if (isLoading) {
-    return <DashboardSkeleton />;
+    return <EventsAdminSkeleton />;
   }
 
   return (

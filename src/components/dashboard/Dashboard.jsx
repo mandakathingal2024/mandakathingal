@@ -17,7 +17,7 @@ import ListItems from './listItems';
 import { useStateContext } from '../../../context/stateContext';
 import ConfirmDialog from './ConfirmDialog';
 import Chip from '@mui/material/Chip';
-import CircularProgress from '@mui/material/CircularProgress';
+import { PageLoadingSkeleton } from '../Skeleton';
 
 // Lazy-load each admin page — only the visible page's code is loaded
 const DashboardHome = React.lazy(() => import('./DashboardHome'));
@@ -31,11 +31,7 @@ const AdminManagement = React.lazy(() => import('./AdminManagement'));
 const ActivityLog = React.lazy(() => import('./ActivityLog'));
 const ProfileAdmin = React.lazy(() => import('./ProfileAdmin'));
 
-const PageLoader = () => (
-  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8 }}>
-    <CircularProgress sx={{ color: '#D4A373' }} />
-  </Box>
-);
+const PageLoader = () => <PageLoadingSkeleton />;
 
 const adminTheme = createTheme({
   palette: {

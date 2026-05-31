@@ -16,7 +16,6 @@ import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
-import CircularProgress from '@mui/material/CircularProgress';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
 import SearchIcon from '@mui/icons-material/Search';
@@ -26,6 +25,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../../../context/firebaseConfig';
 import { useStateContext } from '../../../context/stateContext';
+import { ActivityLogSkeleton } from '../Skeleton';
 
 const ACTION_COLORS = {
   Added: { color: '#2E7D32', bg: 'rgba(46,125,50,0.08)' },
@@ -138,6 +138,10 @@ const ActivityLog = () => {
     return null;
   };
 
+  if (isLoading) {
+    return <ActivityLogSkeleton />;
+  }
+
   const emptyState = (
     <Box sx={{ p: 6, textAlign: 'center' }}>
       <HistoryIcon sx={{ fontSize: 48, color: '#D4A373', mb: 1 }} />
@@ -196,12 +200,7 @@ const ActivityLog = () => {
         </Box>
       </Box>
 
-      {isLoading ? (
-        <Paper sx={{ p: 6, textAlign: 'center' }}>
-          <CircularProgress size={32} sx={{ color: '#D4A373' }} />
-          <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>Loading activity log...</Typography>
-        </Paper>
-      ) : filteredActivities.length === 0 ? (
+      {filteredActivities.length === 0 ? (
         <Paper>{emptyState}</Paper>
       ) : isMobile ? (
         /* Mobile Card Layout */

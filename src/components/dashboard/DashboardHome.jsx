@@ -50,7 +50,15 @@ const StatCard = ({ icon, label, count, color, onClick }) => (
         {icon}
       </Box>
       <Typography variant="h4" sx={{ fontWeight: 700, color: '#2C1810', fontSize: { xs: '1.75rem', sm: '2rem' } }}>
-        {count !== null ? count : <CircularProgress size={24} sx={{ color: '#D4A373' }} />}
+        {count !== null ? count : (
+          <Box sx={{
+            width: 48, height: 32, borderRadius: 1,
+            background: 'linear-gradient(90deg, #f0e8e0 25%, #f7efe7 50%, #f0e8e0 75%)',
+            backgroundSize: '200% 100%',
+            animation: 'shimmer 1.5s infinite',
+            '@keyframes shimmer': { '0%': { backgroundPosition: '200% 0' }, '100%': { backgroundPosition: '-200% 0' } },
+          }} />
+        )}
       </Typography>
       <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, textAlign: 'center', fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}>
         {label}
@@ -283,12 +291,31 @@ const DashboardHome = () => {
             </Grid>
           </Grid>
         ) : (
-          <Box sx={{ textAlign: 'center', py: 2 }}>
-            <CircularProgress size={20} sx={{ color: '#D4A373' }} />
-            <Typography variant="caption" sx={{ display: 'block', mt: 1, color: 'text.secondary' }}>
-              Loading storage info...
-            </Typography>
-          </Box>
+          <Grid container spacing={2}>
+            {[1, 2].map(i => (
+              <Grid item xs={12} sm={6} key={i}>
+                <Box sx={{
+                  width: 80, height: 10, mb: 1, borderRadius: 1,
+                  background: 'linear-gradient(90deg, #f0e8e0 25%, #f7efe7 50%, #f0e8e0 75%)',
+                  backgroundSize: '200% 100%',
+                  animation: 'shimmer 1.5s infinite',
+                  '@keyframes shimmer': { '0%': { backgroundPosition: '200% 0' }, '100%': { backgroundPosition: '-200% 0' } },
+                }} />
+                <Box sx={{
+                  width: 100, height: 24, mb: 1, borderRadius: 1,
+                  background: 'linear-gradient(90deg, #f0e8e0 25%, #f7efe7 50%, #f0e8e0 75%)',
+                  backgroundSize: '200% 100%',
+                  animation: 'shimmer 1.5s infinite',
+                }} />
+                <Box sx={{
+                  width: '100%', height: 8, borderRadius: 4,
+                  background: 'linear-gradient(90deg, #f0e8e0 25%, #f7efe7 50%, #f0e8e0 75%)',
+                  backgroundSize: '200% 100%',
+                  animation: 'shimmer 1.5s infinite',
+                }} />
+              </Grid>
+            ))}
+          </Grid>
         )}
 
         {/* Storage Cleanup Section */}
