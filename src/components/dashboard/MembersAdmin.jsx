@@ -384,8 +384,8 @@ const MemberFormModal = React.memo(({ open, onClose, editMember, onSubmit, isSav
                   ref={suggestionsRef}
                   elevation={8}
                   sx={{
-                    position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
-                    maxHeight: 200, overflow: 'auto', mt: 0.5, borderRadius: 1.5,
+                    position: 'absolute', bottom: '100%', left: 0, right: 0, zIndex: 10,
+                    maxHeight: 200, overflow: 'auto', mb: 0.5, borderRadius: 1.5,
                     border: '1px solid #E0D6CC',
                   }}
                 >
@@ -423,8 +423,8 @@ const MemberFormModal = React.memo(({ open, onClose, editMember, onSubmit, isSav
                   ref={suggestionsRef}
                   elevation={8}
                   sx={{
-                    position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
-                    mt: 0.5, borderRadius: 1.5, border: '1px solid #E0D6CC', p: 2, textAlign: 'center',
+                    position: 'absolute', bottom: '100%', left: 0, right: 0, zIndex: 10,
+                    mb: 0.5, borderRadius: 1.5, border: '1px solid #E0D6CC', p: 2, textAlign: 'center',
                   }}
                 >
                   <Typography variant="body2" color="text.secondary">No members found</Typography>
