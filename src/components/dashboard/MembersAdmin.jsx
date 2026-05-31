@@ -54,9 +54,18 @@ const modalStyle = {
   p: 0,
 };
 
+// Shake animation keyframes injected once
+const shakeKeyframes = `
+@keyframes fieldShake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+`;
+
 // Separate form modal component — isolates form state from the table
 // so typing in the form does NOT re-render the entire members table
-const MemberFormModal = React.memo(({ open, onClose, editMember, onSubmit, isSaving, searchMembersByName }) => {
+const MemberFormModal = React.memo(({ open, onClose, editMember, onSubmit, isSaving, searchMembersByName, members }) => {
   const EMPTY = {
     name: '', uniqueText: '', place: '', gender: '',
     memberImgUrl: '', houseImgUrl: '', description: '',
@@ -64,10 +73,30 @@ const MemberFormModal = React.memo(({ open, onClose, editMember, onSubmit, isSav
   };
 
   const [member, setMember] = React.useState(EMPTY);
-  const [message, setMessage] = React.useState('');
   const [suggestions, setSuggestions] = React.useState([]);
+  const [showSuggestions, setShowSuggestions] = React.useState(false);
+  const [searchText, setSearchText] = React.useState('');
   const [isNewBranch, setIsNewBranch] = React.useState(true);
+  const [fieldErrors, setFieldErrors] = React.useState({});
   const isEdit = !!editMember;
+
+  // Refs for scrolling to invalid fields
+  const nameRef = React.useRef(null);
+  const genderRef = React.useRef(null);
+  const relationRef = React.useRef(null);
+  const relatedToRef = React.useRef(null);
+  const formBodyRef = React.useRef(null);
+  const suggestionsRef = React.useRef(null);
+
+  // Inject shake keyframes once
+  React.useEffect(() => {
+    if (typeof document !== 'undefined' && !document.getElementById('field-shake-style')) {
+      const style = document.createElement('style');
+      style.id = 'field-shake-style';
+      style.textContent = shakeKeyframes;
+      document.head.appendChild(style);
+    }
+  }, []);
 
   // Reset form state when modal opens/closes or editMember changes
   React.useEffect(() => {
@@ -75,36 +104,129 @@ const MemberFormModal = React.memo(({ open, onClose, editMember, onSubmit, isSav
       if (editMember) {
         setMember(editMember);
         setIsNewBranch(editMember.relation === 'New Branch');
+        // Show the selected related member name in the search field
+        if (editMember.relatedTo) {
+          const related = members?.find((m) => m.id === editMember.relatedTo);
+          setSearchText(related ? `${related.name}${related.uniqueText ? ` (${related.uniqueText})` : ''}` : editMember.relatedTo);
+        } else {
+          setSearchText('');
+        }
       } else {
         setMember(EMPTY);
         setIsNewBranch(true);
+        setSearchText('');
       }
-      setMessage('');
       setSuggestions([]);
+      setShowSuggestions(false);
+      setFieldErrors({});
     }
-  }, [open, editMember]);
+  }, [open, editMember, members]);
+
+  // Close suggestions dropdown when clicking outside
+  React.useEffect(() => {
+    if (!showSuggestions) return;
+    const handleClickOutside = (e) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(e.target) &&
+          relatedToRef.current && !relatedToRef.current.contains(e.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showSuggestions]);
 
   const handleChange = React.useCallback((event) => {
     const { name, value } = event.target;
     setMember((prev) => ({ ...prev, [name]: value }));
+    // Clear error for this field when user types
+    setFieldErrors((prev) => {
+      if (!prev[name]) return prev;
+      const next = { ...prev };
+      delete next[name];
+      return next;
+    });
+  }, []);
+
+  const shakeAndScroll = React.useCallback((ref) => {
+    if (!ref?.current) return;
+    ref.current.style.animation = 'none';
+    // Force reflow to restart animation
+    void ref.current.offsetWidth;
+    ref.current.style.animation = 'fieldShake 0.5s ease';
+    ref.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, []);
 
   const handleSubmitClick = () => {
-    if (isEdit) {
-      onSubmit(member, true);
-    } else {
-      const { name, gender, relation, relatedTo } = member;
-      if (name && gender && relation) {
-        if (relation !== 'New Branch' && !relatedTo) {
-          setMessage('Please select a related member');
-          return;
-        }
-        onSubmit(member, false);
-      } else {
-        setMessage('Please fill all required fields');
-      }
+    const errors = {};
+    let firstErrorRef = null;
+
+    // Validate name
+    if (!member.name.trim()) {
+      errors.name = true;
+      if (!firstErrorRef) firstErrorRef = nameRef;
     }
+    // Validate gender
+    if (!member.gender) {
+      errors.gender = true;
+      if (!firstErrorRef) firstErrorRef = genderRef;
+    }
+    // Validate relation (mandatory for both add and edit)
+    if (!member.relation) {
+      errors.relation = true;
+      if (!firstErrorRef) firstErrorRef = relationRef;
+    }
+    // Validate relatedTo if relation requires it
+    if (member.relation && member.relation !== 'New Branch' && !member.relatedTo) {
+      errors.relatedTo = true;
+      if (!firstErrorRef) firstErrorRef = relatedToRef;
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      shakeAndScroll(firstErrorRef);
+      return;
+    }
+
+    onSubmit(member, isEdit);
   };
+
+  const handleRelatedSearch = React.useCallback(async (value) => {
+    setSearchText(value);
+    if (value.trim()) {
+      const results = await searchMembersByName(value);
+      setSuggestions(results || []);
+      setShowSuggestions(true);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      setMember((prev) => ({ ...prev, relatedTo: '' }));
+    }
+    // Clear related error
+    setFieldErrors((prev) => {
+      if (!prev.relatedTo) return prev;
+      const next = { ...prev };
+      delete next.relatedTo;
+      return next;
+    });
+  }, [searchMembersByName]);
+
+  const handleSelectSuggestion = React.useCallback((selected) => {
+    setMember((prev) => ({ ...prev, relatedTo: selected.id }));
+    setSearchText(`${selected.name}${selected.uniqueText ? ` (${selected.uniqueText})` : ''}`);
+    setShowSuggestions(false);
+    setSuggestions([]);
+    setFieldErrors((prev) => {
+      if (!prev.relatedTo) return prev;
+      const next = { ...prev };
+      delete next.relatedTo;
+      return next;
+    });
+  }, []);
+
+  const errorSx = (field) => fieldErrors[field] ? {
+    '& .MuiOutlinedInput-root': { borderColor: '#d32f2f' },
+    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d32f2f !important', borderWidth: 2 },
+  } : {};
 
   return (
     <Modal open={open} onClose={onClose}>
@@ -116,26 +238,26 @@ const MemberFormModal = React.memo(({ open, onClose, editMember, onSubmit, isSav
           </IconButton>
         </Box>
 
-        <Box sx={{ p: 3 }}>
-          {message && (
-            <Box sx={{ mb: 2, p: 1.5, borderRadius: 1, backgroundColor: 'rgba(211,47,47,0.08)', border: '1px solid rgba(211,47,47,0.2)' }}>
-              <Typography variant="body2" sx={{ color: '#B71C1C', fontWeight: 500 }}>{message}</Typography>
-            </Box>
-          )}
-
+        <Box sx={{ p: 3 }} ref={formBodyRef}>
           {/* Basic Info */}
           <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
             Basic Information
           </Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
-              <TextField
-                fullWidth required label="Name" name="name"
-                value={member.name} onChange={handleChange} size="small"
-              />
+              <Box ref={nameRef} sx={{ flex: 1 }}>
+                <TextField
+                  fullWidth required label="Name" name="name"
+                  value={member.name} onChange={handleChange} size="small"
+                  error={!!fieldErrors.name}
+                  helperText={fieldErrors.name ? 'Name is required' : ''}
+                  sx={errorSx('name')}
+                />
+              </Box>
               <TextField
                 fullWidth label="Unique Text (optional)" name="uniqueText"
                 value={member.uniqueText} onChange={handleChange} size="small"
+                sx={{ flex: 1 }}
               />
             </Box>
             <TextField
@@ -143,17 +265,23 @@ const MemberFormModal = React.memo(({ open, onClose, editMember, onSubmit, isSav
               value={member.place} onChange={handleChange} size="small"
             />
 
-            <FormControl>
-              <FormLabel sx={{ fontSize: '0.8125rem', fontWeight: 600, color: 'text.secondary', '&.Mui-focused': { color: 'text.secondary' } }}>
-                Gender *
-              </FormLabel>
-              <RadioGroup
-                row name="gender" value={member.gender} onChange={handleChange}
-              >
-                <FormControlLabel value="male" control={<Radio size="small" sx={{ color: '#D4A373', '&.Mui-checked': { color: '#5C3D2E' } }} />} label="Male" />
-                <FormControlLabel value="female" control={<Radio size="small" sx={{ color: '#D4A373', '&.Mui-checked': { color: '#5C3D2E' } }} />} label="Female" />
-              </RadioGroup>
-            </FormControl>
+            <Box ref={genderRef}>
+              <FormControl error={!!fieldErrors.gender}>
+                <FormLabel sx={{ fontSize: '0.8125rem', fontWeight: 600, color: fieldErrors.gender ? '#d32f2f' : 'text.secondary', '&.Mui-focused': { color: fieldErrors.gender ? '#d32f2f' : 'text.secondary' } }}>
+                  Gender *
+                </FormLabel>
+                <RadioGroup
+                  row name="gender" value={member.gender}
+                  onChange={(e) => { handleChange(e); setFieldErrors((prev) => { const n = { ...prev }; delete n.gender; return n; }); }}
+                >
+                  <FormControlLabel value="male" control={<Radio size="small" sx={{ color: fieldErrors.gender ? '#d32f2f' : '#D4A373', '&.Mui-checked': { color: '#5C3D2E' } }} />} label="Male" />
+                  <FormControlLabel value="female" control={<Radio size="small" sx={{ color: fieldErrors.gender ? '#d32f2f' : '#D4A373', '&.Mui-checked': { color: '#5C3D2E' } }} />} label="Female" />
+                </RadioGroup>
+                {fieldErrors.gender && (
+                  <Typography variant="caption" sx={{ color: '#d32f2f', mt: -0.5 }}>Gender is required</Typography>
+                )}
+              </FormControl>
+            </Box>
           </Box>
 
           {/* Photos */}
@@ -183,62 +311,126 @@ const MemberFormModal = React.memo(({ open, onClose, editMember, onSubmit, isSav
             size="small" multiline rows={2}
           />
 
-          {/* Relation - only show on add */}
-          {!isEdit && (
-            <>
-              <Divider sx={{ my: 2.5, borderColor: '#F0E8E0' }} />
-              <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
-                Family Relation
-              </Typography>
-              <FormControl fullWidth size="small" sx={{ mb: 2 }}>
-                <InputLabel>Relation</InputLabel>
-                <Select
-                  value={member.relation} label="Relation" name="relation"
-                  onChange={(e) => {
-                    handleChange(e);
-                    setIsNewBranch(e.target.value === 'New Branch');
+          {/* Relation - shown on both add and edit */}
+          <Divider sx={{ my: 2.5, borderColor: '#F0E8E0' }} />
+          <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
+            Family Relation *
+          </Typography>
+          <Box ref={relationRef}>
+            <FormControl fullWidth size="small" sx={{ mb: 2, ...errorSx('relation') }} error={!!fieldErrors.relation}>
+              <InputLabel>Relation</InputLabel>
+              <Select
+                value={member.relation} label="Relation" name="relation"
+                onChange={(e) => {
+                  handleChange(e);
+                  const val = e.target.value;
+                  setIsNewBranch(val === 'New Branch');
+                  if (val === 'New Branch') {
+                    setMember((prev) => ({ ...prev, relatedTo: '' }));
+                    setSearchText('');
+                    setSuggestions([]);
+                    setShowSuggestions(false);
+                  }
+                  setFieldErrors((prev) => { const n = { ...prev }; delete n.relation; return n; });
+                }}
+              >
+                <MenuItem value="New Branch">New Branch</MenuItem>
+                <MenuItem value="Son Of / Dauhter Of">Son Of / Daughter Of</MenuItem>
+                <MenuItem value="Wife Of / Husband Of">Wife Of / Husband Of</MenuItem>
+                <MenuItem value="Late Parent / Additional Member">Late Parent / Additional Member</MenuItem>
+              </Select>
+              {fieldErrors.relation && (
+                <Typography variant="caption" sx={{ color: '#d32f2f', mt: 0.5, ml: 1.5 }}>Relation is required</Typography>
+              )}
+            </FormControl>
+          </Box>
+
+          {!isNewBranch && (
+            <Box ref={relatedToRef} sx={{ position: 'relative' }}>
+              <TextField
+                fullWidth
+                label="Search Related Member *"
+                placeholder="Type name to search..."
+                value={searchText}
+                onChange={(e) => handleRelatedSearch(e.target.value)}
+                onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true); }}
+                size="small"
+                error={!!fieldErrors.relatedTo}
+                helperText={fieldErrors.relatedTo ? 'Please select a related member' : ''}
+                sx={errorSx('relatedTo')}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: member.relatedTo ? (
+                    <InputAdornment position="end">
+                      <IconButton size="small" onClick={() => {
+                        setMember((prev) => ({ ...prev, relatedTo: '' }));
+                        setSearchText('');
+                        setSuggestions([]);
+                        setShowSuggestions(false);
+                      }}>
+                        <CloseIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                    </InputAdornment>
+                  ) : null,
+                }}
+              />
+              {/* Suggestions dropdown */}
+              {showSuggestions && suggestions.length > 0 && (
+                <Paper
+                  ref={suggestionsRef}
+                  elevation={8}
+                  sx={{
+                    position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
+                    maxHeight: 200, overflow: 'auto', mt: 0.5, borderRadius: 1.5,
+                    border: '1px solid #E0D6CC',
                   }}
                 >
-                  <MenuItem value="New Branch">New Branch</MenuItem>
-                  <MenuItem value="Son Of / Dauhter Of">Son Of / Daughter Of</MenuItem>
-                  <MenuItem value="Wife Of / Husband Of">Wife Of / Husband Of</MenuItem>
-                  <MenuItem value="Late Parent / Additional Member">Late Parent / Additional Member</MenuItem>
-                </Select>
-              </FormControl>
-
-              {!isNewBranch && (
-                <>
-                  <TextField
-                    fullWidth
-                    label="Search Related Member"
-                    name="relatedTo"
-                    placeholder="Type to search..."
-                    value={member.relatedTo}
-                    onChange={async (e) => {
-                      handleChange(e);
-                      if (e.target.value !== '') {
-                        const suggestionList = await searchMembersByName(e.target.value);
-                        setSuggestions(suggestionList);
-                      }
-                    }}
-                    size="small"
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                    inputProps={{ list: 'suggestions' }}
-                  />
-                  <datalist id="suggestions">
-                    {suggestions && suggestions.map((m, index) => (
-                      <option key={index} value={m.id}>{`${m.name}-${m.uniqueText}`}</option>
-                    ))}
-                  </datalist>
-                </>
+                  {suggestions.map((s) => (
+                    <Box
+                      key={s.id}
+                      onClick={() => handleSelectSuggestion(s)}
+                      sx={{
+                        px: 2, py: 1.2, cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: 1.5,
+                        '&:hover': { backgroundColor: '#FAF7F4' },
+                        borderBottom: '1px solid #F5F0EB',
+                        '&:last-child': { borderBottom: 'none' },
+                      }}
+                    >
+                      <Box sx={{ width: 32, height: 32, borderRadius: '50%', overflow: 'hidden', border: '1px solid #E0D6CC', flexShrink: 0 }}>
+                        <Image
+                          src={s.memberImgUrl || '/default-avatar.svg'}
+                          width={32} height={32} alt={s.name}
+                          style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                        />
+                      </Box>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.3 }}>{s.name}</Typography>
+                        {s.uniqueText && (
+                          <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>{s.uniqueText}</Typography>
+                        )}
+                      </Box>
+                    </Box>
+                  ))}
+                </Paper>
               )}
-            </>
+              {showSuggestions && searchText.trim() && suggestions.length === 0 && (
+                <Paper
+                  ref={suggestionsRef}
+                  elevation={8}
+                  sx={{
+                    position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
+                    mt: 0.5, borderRadius: 1.5, border: '1px solid #E0D6CC', p: 2, textAlign: 'center',
+                  }}
+                >
+                  <Typography variant="body2" color="text.secondary">No members found</Typography>
+                </Paper>
+              )}
+            </Box>
           )}
         </Box>
 
@@ -475,6 +667,7 @@ const MembersAdmin = () => {
         onSubmit={handleFormSubmit}
         isSaving={isSaving}
         searchMembersByName={searchMembersByName}
+        members={members}
       />
 
       <Paper sx={{ overflow: 'hidden' }}>
