@@ -20,7 +20,7 @@ const RecentActivities = () => {
         const filtered = all
           .filter((e) => e.displaySection === 'recentActivities')
           .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
-          .slice(0, 4)
+          .slice(0, 2)
         setActivities(filtered)
       } catch (err) {
         console.error('Error fetching recent activities:', err)
@@ -33,8 +33,8 @@ const RecentActivities = () => {
 
   if (isLoading || activities.length === 0) return null
 
-  // Assign sizes based on position: 1st = large, 2nd = medium, rest = small
-  const sizes = ['large', 'medium', 'small', 'small']
+  // Assign sizes based on position: 1st = large, 2nd = medium
+  const sizes = ['large', 'medium']
 
   return (
     <section id="recent-activities" className="activities-section">
