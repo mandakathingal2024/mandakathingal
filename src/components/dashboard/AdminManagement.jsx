@@ -36,7 +36,7 @@ import ConfirmDialog from './ConfirmDialog';
 import SuccessToast from './SuccessToast';
 import { DashboardSkeleton } from '../Skeleton';
 import { useStateContext } from '../../../context/stateContext';
-import { collection, getDocs, addDoc, query, where, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../../context/firebaseConfig';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -267,10 +267,15 @@ const AdminFormModal = React.memo(function AdminFormModal({
           permissions,
           isActive: true,
           sessionVersion: 0,
-          createdAt: serverTimestamp(),
+          createdAt: { _serverTimestamp: true },
           createdBy: adminUser?.name || 'Unknown',
         };
-        await addDoc(collection(db, 'admins'), newAdmin);
+        const token = localStorage.getItem('adminToken');
+        await fetch('/api/admin/firestore', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ action: 'add', collection: 'admins', data: newAdmin }),
+        });
         await onSuccess('add', name, role);
       }
     } catch (err) {

@@ -30,7 +30,7 @@ import SuccessToast from './SuccessToast';
 import UploadImage from './UploadImage';
 import { WebsiteContentSkeleton } from '../Skeleton';
 import { useStateContext } from '../../../context/stateContext';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../../context/firebaseConfig';
 
 const SECTIONS = [
@@ -153,11 +153,20 @@ const WebsiteContentAdmin = () => {
     init();
   }, []);
 
+  const adminSave = async (docId, saveData) => {
+    const token = localStorage.getItem('adminToken');
+    const res = await fetch('/api/admin/firestore', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ action: 'set', collection: 'websiteContent', data: saveData, id: docId }),
+    });
+    if (!res.ok) throw new Error('Failed to save');
+  };
+
   const handleSave = async (sectionId) => {
     setSavingSection(sectionId);
     try {
-      const docRef = doc(db, 'websiteContent', sectionId);
-      await setDoc(docRef, sectionData[sectionId]);
+      await adminSave(sectionId, sectionData[sectionId]);
       await logActivity('Updated', 'Website Content', `Updated ${SECTIONS.find((s) => s.id === sectionId)?.title}`);
       setToast({ open: true, message: `${SECTIONS.find((s) => s.id === sectionId)?.title} saved successfully!` });
     } catch (err) {
@@ -171,8 +180,7 @@ const WebsiteContentAdmin = () => {
   const handleSaveHero = async () => {
     setSavingHero(true);
     try {
-      const docRef = doc(db, 'websiteContent', 'heroBanner');
-      await setDoc(docRef, heroData);
+      await adminSave('heroBanner', heroData);
       await logActivity('Updated', 'Website Content', 'Updated Hero Banner');
       setToast({ open: true, message: 'Hero Banner saved successfully!' });
     } catch (err) {
@@ -190,8 +198,7 @@ const WebsiteContentAdmin = () => {
   const handleSaveIntro = async () => {
     setSavingIntro(true);
     try {
-      const docRef = doc(db, 'websiteContent', 'introduction');
-      await setDoc(docRef, introData);
+      await adminSave('introduction', introData);
       await logActivity('Updated', 'Website Content', 'Updated Introduction');
       setToast({ open: true, message: 'Introduction saved successfully!' });
     } catch (err) {

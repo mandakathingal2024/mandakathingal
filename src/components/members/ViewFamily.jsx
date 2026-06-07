@@ -73,25 +73,50 @@ export const ViewFamily = ({ id }) => {
   const [error, setError] = useState(null)
 
   async function buildBreadcrumbChain(memberId) {
+    // Fetch all ancestors in a single batch query instead of N+1 individual queries
+    // First, get current member to start the chain
+    const membersRef = collection(db, 'members')
+    const q = query(membersRef, where('id', '==', memberId))
+    const snap = await getDocs(q)
+
+    if (snap.empty) return []
+
+    const currentMember = snap.docs[0].data()
+
+    // If no parent, return just this member
+    if (!currentMember.relatedTo || currentMember.relation !== 'Son Of / Dauhter Of') {
+      return [{ id: currentMember.id, name: currentMember.name }]
+    }
+
+    // Collect all ancestor IDs by walking up (we know the relatedTo chain)
+    // But fetch all "Son Of" members in one query to build a lookup map
+    const sonQuery = query(membersRef, where('relation', '==', 'Son Of / Dauhter Of'))
+    const branchQuery = query(membersRef, where('relation', '==', 'New Branch'))
+    const [sonSnap, branchSnap] = await Promise.all([getDocs(sonQuery), getDocs(branchQuery)])
+
+    const memberMap = {}
+    sonSnap.docs.forEach((doc) => {
+      const d = doc.data()
+      memberMap[d.id] = d
+    })
+    branchSnap.docs.forEach((doc) => {
+      const d = doc.data()
+      memberMap[d.id] = d
+    })
+    // Add current member too
+    memberMap[currentMember.id] = currentMember
+
+    // Walk up the chain using the map (no more queries)
     const chain = []
     let currentId = memberId
     let maxDepth = 10
-
     while (currentId && maxDepth > 0) {
       maxDepth--
-      const membersRef = collection(db, 'members')
-      const q = query(membersRef, where('id', '==', currentId))
-      const snap = await getDocs(q)
-
-      if (snap.size > 0) {
-        const data = snap.docs[0].data()
-        chain.unshift({ id: data.id, name: data.name })
-
-        if (data.relatedTo && data.relation === 'Son Of / Dauhter Of') {
-          currentId = data.relatedTo
-        } else {
-          break
-        }
+      const member = memberMap[currentId]
+      if (!member) break
+      chain.unshift({ id: member.id, name: member.name })
+      if (member.relatedTo && member.relation === 'Son Of / Dauhter Of') {
+        currentId = member.relatedTo
       } else {
         break
       }

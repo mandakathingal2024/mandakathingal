@@ -22,7 +22,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import SuccessToast from './SuccessToast';
 import { useStateContext } from '../../../context/stateContext';
-import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../../context/firebaseConfig';
 
 const ROLE_CONFIG = {
@@ -101,11 +101,17 @@ const ProfileAdmin = () => {
       if (nameChanged) updates.name = newName;
       if (usernameChanged) updates.username = newUsername;
 
-      const docRef = doc(db, adminDoc.ref.path);
-      await updateDoc(docRef, updates);
+      // Update via admin API route
+      const firestoreData = adminDoc.data();
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch('/api/admin/firestore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ action: 'update', collection: 'admins', data: updates, id: firestoreData.id }),
+      });
+      if (!res.ok) throw new Error('Failed to update profile');
 
       // Also sync the correct Firestore id to local state
-      const firestoreData = adminDoc.data();
       const updatedAdmin = {
         ...adminUser,
         name: newName,
@@ -191,8 +197,12 @@ const ProfileAdmin = () => {
 
       const currentData = adminDoc.data();
       const newVersion = (currentData.sessionVersion || 0) + 1;
-      const docRef = doc(db, adminDoc.ref.path);
-      await updateDoc(docRef, { password: hashData.hashed, sessionVersion: newVersion });
+      const updateRes = await fetch('/api/admin/firestore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ action: 'update', collection: 'admins', data: { password: hashData.hashed, sessionVersion: newVersion }, id: currentData.id }),
+      });
+      if (!updateRes.ok) throw new Error('Failed to update password');
 
       // Update own session version so we don't get force-logged out
       const updatedAdmin = { ...adminUser, sessionVersion: newVersion };

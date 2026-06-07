@@ -2,7 +2,7 @@
 import Image from 'next/image'
 import React, { useEffect, useState } from 'react'
 import { useStateContext } from '../../../context/stateContext'
-import { collection, getDocs } from 'firebase/firestore'
+import { collection, getDocs, query, where, limit } from 'firebase/firestore'
 import { db } from '../../../context/firebaseConfig'
 
 const RecentActivities = () => {
@@ -14,10 +14,10 @@ const RecentActivities = () => {
     const fetchActivities = async () => {
       try {
         const eventsRef = collection(db, 'events')
-        const snap = await getDocs(eventsRef)
-        const all = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
-        const filtered = all
-          .filter((e) => e.displaySection === 'recentActivities')
+        const q = query(eventsRef, where('displaySection', '==', 'recentActivities'), limit(8))
+        const snap = await getDocs(q)
+        const filtered = snap.docs
+          .map((doc) => ({ id: doc.id, ...doc.data() }))
           .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
           .slice(0, 4)
         setActivities(filtered)

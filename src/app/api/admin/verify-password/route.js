@@ -44,11 +44,10 @@ export async function POST(request) {
 
     const admin = snap.docs[0].data();
 
+    // Only accept bcrypt-hashed passwords
     let valid = false;
     if (admin.password.startsWith('$2a$') || admin.password.startsWith('$2b$')) {
       valid = await bcrypt.compare(currentPassword, admin.password);
-    } else {
-      valid = admin.password === currentPassword;
     }
 
     return new Response(JSON.stringify({ valid }), { status: 200 });

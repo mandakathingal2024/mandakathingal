@@ -10,6 +10,38 @@ import { v4 as uuidv4 } from 'uuid';
 const Context=createContext()
 export const useStateContext=()=>useContext(Context)
 
+// Helper: route all admin writes through the server-side API
+// This ensures Firestore rules can deny direct client writes
+async function adminWrite(action, collectionName, data, id) {
+  const token = localStorage.getItem('adminToken')
+  if (!token) throw new Error('No admin session')
+
+  // Mark serverTimestamp fields so the API route can convert them
+  const processedData = data ? JSON.parse(JSON.stringify(data, (key, value) => {
+    // serverTimestamp() returns an object with type 'serverTimestamp'
+    if (value && typeof value === 'object' && value.type === 'serverTimestamp') {
+      return { _serverTimestamp: true }
+    }
+    return value
+  })) : undefined
+
+  const res = await fetch('/api/admin/firestore', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ action, collection: collectionName, data: processedData, id }),
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Request failed' }))
+    throw new Error(err.error || 'Admin write failed')
+  }
+
+  return res.json()
+}
+
 export const StateContext =({children})=>{
     const [isEnglish, setIsEnglish] = useState(true)
     const [isAuthenticated,setIsAuthenticated]=useState(false)
@@ -169,15 +201,14 @@ export const StateContext =({children})=>{
 
               // Log login activity
               try {
-                const activityRef = collection(db, 'activityLog')
-                await addDoc(activityRef, {
+                await adminWrite('add', 'activityLog', {
                   id: uuidv4(),
                   adminId: responseData.admin.id,
                   adminName: responseData.admin.name,
                   action: 'Logged In',
                   module: 'Auth',
                   details: `${responseData.admin.name} logged in`,
-                  createdAt: serverTimestamp(),
+                  createdAt: { _serverTimestamp: true },
                 })
               } catch (e) {
                 // Activity logging is non-critical
@@ -191,45 +222,40 @@ export const StateContext =({children})=>{
     }
     async function addMember(obj) {
       try {
-        const membersCollectionRef = collection(db, "members");
         const uniqueId = uuidv4();
-        const docRef = await addDoc(membersCollectionRef, {...obj, id: uniqueId, createdAt: serverTimestamp()});
+        await adminWrite('add', 'members', { ...obj, id: uniqueId, createdAt: { _serverTimestamp: true } });
       } catch (error) {
         console.error("Error adding document: ", error);
       }
     }
     async function addGallery(obj) {
       try {
-        const galleryCollectionRef = collection(db, "gallery");
         const uniqueId = uuidv4();
-        const docRef = await addDoc(galleryCollectionRef, {...obj,id:uniqueId});
+        await adminWrite('add', 'gallery', { ...obj, id: uniqueId });
       } catch (error) {
         console.error("Error adding document: ", error);
       }
     }
     async function addEvent(obj) {
       try {
-        const eventCollectionRef = collection(db, "events");
         const uniqueId = uuidv4();
-        const docRef = await addDoc(eventCollectionRef, {...obj, id: uniqueId, createdAt: serverTimestamp()});
+        await adminWrite('add', 'events', { ...obj, id: uniqueId, createdAt: { _serverTimestamp: true } });
       } catch (error) {
         console.error("Error adding document: ", error);
       }
     }
     async function addExecutive(obj) {
       try {
-        const executiveCollectionRef = collection(db, "executives");
         const uniqueId = uuidv4();
-        const docRef = await addDoc(executiveCollectionRef, {...obj,id:uniqueId});
+        await adminWrite('add', 'executives', { ...obj, id: uniqueId });
       } catch (error) {
         console.error("Error adding document: ", error);
       }
     }
     async function addGmail(obj) {
       try {
-        const gmailCollectionRef = collection(db, "gmail");
         const uniqueId = uuidv4();
-        const docRef = await addDoc(gmailCollectionRef, {...obj,id:uniqueId});
+        await adminWrite('add', 'gmail', { ...obj, id: uniqueId });
       } catch (error) {
         console.error("Error adding document: ", error);
       }
@@ -239,15 +265,14 @@ export const StateContext =({children})=>{
       // Log logout activity before clearing session
       if (adminUser) {
         try {
-          const activityRef = collection(db, 'activityLog')
-          await addDoc(activityRef, {
+          await adminWrite('add', 'activityLog', {
             id: uuidv4(),
             adminId: adminUser.id,
             adminName: adminUser.name,
             action: 'Logged Out',
             module: 'Auth',
             details: `${adminUser.name} logged out`,
-            createdAt: serverTimestamp(),
+            createdAt: { _serverTimestamp: true },
           })
         } catch (e) {
           // Activity logging is non-critical
@@ -281,15 +306,14 @@ export const StateContext =({children})=>{
     // Activity logger
     async function logActivity(action, module, details) {
       try {
-        const activityRef = collection(db, 'activityLog')
-        await addDoc(activityRef, {
+        await adminWrite('add', 'activityLog', {
           id: uuidv4(),
           adminId: adminUser?.id || 'unknown',
           adminName: adminUser?.name || 'Unknown',
           action,
           module,
           details,
-          createdAt: serverTimestamp(),
+          createdAt: { _serverTimestamp: true },
         })
       } catch (error) {
         console.error('Error logging activity:', error)
@@ -331,7 +355,12 @@ export const StateContext =({children})=>{
 
 // Assuming you have initialized your Firestore instance as 'db'
 
-      async function getMembersWithNewBranchRelation() {
+      async function getMembersWithNewBranchRelation(forceRefresh = false) {
+        // Skip re-fetching if data already loaded (saves Firestore reads)
+        if (!forceRefresh && members && members.length > 0) {
+          return { branches: newBranchData, newHomes: newHomeData };
+        }
+
         const membersCollection = collection(db, 'members');
         const querySnapshot = await getDocs(membersCollection);
 
@@ -488,44 +517,25 @@ export const StateContext =({children})=>{
         }
       }
 
-      async function deleteDocument(collectionName, id ) {
+      async function deleteDocument(collectionName, id) {
         try {
-          const querySnapshot = await getDocs(query(collection(db, collectionName), where('id', '==', id)));
-      
-          if (!querySnapshot.empty) {
-            querySnapshot.forEach(async (doc) => {
-              await deleteDoc(doc.ref);
-            });
-            if(collectionName==='gallery'){
-              setGallery((gallery)=>{
-                return gallery?.filter((gallery)=>gallery.id!==id)
-              })
+          if (collectionName === 'members') {
+            // Use server-side recursive delete for members
+            await adminWrite('deleteRecursive', 'members', null, id);
+            setMembers((members) => members?.filter((member) => member.id !== id));
+          } else {
+            await adminWrite('delete', collectionName, null, id);
+            if (collectionName === 'gallery') {
+              setGallery((gallery) => gallery?.filter((g) => g.id !== id));
             }
-            if(collectionName==='events'){
-              setEvents((events)=>{
-                return events?.filter((event)=>event.id!==id)
-              })
+            if (collectionName === 'events') {
+              setEvents((events) => events?.filter((event) => event.id !== id));
             }
-            if(collectionName==='executives'){
-              setExecutives((executives)=>{
-                return executives?.filter((executive)=>executive.id!==id)
-              })
+            if (collectionName === 'executives') {
+              setExecutives((executives) => executives?.filter((executive) => executive.id !== id));
             }
-            if(collectionName==='gmail'){
-              setGmail((gmail)=>{
-                return gmail?.filter((gmail)=>gmail.id!==id)
-              })
-            }
-            if(collectionName==='members'){
-              const querySnapshotMembers = await getDocs(query(collection(db, collectionName), where('relatedTo', '==', id)));
-              if (!querySnapshotMembers.empty){
-                querySnapshotMembers.forEach(async (doc) => {
-                  await deleteDocument('members',doc.data().id);
-                });
-              }
-              setMembers((members)=>{
-                return members?.filter((member)=>member.id!==id)
-              })
+            if (collectionName === 'gmail') {
+              setGmail((gmail) => gmail?.filter((g) => g.id !== id));
             }
           }
         } catch (error) {
@@ -546,43 +556,17 @@ export const StateContext =({children})=>{
       // }
       async function updateMember(updatedData) {
         try {
-          // Create a query to find the document based on the key-value pair
-          // const q = query('members', where('id', "==", updatedData.id));
-      
-          // // Get the query snapshot
-          // const querySnapshot = await getDocs(q);
-
-          // console.log(querySnapshot);
-          const membersRef = collection(db, "members");
-          const q = query(membersRef, where("id", "==", updatedData.id));
-          const querySnapshot = await getDocs(q);
-          
-      
-          // If a document is found, update it
-          if (!querySnapshot.empty) {
-            const docRef = doc(db, querySnapshot.docs[0].ref.path);
-      
-            // Update the document
-            await updateDoc(docRef, updatedData);
-          }
+          await adminWrite('update', 'members', updatedData, updatedData.id);
         } catch (error) {
-          console.error("Error updating document:", error);   
-      
+          console.error('Error updating document:', error);
         }
       }
 
       async function updateDocument(collectionName, updatedData) {
         try {
-          const colRef = collection(db, collectionName);
-          const q = query(colRef, where("id", "==", updatedData.id));
-          const querySnapshot = await getDocs(q);
-
-          if (!querySnapshot.empty) {
-            const docRef = doc(db, querySnapshot.docs[0].ref.path);
-            await updateDoc(docRef, updatedData);
-          }
+          await adminWrite('update', collectionName, updatedData, updatedData.id);
         } catch (error) {
-          console.error("Error updating document:", error);
+          console.error('Error updating document:', error);
         }
       }
 

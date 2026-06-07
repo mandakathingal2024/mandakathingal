@@ -1,6 +1,6 @@
 'use server'
 import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
 import bcrypt from 'bcryptjs';
 import { createSessionToken, buildSessionCookie } from '../../../lib/auth';
 
@@ -99,24 +99,12 @@ export async function POST(request) {
         return new Response(JSON.stringify({ isAuthenticated: false }), { status: 200 });
       }
 
-      // Support both hashed and legacy plaintext passwords
+      // Only accept bcrypt-hashed passwords — plaintext fallback removed for security
       let passwordValid = false;
       if (admin.password.startsWith('$2a$') || admin.password.startsWith('$2b$')) {
-        // Bcrypt hashed password
         passwordValid = await bcrypt.compare(req.password, admin.password);
-      } else {
-        // Legacy plaintext — verify and auto-migrate to bcrypt
-        passwordValid = admin.password === req.password;
-        if (passwordValid) {
-          try {
-            const hashed = await bcrypt.hash(req.password, 10);
-            const docRef = doc(db, adminDoc.ref.path);
-            await updateDoc(docRef, { password: hashed });
-          } catch (e) {
-            console.error('Auto-hash migration failed:', e);
-          }
-        }
       }
+      // If password is not hashed, login fails — admin must contact superAdmin to reset
 
       if (passwordValid) {
         clearAttempts(req.userName);

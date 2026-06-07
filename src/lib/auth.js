@@ -72,20 +72,32 @@ export function createSessionToken(admin) {
  * Returns the decoded session payload or null.
  */
 export function getSessionFromRequest(request) {
+  let session = null;
+
   // Try cookie header
   const cookieHeader = request.headers.get('cookie') || '';
   const match = cookieHeader.match(new RegExp(`${SESSION_COOKIE}=([^;]+)`));
   if (match) {
-    return verifyToken(decodeURIComponent(match[1]));
+    session = verifyToken(decodeURIComponent(match[1]));
   }
 
   // Fallback: check Authorization header (for client-side API calls)
-  const authHeader = request.headers.get('authorization') || '';
-  if (authHeader.startsWith('Bearer ')) {
-    return verifyToken(authHeader.slice(7));
+  if (!session) {
+    const authHeader = request.headers.get('authorization') || '';
+    if (authHeader.startsWith('Bearer ')) {
+      session = verifyToken(authHeader.slice(7));
+    }
   }
 
-  return null;
+  // Check token expiry (7 days max)
+  if (session && session.ts) {
+    const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+    if (Date.now() - session.ts > MAX_AGE_MS) {
+      return null; // Token expired
+    }
+  }
+
+  return session;
 }
 
 /**
