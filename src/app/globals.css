@@ -532,7 +532,7 @@ html.anim .reveal[data-d="4"] { transition-delay: .32s; }
   .menu-btn { padding: 4px; }
 
   /* Hero — bring the portrait back as square arch beneath copy */
-  .hero { padding-top: 112px; }
+  .hero { padding-top: 82px; }
   .hero .wrap { gap: 28px; }
   .hero-copy { padding-bottom: 8px; }
   .hero-badge-new { font-size: 10.5px; letter-spacing: .14em; padding: 6px 13px; gap: 8px; }
