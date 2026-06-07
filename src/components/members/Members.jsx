@@ -8,8 +8,9 @@ import { MembersSkeleton } from '../Skeleton'
 
 const Members = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const { getMembersWithNewBranchRelation, newBranchData, isGmailAuthenticated, googleSignIn, googleSignOut, isAuthorised, deniedEmail, isGmailLoading } = useStateContext()
+  const { getMembersWithNewBranchRelation, newBranchData, newHomeData, isGmailAuthenticated, googleSignIn, googleSignOut, isAuthorised, deniedEmail, isGmailLoading } = useStateContext()
   const [search, setSearch] = useState('')
+  const [filter, setFilter] = useState('branch') // 'branch' or 'home'
 
   const [error, setError] = useState(null);
 
@@ -26,17 +27,27 @@ const Members = () => {
     fetchData();
   }, []);
 
+  // Data source based on filter
+  const dataSource = useMemo(() => {
+    if (filter === 'home') {
+      // Combine branches + new homes, sorted alphabetically
+      const combined = [...(newBranchData || []), ...(newHomeData || [])];
+      return combined.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    }
+    return newBranchData || [];
+  }, [filter, newBranchData, newHomeData]);
+
   // Client-side case-insensitive search — filters on every keystroke
   const filteredMembers = useMemo(() => {
-    if (!newBranchData) return [];
-    if (!search.trim()) return newBranchData;
+    if (!dataSource.length) return [];
+    if (!search.trim()) return dataSource;
     const query = search.trim().toLowerCase();
-    return newBranchData.filter((member) => {
+    return dataSource.filter((member) => {
       const name = (member.name || '').toLowerCase();
       const place = (member.place || '').toLowerCase();
       return name.includes(query) || place.includes(query);
     });
-  }, [search, newBranchData]);
+  }, [search, dataSource]);
 
   if (isLoading) {
     return <MembersSkeleton />
@@ -89,6 +100,22 @@ const Members = () => {
                 </span>
               )}
             </div>
+            <div className="member-filter-tabs">
+              <button
+                className={`member-filter-tab${filter === 'branch' ? ' member-filter-tab--active' : ''}`}
+                onClick={() => setFilter('branch')}
+              >
+                Branches
+                <span className="member-filter-count">{newBranchData?.length || 0}</span>
+              </button>
+              <button
+                className={`member-filter-tab${filter === 'home' ? ' member-filter-tab--active' : ''}`}
+                onClick={() => setFilter('home')}
+              >
+                All Homes
+                <span className="member-filter-count">{(newBranchData?.length || 0) + (newHomeData?.length || 0)}</span>
+              </button>
+            </div>
             <div className="row">
               {filteredMembers.length > 0 ? filteredMembers.map((member) => {
                 return (
@@ -104,6 +131,9 @@ const Members = () => {
                       </div>
                       <h4 className="title"><a href={`/members/${member.id}`}>{member.name}</a></h4>
                       <p className="description">{member.place}</p>
+                      {member.totalMembers && (
+                        <p className="member-count-badge">{member.totalMembers} {member.totalMembers === 1 ? 'member' : 'members'}</p>
+                      )}
                       <a href={`/members/${member.id}`} className="btn-learn-more">View Family</a>
                     </div>
                   </div>

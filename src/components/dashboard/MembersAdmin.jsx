@@ -11,6 +11,7 @@ import Typography from '@mui/material/Typography';
 import Radio from '@mui/material/Radio';
 import RadioGroup from '@mui/material/RadioGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
+import Switch from '@mui/material/Switch';
 import FormControl from '@mui/material/FormControl';
 import FormLabel from '@mui/material/FormLabel';
 import InputLabel from '@mui/material/InputLabel';
@@ -69,7 +70,7 @@ const MemberFormModal = React.memo(({ open, onClose, editMember, onSubmit, isSav
   const EMPTY = {
     name: '', uniqueText: '', place: '', gender: '',
     memberImgUrl: '', houseImgUrl: '', description: '',
-    relatedTo: '', relation: ''
+    relatedTo: '', relation: '', isNewHome: false
   };
 
   const [member, setMember] = React.useState(EMPTY);
@@ -326,10 +327,12 @@ const MemberFormModal = React.memo(({ open, onClose, editMember, onSubmit, isSav
                   const val = e.target.value;
                   setIsNewBranch(val === 'New Branch');
                   if (val === 'New Branch') {
-                    setMember((prev) => ({ ...prev, relatedTo: '' }));
+                    setMember((prev) => ({ ...prev, relatedTo: '', isNewHome: false }));
                     setSearchText('');
                     setSuggestions([]);
                     setShowSuggestions(false);
+                  } else if (val !== 'Son Of / Dauhter Of') {
+                    setMember((prev) => ({ ...prev, isNewHome: false }));
                   }
                   setFieldErrors((prev) => { const n = { ...prev }; delete n.relation; return n; });
                 }}
@@ -430,6 +433,29 @@ const MemberFormModal = React.memo(({ open, onClose, editMember, onSubmit, isSav
                   <Typography variant="body2" color="text.secondary">No members found</Typography>
                 </Paper>
               )}
+            </Box>
+          )}
+
+          {/* New Home toggle — only for Son/Daughter relation */}
+          {member.relation === 'Son Of / Dauhter Of' && (
+            <Box sx={{ mt: 1.5, p: 1.5, borderRadius: 1.5, backgroundColor: member.isNewHome ? 'rgba(46,125,50,0.06)' : 'rgba(0,0,0,0.02)', border: `1px solid ${member.isNewHome ? 'rgba(46,125,50,0.25)' : '#E0D6CC'}`, transition: 'all 0.2s' }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={!!member.isNewHome}
+                    onChange={(e) => setMember((prev) => ({ ...prev, isNewHome: e.target.checked }))}
+                    size="small"
+                    sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: '#2E7D32' }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#2E7D32' } }}
+                  />
+                }
+                label={
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.85rem' }}>Started a new home</Typography>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>This member will appear as a separate home in the Members page</Typography>
+                  </Box>
+                }
+                sx={{ m: 0, alignItems: 'flex-start', gap: 0.5 }}
+              />
             </Box>
           )}
         </Box>

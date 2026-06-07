@@ -17,6 +17,7 @@ export const StateContext =({children})=>{
     const [pageValue,setPageValue]=useState(0)
     const [adminUser, setAdminUser] = useState(null)
     const [newBranchData, setNewBranchData] = useState([]);
+    const [newHomeData, setNewHomeData] = useState([]);
     const [viewFamilyData,setViewFamilyData]= useState([]);
     const [memberObj,setMemberObj]= useState(null);
     const [events,setEvents] = useState(null)
@@ -332,17 +333,26 @@ export const StateContext =({children})=>{
 
       async function getMembersWithNewBranchRelation() {
         const membersCollection = collection(db, 'members');
+        const querySnapshot = await getDocs(membersCollection);
 
-        const q = query(membersCollection, where('relation', '==', 'New Branch'));
-        const querySnapshot = await getDocs(q);
-
-        const membersArray = [];
+        const allMembers = [];
         querySnapshot.forEach((doc) => {
-          membersArray.push({ id: doc.id, ...doc.data() });
+          allMembers.push({ id: doc.id, ...doc.data() });
         });
-        setNewBranchData(membersArray)
-        setMembers(membersArray)
-        return membersArray;
+
+        const branches = allMembers.filter((m) => m.relation === 'New Branch');
+        const newHomes = allMembers.filter((m) => m.isNewHome === true);
+
+        // Count family members for each branch/home
+        const withCount = (list) => list.map((head) => {
+          const familyMembers = allMembers.filter((m) => m.relatedTo === head.id);
+          return { ...head, totalMembers: 1 + familyMembers.length };
+        });
+
+        setNewBranchData(withCount(branches));
+        setNewHomeData(withCount(newHomes));
+        setMembers(allMembers);
+        return { branches: withCount(branches), newHomes: withCount(newHomes) };
       }
 
       async function fetchAllMembers() {
@@ -676,7 +686,7 @@ export const StateContext =({children})=>{
         pageValue, setPageValue,
         addMember, handleLogOut,
         searchMembersByName, getMembersWithNewBranchRelation,
-        fetchAllMembers, setNewBranchData, newBranchData,
+        fetchAllMembers, setNewBranchData, newBranchData, newHomeData,
         getMembersByRelatedTo, viewFamilyData, setViewFamilyData,
         memberObj, setMemberObj, getMemberById,
         addGallery, addEvent, fetchAllEvents, setEvents, events,
@@ -691,7 +701,7 @@ export const StateContext =({children})=>{
         logoutMessage, setLogoutMessage
     }), [
         isEnglish, isAuthenticated, isAuthLoading, pageValue,
-        newBranchData, viewFamilyData, memberObj,
+        newBranchData, newHomeData, viewFamilyData, memberObj,
         events, gallery, executives, members,
         user, isGmailAuthenticated, isAuthorised, deniedEmail,
         gmail, isGmailLoading, adminUser, logoutMessage
