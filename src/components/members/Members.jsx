@@ -21,8 +21,14 @@ const Members = () => {
   const [filter, setFilter] = useState('branch')
   const [error, setError] = useState(null)
 
+  // Only fetch member data AFTER Gmail authentication succeeds
   useEffect(() => {
+    if (!isGmailAuthenticated) {
+      setIsLoading(false)
+      return
+    }
     const fetchData = async () => {
+      setIsLoading(true)
       try {
         await getMembersWithNewBranchRelation()
       } catch (error) {
@@ -32,7 +38,7 @@ const Members = () => {
       }
     }
     fetchData()
-  }, [])
+  }, [isGmailAuthenticated])
 
   const dataSource = useMemo(() => {
     if (filter === 'all') {

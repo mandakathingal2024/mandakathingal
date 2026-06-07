@@ -10,14 +10,19 @@ import { cookies } from 'next/headers';
 import crypto from 'crypto';
 
 const SESSION_COOKIE = 'admin_session';
-const SECRET = process.env.SESSION_SECRET || process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'fallback-secret';
+// SESSION_SECRET must be set in production — never fall back to public keys
+const SECRET = process.env.SESSION_SECRET;
+if (!SECRET && process.env.NODE_ENV === 'production') {
+  throw new Error('SESSION_SECRET environment variable is required in production');
+}
+const SIGNING_KEY = SECRET || crypto.randomBytes(32).toString('hex'); // random key per cold start in dev
 
 /**
  * Sign a payload into a tamper-proof token: base64(payload).base64(hmac)
  */
 export function signToken(payload) {
   const data = Buffer.from(JSON.stringify(payload)).toString('base64');
-  const hmac = crypto.createHmac('sha256', SECRET).update(data).digest('base64');
+  const hmac = crypto.createHmac('sha256', SIGNING_KEY).update(data).digest('base64');
   return `${data}.${hmac}`;
 }
 
@@ -29,10 +34,19 @@ export function verifyToken(token) {
   const parts = token.split('.');
   if (parts.length !== 2) return null;
 
-  const [data, hmac] = parts;
-  const expected = crypto.createHmac('sha256', SECRET).update(data).digest('base64');
+  const [data, sig] = parts;
+  const expected = crypto.createHmac('sha256', SIGNING_KEY).update(data).digest('base64');
 
-  if (hmac !== expected) return null;
+  // Constant-time comparison to prevent timing attacks
+  try {
+    const sigBuf = Buffer.from(sig);
+    const expectedBuf = Buffer.from(expected);
+    if (sigBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(sigBuf, expectedBuf)) {
+      return null;
+    }
+  } catch {
+    return null;
+  }
 
   try {
     return JSON.parse(Buffer.from(data, 'base64').toString());

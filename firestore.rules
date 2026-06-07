@@ -2,44 +2,45 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Members: public read (website displays family tree), authenticated write
+    // Members: only authenticated users can read (Gmail sign-in required)
+    // Write requires Firebase Authentication
     match /members/{docId} {
-      allow read: if true;
+      allow read: if request.auth != null;
       allow write: if request.auth != null;
     }
 
-    // Events: public read, authenticated write
+    // Events: public read (displayed on homepage), authenticated write
     match /events/{docId} {
       allow read: if true;
       allow write: if request.auth != null;
     }
 
-    // Gallery: public read, authenticated write
+    // Gallery: public read (displayed on gallery page), authenticated write
     match /gallery/{docId} {
       allow read: if true;
       allow write: if request.auth != null;
     }
 
-    // Executives: public read, authenticated write
+    // Executives: public read (displayed on homepage & executives page), authenticated write
     match /executives/{docId} {
       allow read: if true;
       allow write: if request.auth != null;
     }
 
-    // Website Content: public read, authenticated write
+    // Website Content: public read (hero, about, milestones), authenticated write
     match /websiteContent/{docId} {
       allow read: if true;
       allow write: if request.auth != null;
     }
 
-    // Gmail access list: read only by authenticated users, write by authenticated
+    // Gmail access list: authenticated users can check their own email,
+    // only authenticated users can read/write
     match /gmail/{docId} {
-      allow read: if true;
+      allow read: if request.auth != null;
       allow write: if request.auth != null;
     }
 
-    // Admins: only server-side access (API routes)
-    // Client reads are needed for session verification
+    // Admins: only authenticated access
     match /admins/{docId} {
       allow read: if request.auth != null;
       allow write: if request.auth != null;
