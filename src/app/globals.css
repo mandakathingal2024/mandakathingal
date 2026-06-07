@@ -517,6 +517,103 @@ html.anim .reveal[data-d="4"] { transition-delay: .32s; }
   .cta p { font-size: 15px; }
 }
 
+/* ================= Phone (≤560px) — per design spec ================= */
+@media (max-width: 560px) {
+  :root { --gut: 20px; }
+
+  /* Header — compact brand */
+  .site-header { padding: 14px 0; }
+  .site-header.scrolled { padding: 10px 0; }
+  .brand-mark { width: 40px; height: 40px; }
+  .brand-mark img { width: 30px; height: 30px; }
+  .brand-mark svg { width: 24px; height: 24px; }
+  .brand-name { font-size: 19px; }
+  .brand-sub { font-size: 9px; letter-spacing: .2em; }
+  .menu-btn { padding: 4px; }
+
+  /* Hero — bring the portrait back as square arch beneath copy */
+  .hero { padding-top: 112px; }
+  .hero .wrap { gap: 28px; }
+  .hero-copy { padding-bottom: 8px; }
+  .hero-badge-new { font-size: 10.5px; letter-spacing: .14em; padding: 6px 13px; gap: 8px; }
+  .hero h1 { font-size: clamp(32px, 10vw, 44px); line-height: .96; margin-top: 20px; }
+  .hero h1 .accent { font-size: .46em; margin-top: 6px; }
+  .hero-sub { font-size: 15px; margin-top: 18px; max-width: none; }
+  .hero-cta { gap: 11px; margin-top: 26px; }
+  .hero-cta .thbtn { flex: 1; justify-content: center; padding: 14px 18px !important; }
+
+  /* Portrait — show it as a compact square arch */
+  .hero-figure { display: block !important; margin-top: 4px; max-width: 300px; margin-inline: auto; width: 100%; }
+  .hero-figure .frame-ring { inset: -10px; }
+  .arch { aspect-ratio: 1/1; border-radius: 46% 46% 6px 6px / 30% 30% 6px 6px; }
+  .hero-figure .seal { width: 72px; height: 72px; left: -8px; bottom: 22px; }
+  .seal .seal-yr { font-size: 19px; }
+  .seal .seal-tx { font-size: 7.5px; }
+
+  /* Stats bar */
+  .hero-stats-bar .wrap { padding-block: 4px; }
+  .hstat { padding: 14px 2px; }
+  .hstat .num { font-size: 32px; min-width: 72px; }
+  .hstat .lbl { font-size: 12px; }
+
+  /* Section headings */
+  .section-head { margin-bottom: 32px; }
+  .section-head h2 { font-size: clamp(24px, 7vw, 34px); }
+  .section-head p { font-size: 15px; }
+  .th-section-head h2 { font-size: clamp(20px, 6vw, 28px); }
+
+  /* About section */
+  .about-section { padding: 48px 0; }
+  .about-figure { max-width: 100%; }
+  .about-figure .ph { border-radius: 160px 160px 6px 6px; }
+  .about-figure .tag { right: 8px; bottom: 18px; padding: 14px 16px; max-width: 200px; }
+  .about-figure .tag .t-name { font-size: 17px; }
+  .about-copy { margin-top: 12px; }
+  .about-copy h2 { font-size: clamp(24px, 7vw, 34px); }
+  .about-copy .lead { font-size: 17px; }
+  .about-copy .body { font-size: 14.5px; }
+
+  /* Leadership */
+  .leaders { padding: 48px 0; }
+  .tabs { gap: 7px; margin-bottom: clamp(20px, 3vw, 32px); }
+  .tab { padding: 10px 15px; font-size: 13px; }
+  .people { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .person { padding: 20px 10px; }
+  .avatar { width: 70px; height: 70px; font-size: 23px; margin-bottom: 12px; }
+  .person.lead .avatar { width: 76px; height: 76px; font-size: 26px; }
+  .person .p-name { font-size: 16px; }
+  .person .p-role { font-size: 10px; letter-spacing: .08em; }
+
+  /* Activities — single column stack */
+  .activities { padding: 48px 0; }
+  .bento { grid-template-columns: 1fr; grid-auto-rows: 220px; gap: 14px; }
+  .acard:nth-child(1), .acard:nth-child(2), .acard:nth-child(3), .acard:nth-child(4) { grid-column: span 1; grid-row: span 1; display: block; }
+  .acard .a-body { padding: 20px; }
+  .acard .a-desc { opacity: 1; max-height: 120px; }
+
+  /* Timeline */
+  .timeline { padding: 48px 0; }
+  .tl { gap: 28px; }
+  .mstone { padding-top: 0; }
+  .mstone .yr { position: static; transform: none; margin: 0 auto 14px; }
+  .mstone .m-title { font-size: 19px; }
+
+  /* CTA */
+  .cta { padding: 48px 0; }
+  .cta h2 { font-size: clamp(26px, 8vw, 36px); }
+  .cta p { font-size: 15px; }
+  .cta .hero-cta { flex-direction: column; }
+  .cta .hero-cta .thbtn { width: 100%; justify-content: center; }
+
+  /* Footer */
+  .foot-grid { grid-template-columns: 1fr; gap: 28px; }
+  .foot-bottom .wrap { flex-direction: column; align-items: flex-start; gap: 8px; }
+
+  /* Mobile nav — already reduced */
+  .mobile-nav .sheet { padding: 68px 24px 24px; }
+  .team-section { padding: 24px 0; }
+}
+
 /* ---------- Page Banner (inner pages) ---------- */
 .page-banner {
   background: var(--palm-deep);
