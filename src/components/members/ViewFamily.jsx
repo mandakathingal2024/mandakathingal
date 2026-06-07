@@ -124,12 +124,9 @@ export const ViewFamily = ({ id }) => {
   const spouses = viewFamilyData?.filter(m => m.relation === 'Wife Of / Husband Of') || []
   const allLateAdditional = viewFamilyData?.filter(m => m.relation === 'Late Parent / Additional Member') || []
   const lateFromRelation = allLateAdditional.filter(m => m.subType === 'late' || !m.subType)
-  const lateChildren = viewFamilyData?.filter(m => m.relation === 'Son Of / Dauhter Of' && m.isLate === true) || []
-  const lateSpouses = spouses.filter(m => m.isLate === true)
-  const lateMembers = [...lateFromRelation, ...lateChildren, ...lateSpouses]
-  const aliveSpouses = spouses.filter(m => !m.isLate)
+  const lateMembers = [...lateFromRelation]
   const additionalMembers = allLateAdditional.filter(m => m.subType === 'additional')
-  const children = viewFamilyData?.filter(m => m.relation === 'Son Of / Dauhter Of' && !m.isLate) || []
+  const children = viewFamilyData?.filter(m => m.relation === 'Son Of / Dauhter Of') || []
 
   return (
     <>
@@ -160,11 +157,16 @@ export const ViewFamily = ({ id }) => {
                   <p className="vf-member-place">{memberObj?.place}</p>
                 </div>
 
-                {/* Spouses (alive only — late spouses appear in Late Members section) */}
-                {aliveSpouses.map((spouse) => (
+                {/* Spouses — late spouses shown with tag */}
+                {spouses.map((spouse) => (
                   <div className="vf-member-card" key={spouse.id}>
-                    <div className="vf-member-img">
+                    <div className="vf-member-img" style={{ position: 'relative' }}>
                       <MemberImage src={spouse.memberImgUrl} name={spouse.name} width={150} height={200} />
+                      {spouse.isLate && (
+                        <span className="fam-card-tag fam-card-tag-late">
+                          {isEnglish ? 'Late' : 'മരണം'}
+                        </span>
+                      )}
                     </div>
                     <h4 className="vf-member-name">{spouse.name}</h4>
                     <p className="vf-member-place">{spouse.place}</p>
@@ -266,8 +268,13 @@ export const ViewFamily = ({ id }) => {
               <div className="fam-grid">
                 {children.map((member) => (
                   <div className="fam-card" key={member.id}>
-                    <div className="fam-card-img">
+                    <div className="fam-card-img" style={{ position: 'relative' }}>
                       <MemberImage src={member.memberImgUrl} name={member.name} width={200} height={220} />
+                      {member.isLate && (
+                        <span className="fam-card-tag fam-card-tag-late">
+                          {isEnglish ? 'Late' : 'മരണം'}
+                        </span>
+                      )}
                     </div>
                     <div className="fam-card-body">
                       <h4 className="fam-card-name">{member.name}</h4>
