@@ -8,7 +8,7 @@ import { MembersSkeleton } from '../Skeleton'
 
 const Members = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const { getMembersWithNewBranchRelation, newBranchData, newHomeData, isGmailAuthenticated, googleSignIn, googleSignOut, isAuthorised, deniedEmail, isGmailLoading } = useStateContext()
+  const { getMembersWithNewBranchRelation, newBranchData, newHomeData, members, isGmailAuthenticated, googleSignIn, googleSignOut, isAuthorised, deniedEmail, isGmailLoading } = useStateContext()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('branch') // 'branch' or 'home'
 
@@ -29,13 +29,15 @@ const Members = () => {
 
   // Data source based on filter
   const dataSource = useMemo(() => {
+    if (filter === 'all') {
+      return (members || []).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    }
     if (filter === 'home') {
-      // Combine branches + new homes, sorted alphabetically
       const combined = [...(newBranchData || []), ...(newHomeData || [])];
       return combined.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     }
     return newBranchData || [];
-  }, [filter, newBranchData, newHomeData]);
+  }, [filter, newBranchData, newHomeData, members]);
 
   // Client-side case-insensitive search — filters on every keystroke
   const filteredMembers = useMemo(() => {
@@ -105,7 +107,7 @@ const Members = () => {
                 className={`member-filter-tab${filter === 'branch' ? ' member-filter-tab--active' : ''}`}
                 onClick={() => setFilter('branch')}
               >
-                Branches
+                Family
                 <span className="member-filter-count">{newBranchData?.length || 0}</span>
               </button>
               <button
@@ -114,6 +116,13 @@ const Members = () => {
               >
                 All Homes
                 <span className="member-filter-count">{(newBranchData?.length || 0) + (newHomeData?.length || 0)}</span>
+              </button>
+              <button
+                className={`member-filter-tab${filter === 'all' ? ' member-filter-tab--active' : ''}`}
+                onClick={() => setFilter('all')}
+              >
+                All Members
+                <span className="member-filter-count">{members?.length || 0}</span>
               </button>
             </div>
             <div className="row">
