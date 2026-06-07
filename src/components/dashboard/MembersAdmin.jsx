@@ -30,7 +30,6 @@ import SuccessToast from './SuccessToast';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import SortIcon from '@mui/icons-material/Sort';
 import SearchIcon from '@mui/icons-material/Search';
-import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import CloseIcon from '@mui/icons-material/Close';
 import UploadImage from './UploadImage';
 import Table from '@mui/material/Table';
@@ -70,7 +69,7 @@ const MemberFormModal = React.memo(({ open, onClose, editMember, onSubmit, isSav
   const EMPTY = {
     name: '', uniqueText: '', place: '', gender: '',
     memberImgUrl: '', houseImgUrl: '', description: '',
-    relatedTo: '', relation: '', isNewHome: false
+    relatedTo: '', relation: '', isNewHome: false, subType: '', subTypeLabel: ''
   };
 
   const [member, setMember] = React.useState(EMPTY);
@@ -327,12 +326,14 @@ const MemberFormModal = React.memo(({ open, onClose, editMember, onSubmit, isSav
                   const val = e.target.value;
                   setIsNewBranch(val === 'New Branch');
                   if (val === 'New Branch') {
-                    setMember((prev) => ({ ...prev, relatedTo: '', isNewHome: false }));
+                    setMember((prev) => ({ ...prev, relatedTo: '', isNewHome: false, subType: '' }));
                     setSearchText('');
                     setSuggestions([]);
                     setShowSuggestions(false);
-                  } else if (val !== 'Son Of / Dauhter Of') {
-                    setMember((prev) => ({ ...prev, isNewHome: false }));
+                  } else if (val === 'Late Parent / Additional Member') {
+                    setMember((prev) => ({ ...prev, isNewHome: false, subType: prev.subType || 'late' }));
+                  } else {
+                    setMember((prev) => ({ ...prev, isNewHome: val === 'Son Of / Dauhter Of' ? prev.isNewHome : false, subType: '' }));
                   }
                   setFieldErrors((prev) => { const n = { ...prev }; delete n.relation; return n; });
                 }}
@@ -347,6 +348,34 @@ const MemberFormModal = React.memo(({ open, onClose, editMember, onSubmit, isSav
               )}
             </FormControl>
           </Box>
+
+          {/* Sub-type dropdown for Late Parent / Additional Member */}
+          {member.relation === 'Late Parent / Additional Member' && (
+            <>
+              <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+                <InputLabel>Member Type</InputLabel>
+                <Select
+                  value={member.subType || 'late'}
+                  label="Member Type"
+                  onChange={(e) => setMember((prev) => ({ ...prev, subType: e.target.value }))}
+                >
+                  <MenuItem value="late">Late Member</MenuItem>
+                  <MenuItem value="additional">Additional Member</MenuItem>
+                </Select>
+              </FormControl>
+              <TextField
+                fullWidth
+                label="Section Label (optional)"
+                placeholder={member.subType === 'late' ? 'e.g. Late Parents, In Memory Of, etc.' : 'e.g. Adopted, Foster, etc.'}
+                name="subTypeLabel"
+                value={member.subTypeLabel || ''}
+                onChange={handleChange}
+                size="small"
+                sx={{ mb: 2 }}
+                helperText="If given, this label will appear as a heading on the website"
+                />
+            </>
+          )}
 
           {!isNewBranch && (
             <Box ref={relatedToRef} sx={{ position: 'relative' }}>
@@ -578,6 +607,7 @@ const MembersAdmin = () => {
   const [deleteTarget, setDeleteTarget] = React.useState(null);
   const [toast, setToast] = React.useState({ open: false, message: '' });
   const [sortBy, setSortBy] = React.useState('newest');
+  const [filterTag, setFilterTag] = React.useState(null); // 'family' | 'houses' | 'late' | null
 
   const {
     addMember, searchMembersByName, fetchAllMembers,
@@ -588,10 +618,26 @@ const MembersAdmin = () => {
   const canEdit = hasPermission('edit');
   const canDelete = hasPermission('delete');
 
-  // Client-side search + sort — memoized so table doesn't re-render on unrelated state changes
+  // Counts for stat tags
+  const familyCount = React.useMemo(() => (members || []).filter(m => m.relation === 'New Branch').length, [members]);
+  const housesCount = React.useMemo(() => (members || []).filter(m => m.relation === 'New Branch' || m.isNewHome === true).length, [members]);
+  const lateCount = React.useMemo(() => (members || []).filter(m => m.relation === 'Late Parent / Additional Member' && (m.subType === 'late' || !m.subType)).length, [members]);
+  const totalCount = (members || []).length;
+
+  // Client-side search + tag filter + sort — memoized so table doesn't re-render on unrelated state changes
   const sortedMembers = React.useMemo(() => {
     if (!members) return [];
     let list = members;
+
+    // Apply tag filter
+    if (filterTag === 'family') {
+      list = list.filter(m => m.relation === 'New Branch');
+    } else if (filterTag === 'houses') {
+      list = list.filter(m => m.relation === 'New Branch' || m.isNewHome === true);
+    } else if (filterTag === 'late') {
+      list = list.filter(m => m.relation === 'Late Parent / Additional Member' && (m.subType === 'late' || !m.subType));
+    }
+
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       list = list.filter((m) => {
@@ -616,7 +662,7 @@ const MembersAdmin = () => {
       }
       return 0;
     });
-  }, [search, members, sortBy]);
+  }, [search, members, sortBy, filterTag]);
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -678,7 +724,59 @@ const MembersAdmin = () => {
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3 } }}>
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'center' }, gap: 1.5, mb: 3 }}>
-        <Typography variant="h5">Members</Typography>
+        <Box>
+          <Typography variant="h5" sx={{ mb: 1 }}>Members</Typography>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <Box
+              onClick={() => setFilterTag(filterTag === 'family' ? null : 'family')}
+              sx={{
+                display: 'inline-flex', alignItems: 'center', gap: 0.5, px: 1.5, py: 0.5,
+                borderRadius: '99px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer',
+                bgcolor: filterTag === 'family' ? 'rgba(46,125,50,0.2)' : 'rgba(46,125,50,0.08)',
+                color: '#2E7D32', border: filterTag === 'family' ? '1.5px solid #2E7D32' : '1.5px solid transparent',
+                transition: 'all 0.2s', '&:hover': { bgcolor: 'rgba(46,125,50,0.15)' },
+              }}
+            >
+              Family <Box component="span" sx={{ bgcolor: 'rgba(46,125,50,0.15)', px: 0.8, py: 0.1, borderRadius: '99px', ml: 0.3 }}>{familyCount}</Box>
+            </Box>
+            <Box
+              onClick={() => setFilterTag(filterTag === 'houses' ? null : 'houses')}
+              sx={{
+                display: 'inline-flex', alignItems: 'center', gap: 0.5, px: 1.5, py: 0.5,
+                borderRadius: '99px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer',
+                bgcolor: filterTag === 'houses' ? 'rgba(21,101,192,0.2)' : 'rgba(21,101,192,0.08)',
+                color: '#1565C0', border: filterTag === 'houses' ? '1.5px solid #1565C0' : '1.5px solid transparent',
+                transition: 'all 0.2s', '&:hover': { bgcolor: 'rgba(21,101,192,0.15)' },
+              }}
+            >
+              Houses <Box component="span" sx={{ bgcolor: 'rgba(21,101,192,0.15)', px: 0.8, py: 0.1, borderRadius: '99px', ml: 0.3 }}>{housesCount}</Box>
+            </Box>
+            <Box
+              onClick={() => setFilterTag(filterTag === 'late' ? null : 'late')}
+              sx={{
+                display: 'inline-flex', alignItems: 'center', gap: 0.5, px: 1.5, py: 0.5,
+                borderRadius: '99px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer',
+                bgcolor: filterTag === 'late' ? 'rgba(121,85,72,0.2)' : 'rgba(121,85,72,0.08)',
+                color: '#795548', border: filterTag === 'late' ? '1.5px solid #795548' : '1.5px solid transparent',
+                transition: 'all 0.2s', '&:hover': { bgcolor: 'rgba(121,85,72,0.15)' },
+              }}
+            >
+              Late Members <Box component="span" sx={{ bgcolor: 'rgba(121,85,72,0.15)', px: 0.8, py: 0.1, borderRadius: '99px', ml: 0.3 }}>{lateCount}</Box>
+            </Box>
+            <Box
+              onClick={() => setFilterTag(null)}
+              sx={{
+                display: 'inline-flex', alignItems: 'center', gap: 0.5, px: 1.5, py: 0.5,
+                borderRadius: '99px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer',
+                bgcolor: filterTag === null ? 'rgba(176,124,46,0.2)' : 'rgba(176,124,46,0.08)',
+                color: '#B07C2E', border: filterTag === null ? '1.5px solid #B07C2E' : '1.5px solid transparent',
+                transition: 'all 0.2s', '&:hover': { bgcolor: 'rgba(176,124,46,0.15)' },
+              }}
+            >
+              Total Members <Box component="span" sx={{ bgcolor: 'rgba(176,124,46,0.15)', px: 0.8, py: 0.1, borderRadius: '99px', ml: 0.3 }}>{totalCount}</Box>
+            </Box>
+          </Box>
+        </Box>
         {hasPermission('add') && (
           <Button variant="contained" startIcon={<PersonAddIcon />} onClick={handleOpen} sx={{ alignSelf: { xs: 'flex-start', sm: 'auto' } }}>
             Add Member
@@ -726,15 +824,6 @@ const MembersAdmin = () => {
               <MenuItem value="oldest">Oldest First</MenuItem>
             </Select>
           </FormControl>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<RestartAltIcon />}
-            onClick={() => { setSearch(''); setSortBy('default'); }}
-            sx={{ color: 'text.secondary', borderColor: '#E0D6CC', minWidth: 'fit-content' }}
-          >
-            Reset
-          </Button>
         </Box>
 
         <MembersTable

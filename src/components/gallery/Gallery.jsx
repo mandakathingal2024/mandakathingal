@@ -1,59 +1,43 @@
 'use client'
 import React, { useEffect, useState } from 'react'
-import { useStateContext } from '../../../context/stateContext';
-import Image from 'next/image';
-import { GallerySkeleton } from '../Skeleton';
+import { useStateContext } from '../../../context/stateContext'
+import { GallerySkeleton } from '../Skeleton'
+import PageBanner from '../shared/PageBanner'
 
 const Gallery = () => {
-  const [isLoading, setIsLoading] = useState(true);
-  const {fetchAllGallery,gallery} =useStateContext()
-
-  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(true)
+  const { fetchAllGallery, gallery, isEnglish } = useStateContext()
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetchAllGallery();
+        await fetchAllGallery()
       } catch (error) {
-        setError(error);
+        setError(error)
       } finally {
-        setIsLoading(false);
+        setIsLoading(false)
       }
-    };
-    fetchData();
-  },[]);
-  if(isLoading){
+    }
+    fetchData()
+  }, [])
+
+  if (isLoading) {
     return <GallerySkeleton />
   }
+
   return (
-    <main id="main">
-    <section id="breadcrumbs" className="breadcrumbs">
-      <div className="container">
-
-        <div className="d-flex justify-content-between align-items-center">
-          <h2>Gallery</h2>
-          <ol>
-            <li><a href="index.html">Home</a></li>
-            <li>Gallery</li>
-          </ol>
-        </div>
-
-      </div>
-    </section>
-
-    {/* <!-- ======= Gallery Section ======= --> */}
-    <section id="gallery" className="gallery">
-      <div className="container">
-
-        <div className="row gallery-container">
-          {gallery&&gallery.length > 0 ? gallery.map((image)=>{
-            return (
-              <div className="col-lg-4 col-md-6 gallery-item " key={image.id}>
+    <>
+      <PageBanner title={isEnglish ? 'Gallery' : 'ഗാലറി'} />
+      <section className="th-section">
+        <div className="wrap">
+          <div className="th-gallery-grid">
+            {gallery && gallery.length > 0 ? gallery.map((image) => (
+              <div className="th-gallery-item" key={image.id}>
                 <div className="gallery-wrap">
-                  <img src={image.galleryImgUrl} className="img-fluid" alt="" />
+                  <img src={image.galleryImgUrl} alt={image.description || ''} />
                   <div className="gallery-info">
                     <h4>{image.description}</h4>
-
                     <div className="gallery-links">
                       <a
                         href={image.galleryImgUrl}
@@ -66,178 +50,19 @@ const Gallery = () => {
                   </div>
                 </div>
               </div>
-            );
-          }) : (
-            <div className="empty-state">
-              <div className="empty-state-icon">
-                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" /></svg>
-              </div>
-              <h3>No Photos to Display</h3>
-              <p>The gallery is currently empty.</p>
-            </div>
-          )}
-
-          {/* <div className="col-lg-4 col-md-6 gallery-item filter-vacation">
-            <div className="gallery-wrap">
-              <img src="/gallery/img-2.jpeg" className="img-fluid" alt=""/>
-              <div className="gallery-info">
-                <h4>Vacation 2</h4>
-                <p>Vacation</p>
-                <div className="gallery-links">
-                  <a href="/gallery/img-2.jpeg" className="glightbox" title="Vacation 2"><i className="bx bx-plus"></i></a>
+            )) : (
+              <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
+                <div className="empty-state-icon">
+                  <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" /></svg>
                 </div>
+                <h3>{isEnglish ? 'No Photos to Display' : 'ഫോട്ടോകൾ ഇല്ല'}</h3>
+                <p>{isEnglish ? 'The gallery is currently empty.' : 'ഗാലറി ശൂന്യമാണ്.'}</p>
               </div>
-            </div>
+            )}
           </div>
-
-          <div className="col-lg-4 col-md-6 gallery-item filter-home">
-            <div className="gallery-wrap">
-              <img src="/gallery/img-3.jpeg" className="img-fluid" alt=""/>
-              <div className="gallery-info">
-                <h4>Home 2</h4>
-                <p>Home</p>
-                <div className="gallery-links">
-                  <a href="/gallery/img-3.jpeg" className="glightbox" title="Home 2"><i className="bx bx-plus"></i></a>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-lg-4 col-md-6 gallery-item filter-beach">
-            <div className="gallery-wrap">
-              <img src="/gallery/img-4.jpeg" className="img-fluid" alt=""/>
-              <div className="gallery-info">
-                <h4>Beach 2</h4>
-                <p>Beach</p>
-                <div className="gallery-links">
-                  <a href="/gallery/img-4.jpeg" className="glightbox" title="Beach 2"><i className="bx bx-plus"></i></a>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-lg-4 col-md-6 gallery-item filter-vacation">
-            <div className="gallery-wrap">
-              <img src="/gallery/img-5.jpeg" className="img-fluid" alt=""/>
-              <div className="gallery-info">
-                <h4>Vacation 1</h4>
-                <p>Vacation</p>
-                <div className="gallery-links">
-                  <a href="/gallery/img-5.jpeg" className="glightbox" title="Vacation 1"><i className="bx bx-plus"></i></a>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-lg-4 col-md-6 gallery-item filter-home">
-            <div className="gallery-wrap">
-              <img src="/gallery/img-6.jpeg" className="img-fluid" alt=""/>
-              <div className="gallery-info">
-                <h4>Home 3</h4>
-                <p>Home</p>
-                <div className="gallery-links">
-                  <a href="/gallery/img-6.jpeg" className="glightbox" title="Home 3"><i className="bx bx-plus"></i></a>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-lg-4 col-md-6 gallery-item filter-beach">
-            <div className="gallery-wrap">
-              <img src="/gallery/img-7.jpeg" className="img-fluid" alt=""/>
-              <div className="gallery-info">
-                <h4>Beach 1</h4>
-                <p>Beach</p>
-                <div className="gallery-links">
-                  <a href="/gallery/img-7.jpeg" className="glightbox" title="Beach 1"><i className="bx bx-plus"></i></a>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-lg-4 col-md-6 gallery-item filter-beach">
-            <div className="gallery-wrap">
-              <img src="/gallery/img-8.jpeg" className="img-fluid" alt=""/>
-              <div className="gallery-info">
-                <h4>Beach 3</h4>
-                <p>Beach</p>
-                <div className="gallery-links">
-                  <a href="/gallery/img-8.jpeg" className="glightbox" title="Beach 3"><i className="bx bx-plus"></i></a>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-lg-4 col-md-6 gallery-item filter-beach">
-            <div className="gallery-wrap">
-              <img src="/gallery/img-9.jpeg" className="img-fluid" alt=""/>
-              <div className="gallery-info">
-                <h4>Beach 3</h4>
-                <p>Beach</p>
-                <div className="gallery-links">
-                  <a href="/gallery/img-9.jpeg" className="glightbox" title="Beach 3"><i className="bx bx-plus"></i></a>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-lg-4 col-md-6 gallery-item filter-beach">
-            <div className="gallery-wrap">
-              <img src="/gallery/img-10.jpeg" className="img-fluid" alt=""/>
-              <div className="gallery-info">
-                <h4>Beach 3</h4>
-                <p>Beach</p>
-                <div className="gallery-links">
-                  <a href="/gallery/img-10.jpeg" className="glightbox" title="Beach 3"><i className="bx bx-plus"></i></a>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-lg-4 col-md-6 gallery-item filter-beach">
-            <div className="gallery-wrap">
-              <img src="/gallery/img-11.jpeg" className="img-fluid" alt=""/>
-              <div className="gallery-info">
-                <h4>Beach 3</h4>
-                <p>Beach</p>
-                <div className="gallery-links">
-                  <a href="/gallery/img-11.jpeg" className="glightbox" title="Beach 3"><i className="bx bx-plus"></i></a>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-lg-4 col-md-6 gallery-item filter-beach">
-            <div className="gallery-wrap">
-              <img src="/gallery/img-12.jpeg" className="img-fluid" alt=""/>
-              <div className="gallery-info">
-                <h4>Beach 3</h4>
-                <p>Beach</p>
-                <div className="gallery-links">
-                  <a href="/gallery/img-12.jpeg" className="glightbox" title="Beach 3"><i className="bx bx-plus"></i></a>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-lg-4 col-md-6 gallery-item filter-beach">
-            <div className="gallery-wrap">
-              <img src="/gallery/img-13.jpeg" className="img-fluid" alt=""/>
-              <div className="gallery-info">
-                <h4>Beach 3</h4>
-                <p>Beach</p>
-                <div className="gallery-links">
-                  <a href="/gallery/img-13.jpeg" className="glightbox" title="Beach 3"><i className="bx bx-plus"></i></a>
-                </div>
-              </div>
-            </div>
-          </div> */}
-
         </div>
-
-      </div>
-    </section>
-    </main>
+      </section>
+    </>
   )
 }
 

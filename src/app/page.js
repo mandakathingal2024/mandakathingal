@@ -1,34 +1,25 @@
 import Hero from "@/components/home/Hero";
 import About from "@/components/home/About";
-import Association from "@/components/home/Association";
+import Leadership from "@/components/home/Leadership";
 import RecentActivities from "@/components/home/RecentActivities";
 import Milestones from "@/components/home/Milestones";
-import Footer from "@/components/Footer"
-import { Header } from "@/components/home/header"
-import Editorial from "@/components/home/Editorial";
-import AdvisoryBoard from "@/components/home/AdvisoryBoard";
-
-
+import Footer from "@/components/Footer";
+import { Header } from "@/components/home/header";
+import ScrollReveal from "@/components/home/ScrollReveal";
 
 export default function Home() {
   return (
     <>
-        <header>
-          <Header/>
-        </header>
-      <Hero/>
+      <Header />
+      <Hero />
       <main id="main">
-        <About/>
-        <Editorial/>
-        <AdvisoryBoard/>
-        <Association/>
-        {/* //Association renamed as executives */}
-        <RecentActivities/>
-        <Milestones/>
+        <About />
+        <Leadership />
+        <RecentActivities />
+        <Milestones />
       </main>
-      <footer>
-            <Footer/>
-        </footer>
+      <Footer />
+      <ScrollReveal />
     </>
   );
 }

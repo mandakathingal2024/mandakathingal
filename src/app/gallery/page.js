@@ -1,10 +1,17 @@
 import Gallery from "@/components/gallery/Gallery";
+import { Header } from "@/components/home/header";
+import Footer from "@/components/Footer";
+import ScrollReveal from "@/components/home/ScrollReveal";
 
-
-export default function Home() {
-    return (
-      <>
-          <Gallery/>
-      </>
-    );
-  }
+export default function GalleryPage() {
+  return (
+    <>
+      <Header />
+      <main id="main">
+        <Gallery />
+      </main>
+      <Footer />
+      <ScrollReveal />
+    </>
+  );
+}

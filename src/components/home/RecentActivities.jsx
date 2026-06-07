@@ -16,7 +16,6 @@ const RecentActivities = () => {
         const eventsRef = collection(db, 'events')
         const snap = await getDocs(eventsRef)
         const all = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
-        // Filter and sort client-side to avoid needing a Firestore composite index
         const filtered = all
           .filter((e) => e.displaySection === 'recentActivities')
           .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
@@ -33,43 +32,40 @@ const RecentActivities = () => {
 
   if (isLoading || activities.length === 0) return null
 
-  // Assign sizes based on position: 1st = large, 2nd = medium, rest = small
-  const sizes = ['large', 'medium', 'small', 'small']
-
   return (
-    <section id="recent-activities" className="activities-section">
-      <div className="container">
-        <p className="section-label">
-          {isEnglish ? 'Highlights' : 'ഹൈലൈറ്റുകൾ'}
-        </p>
-        <div className="section-title">
-          <h2>{isEnglish ? 'Recent Activities' : 'സമീപകാല പ്രവർത്തനങ്ങൾ'}</h2>
+    <section className="activities" id="activities">
+      <div className="wrap">
+        <div className="section-head reveal">
+          <span className="eyebrow center">
+            {isEnglish ? 'Highlights' : 'ഹൈലൈറ്റുകൾ'}
+          </span>
+          <h2>{isEnglish ? 'Moments we gathered for' : 'ഞങ്ങൾ ഒത്തുചേർന്ന നിമിഷങ്ങൾ'}</h2>
         </div>
-        <hr className="section-divider" />
+        <div className="bento reveal" data-d="1">
+          {activities.map((activity) => {
+            const title = isEnglish ? activity.title : (activity.titleMl || activity.title)
+            const desc = isEnglish ? activity.description : (activity.descMl || activity.description)
+            const category = isEnglish
+              ? (activity.category || '')
+              : (activity.categoryMl || activity.category || '')
 
-        <div className="activities-bento">
-          {activities.map((activity, index) => (
-            <div
-              key={activity.id}
-              className={`activity-card activity-card--${sizes[index] || 'small'}${index >= 2 ? ' activity-card--desktop-only' : ''}`}
-            >
-              <Image
-                src={activity.eventImgUrl}
-                alt={isEnglish ? activity.title : (activity.titleMl || activity.title)}
-                fill
-                style={{ objectFit: 'cover' }}
-                sizes="(max-width: 768px) 100vw, 50vw"
-              />
-              <div className="activity-card-overlay">
-                <h3 className="activity-card-title">
-                  {isEnglish ? activity.title : (activity.titleMl || activity.title)}
-                </h3>
-                <p className="activity-card-desc">
-                  {isEnglish ? activity.description : (activity.descMl || activity.description)}
-                </p>
+            return (
+              <div key={activity.id} className="acard">
+                <Image
+                  src={activity.eventImgUrl}
+                  alt={title}
+                  fill
+                  style={{ objectFit: 'cover' }}
+                  sizes="(max-width: 720px) 100vw, (max-width: 980px) 50vw, 25vw"
+                />
+                <div className="a-body">
+                  {category && <span className="a-cat">{category}</span>}
+                  <h3 className="a-title">{title}</h3>
+                  {desc && <p className="a-desc">{desc}</p>}
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </section>

@@ -1,15 +1,17 @@
 import StoryIntro from "@/components/our-story/StoryIntro";
-import { Breadcrumbs } from "@mui/material";
+import { Header } from "@/components/home/header";
+import Footer from "@/components/Footer";
+import ScrollReveal from "@/components/home/ScrollReveal";
 
-
-
-export default function Home() {
-    return (
-      <>
+export default function OurStoryPage() {
+  return (
+    <>
+      <Header />
       <main id="main">
-        {/* <Breadcrumbs/> */}
-        <StoryIntro/>
+        <StoryIntro />
       </main>
-      </>
-    );
-  }
+      <Footer />
+      <ScrollReveal />
+    </>
+  );
+}

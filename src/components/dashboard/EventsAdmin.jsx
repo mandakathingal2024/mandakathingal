@@ -53,6 +53,7 @@ const EMPTY_EVENT = {
   category: '',
   categoryMl: '',
   year: '',
+  eventDate: '',
 };
 
 const SECTION_LABELS = {
@@ -120,6 +121,19 @@ const EventFormModal = React.memo(({ open, onClose, editEvent, onSubmit, isSavin
           </FormControl>
 
           <Typography variant="subtitle2" sx={{ mt: 2.5, mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
+            Event Date
+          </Typography>
+          <TextField
+            type="date"
+            name="eventDate"
+            value={event.eventDate}
+            onChange={handleChange}
+            size="small"
+            sx={{ mt: 1, maxWidth: 220 }}
+            InputLabelProps={{ shrink: true }}
+          />
+
+          <Typography variant="subtitle2" sx={{ mt: 2.5, mb: 0.5, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
             Event Details (English)
           </Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
@@ -145,7 +159,6 @@ const EventFormModal = React.memo(({ open, onClose, editEvent, onSubmit, isSavin
                   <TextField fullWidth label="Category (English)" name="category" value={event.category} onChange={handleChange} size="small" placeholder="e.g. Foundation, Reunion" />
                   <TextField fullWidth label="Category (Malayalam)" name="categoryMl" value={event.categoryMl} onChange={handleChange} size="small" />
                 </Box>
-                <TextField label="Year" name="year" value={event.year} onChange={handleChange} size="small" placeholder="e.g. 2024" sx={{ maxWidth: 120 }} />
               </Box>
             </>
           )}
@@ -211,9 +224,12 @@ const EventCard = React.memo(({ row, onEdit, onDelete, canEdit, canDelete }) => 
         <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
           {row.description}
         </Typography>
-        {row.year && (
+        {(row.eventDate || row.year) && (
           <Typography variant="caption" sx={{ mt: 'auto', pt: 1, color: '#D4A373', fontWeight: 600 }}>
-            {row.category ? `${row.category} • ${row.year}` : row.year}
+            {row.category ? `${row.category} • ` : ''}
+            {row.eventDate
+              ? new Date(row.eventDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+              : row.year}
           </Typography>
         )}
       </Box>

@@ -16,7 +16,6 @@ const Milestones = () => {
         const eventsRef = collection(db, 'events')
         const snap = await getDocs(eventsRef)
         const all = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
-        // Filter and sort client-side to avoid needing a Firestore composite index
         const filtered = all
           .filter((e) => e.displaySection === 'familyMilestones')
           .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
@@ -34,46 +33,44 @@ const Milestones = () => {
   if (isLoading || milestones.length === 0) return null
 
   return (
-    <section id="milestones" className="milestones-section section-bg-warm">
-      <div className="container">
-        <p className="section-label">
-          {isEnglish ? 'Our Journey' : 'ഞങ്ങളുടെ യാത്ര'}
-        </p>
-        <div className="section-title">
+    <section className="timeline grain" id="milestones">
+      <div className="wrap">
+        <div className="section-head reveal">
+          <span className="eyebrow center">
+            {isEnglish ? 'Our Journey' : 'ഞങ്ങളുടെ യാത്ര'}
+          </span>
           <h2>{isEnglish ? 'Family Milestones' : 'കുടുംബ നാഴികക്കല്ലുകൾ'}</h2>
         </div>
-        <hr className="section-divider" />
+        <div className="tl">
+          {milestones.map((milestone, index) => {
+            const title = isEnglish ? milestone.title : (milestone.titleMl || milestone.title)
+            const desc = isEnglish ? milestone.description : (milestone.descMl || milestone.description)
+            const category = isEnglish
+              ? (milestone.category || '')
+              : (milestone.categoryMl || milestone.category || '')
 
-        <div className="milestones-grid">
-          {milestones.map((milestone) => (
-            <div key={milestone.id} className="milestone-card">
-              <div className="milestone-card-img">
-                <Image
-                  src={milestone.eventImgUrl}
-                  alt={isEnglish ? milestone.title : (milestone.titleMl || milestone.title)}
-                  width={400}
-                  height={260}
-                  style={{ objectFit: 'cover', width: '100%', height: '100%' }}
-                />
-                {milestone.year && (
-                  <span className="milestone-year-badge">{milestone.year}</span>
-                )}
+            const displayYear = milestone.eventDate
+              ? new Date(milestone.eventDate).getFullYear().toString()
+              : milestone.year
+
+            return (
+              <div key={milestone.id} className="mstone reveal" data-d={String(index)}>
+                {displayYear && <div className="yr">{displayYear}</div>}
+                <div className="m-img">
+                  <Image
+                    src={milestone.eventImgUrl}
+                    alt={title}
+                    width={400}
+                    height={260}
+                    style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                  />
+                </div>
+                {category && <div className="m-cat">{category}</div>}
+                <h4 className="m-title">{title}</h4>
+                {desc && <p className="m-desc">{desc}</p>}
               </div>
-              <div className="milestone-card-body">
-                {(milestone.category || milestone.categoryMl) && (
-                  <span className="milestone-category">
-                    {isEnglish ? (milestone.category || '') : (milestone.categoryMl || milestone.category || '')}
-                  </span>
-                )}
-                <h4 className="milestone-card-title">
-                  {isEnglish ? milestone.title : (milestone.titleMl || milestone.title)}
-                </h4>
-                <p className="milestone-card-desc">
-                  {isEnglish ? milestone.description : (milestone.descMl || milestone.description)}
-                </p>
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </section>

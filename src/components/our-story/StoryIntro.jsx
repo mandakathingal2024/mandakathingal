@@ -1,123 +1,71 @@
 'use client'
 import React from 'react'
+import { useStateContext } from '../../../context/stateContext'
+import PageBanner from '../shared/PageBanner'
 
 const StoryIntro = () => {
+  const { isEnglish } = useStateContext()
+
   return (
-   <>
-    <section id="breadcrumbs" className="breadcrumbs">
-      <div className="container">
+    <>
+      <PageBanner
+        title={isEnglish ? 'Our Story' : 'ഞങ്ങളുടെ കഥ'}
+        subtitle={isEnglish ? 'The heritage and journey of Mandakathingal family' : 'മണ്ടകത്തിങ്ങൽ കുടുംബത്തിന്റെ പൈതൃകവും യാത്രയും'}
+      />
 
-        <div className="d-flex justify-content-between align-items-center">
-          <h2>Our Story</h2>
-          <ol>
-            <li><a href="/">Home</a></li>
-            <li>Our Story</li>
-          </ol>
-        </div>
-
-      </div>
-    </section>
-    <section id="story-intro" className="story-intro">
-      <div className="container">
-
-        <div className="row">
-          <div className="col-lg-6 order-1 order-lg-2">
-            <img src="/Tharavadu.jpg" className="img-fluid" alt=""/>
-          </div>
-          <div className="col-lg-6 pt-4 pt-lg-0 order-2 order-lg-1 content">
-            <h3>Mandakathingal Pokanath Tharavdu</h3>
-            <p className="fst-italic">
-             Loading.........
-            </p>
-            {/* <ul>
-              <li><i className="bi bi-check-circled"></i> Ullamco laboris nisi ut aliquip ex ea commodo consequat.</li>
-              <li><i className="bi bi-check-circled"></i> Duis aute irure dolor in reprehenderit in voluptate velit.</li>
-              <li><i className="bi bi-check-circled"></i> Ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate trideta storacalaperda mastiro dolore eu fugiat nulla pariatur.</li>
-            </ul> */}
-            {/* <p>
-              Ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate
-              velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-              culpa qui officia deserunt mollit anim id est laborum
-            </p> */}
+      <section className="th-story-section">
+        <div className="wrap">
+          <div className="th-story-grid">
+            <div className="th-story-img">
+              <img src="/Tharavadu.jpg" alt="Mandakathingal Tharavadu" />
+            </div>
+            <div className="th-story-copy">
+              <h3>{isEnglish ? 'Mandakathingal Tharavadu' : 'മണ്ടകത്തിങ്ങൽ തറവാട്'}</h3>
+              <p>
+                {isEnglish
+                  ? 'The Mandakathingal Tharavadu stands as a testament to our rich heritage, connecting generations of family members through shared traditions, values, and bonds of love.'
+                  : 'മണ്ടകത്തിങ്ങൽ തറവാട് നമ്മുടെ സമ്പന്നമായ പൈതൃകത്തിന്റെ സാക്ഷ്യമായി നിലകൊള്ളുന്നു, പങ്കിട്ട പാരമ്പര്യങ്ങൾ, മൂല്യങ്ങൾ, സ്നേഹ ബന്ധങ്ങൾ എന്നിവയിലൂടെ തലമുറകളെ ബന്ധിപ്പിക്കുന്നു.'}
+              </p>
+            </div>
           </div>
         </div>
+      </section>
 
-      </div>
-    </section>
-
-    <section id="featured-members" className="featured-members">
-      <div className="container">
-
-        <div className="row content">
-          <div className="col-lg-6">
-            <img src="/mos-3.jpeg" className="img-fluid" alt=""/>
-          </div>
-          <div className="col-lg-6 pt-3 pt-lg-0">
-            <h3>Loading.....</h3>
-            <p className="fst-italic">
-              Loading......
-            </p>
-            {/* <ul>
-              <li><i className="bi bi-check"></i> Ullamco laboris nisi ut aliquip ex ea commodo consequat.</li>
-              <li><i className="bi bi-check"></i> Duis aute irure dolor in reprehenderit in voluptate velit.</li>
-            </ul> */}
+      <section className="th-story-section" style={{ background: 'var(--paper-2)' }}>
+        <div className="wrap">
+          <div className="th-story-grid reverse">
+            <div className="th-story-copy">
+              <h3>{isEnglish ? 'Our Community' : 'ഞങ്ങളുടെ സമൂഹം'}</h3>
+              <p>
+                {isEnglish
+                  ? 'Since 2009, the Mandakathingal Kudumbasamithi has been bringing together family members from across the globe, organizing events, preserving our cultural heritage, and strengthening the bonds that unite us.'
+                  : '2009 മുതൽ, മണ്ടകത്തിങ്ങൽ കുടുംബസമിതി ലോകമെമ്പാടുമുള്ള കുടുംബാംഗങ്ങളെ ഒരുമിച്ച് കൊണ്ടുവരുന്നു, പരിപാടികൾ സംഘടിപ്പിക്കുന്നു, സാംസ്കാരിക പൈതൃകം സംരക്ഷിക്കുന്നു, നമ്മെ ഒന്നിപ്പിക്കുന്ന ബന്ധങ്ങൾ ശക്തിപ്പെടുത്തുന്നു.'}
+              </p>
+            </div>
+            <div className="th-story-img">
+              <img src="/mos-3.jpeg" alt={isEnglish ? 'Our Community' : 'ഞങ്ങളുടെ സമൂഹം'} />
+            </div>
           </div>
         </div>
+      </section>
 
-        <div className="row content">
-          <div className="col-lg-6 order-1 order-lg-2">
-            <img src="/mos-1.jpeg" className="img-fluid" alt=""/>
-          </div>
-          <div className="col-lg-6 order-2 order-lg-1 pt-3 pt-lg-0">
-            <h3>Loading...</h3>
-            <p className="fst-italic">
-             Loading.....
-            </p>
-            {/* <p>
-              Ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate
-              velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-              culpa qui officia deserunt mollit anim id est laborum
-            </p> */}
+      <section className="th-story-section">
+        <div className="wrap">
+          <div className="th-story-grid">
+            <div className="th-story-img">
+              <img src="/mos-1.jpeg" alt={isEnglish ? 'Our Heritage' : 'ഞങ്ങളുടെ പൈതൃകം'} />
+            </div>
+            <div className="th-story-copy">
+              <h3>{isEnglish ? 'Preserving Our Heritage' : 'ഞങ്ങളുടെ പൈതൃകം സംരക്ഷിക്കുന്നു'}</h3>
+              <p>
+                {isEnglish
+                  ? 'Through our association, we document family history, celebrate milestones together, and ensure that the stories and traditions of the Mandakathingal family are passed down to future generations.'
+                  : 'ഞങ്ങളുടെ സംഘടനയിലൂടെ, കുടുംബ ചരിത്രം രേഖപ്പെടുത്തുന്നു, നാഴികക്കല്ലുകൾ ഒരുമിച്ച് ആഘോഷിക്കുന്നു, മണ്ടകത്തിങ്ങൽ കുടുംബത്തിന്റെ കഥകളും പാരമ്പര്യങ്ങളും ഭാവി തലമുറകളിലേക്ക് കൈമാറുന്നു.'}
+              </p>
+            </div>
           </div>
         </div>
-{/* 
-        <div className="row content">
-          <div className="col-lg-6">
-            <img src="/members/featured-members-3.jpg" className="img-fluid" alt=""/>
-          </div>
-          <div className="col-lg-6 pt-3 pt-lg-0">
-            <h3>Sunt consequatur ad ut est nulla consectetur reiciendis animi voluptas</h3>
-            <p>Cupiditate placeat cupiditate placeat est ipsam culpa. Delectus quia minima quod. Sunt saepe odit aut quia voluptatem hic voluptas dolor doloremque.</p>
-            <ul>
-              <li><i className="bi bi-check"></i> Ullamco laboris nisi ut aliquip ex ea commodo consequat.</li>
-              <li><i className="bi bi-check"></i> Duis aute irure dolor in reprehenderit in voluptate velit.</li>
-              <li><i className="bi bi-check"></i> Facilis ut et voluptatem aperiam. Autem soluta ad fugiat.</li>
-            </ul>
-          </div>
-        </div> */}
-
-
-{/* 
-        <div className="row content">
-          <div className="col-lg-6 order-1 order-lg-2">
-            <img src="/members/featured-members-4.jpg" className="img-fluid" alt=""/>
-          </div>
-          <div className="col-lg-6 order-2 order-lg-1 pt-3 pt-lg-0">
-            <h3>Quas et necessitatibus eaque impedit ipsum animi consequatur incidunt in</h3>
-            <p className="fst-italic">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
-              magna aliqua.
-            </p>
-            <p>
-              Ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate
-              velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-              culpa qui officia deserunt mollit anim id est laborum
-            </p>
-          </div>
-        </div> */}
-
-      </div>
-    </section>
+      </section>
     </>
   )
 }

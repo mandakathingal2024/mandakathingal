@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import Image from 'next/image'
 import { useStateContext } from '../../../context/stateContext'
 import { doc, getDoc } from 'firebase/firestore'
@@ -11,13 +11,52 @@ const DEFAULTS = {
   badgeMl: 'കുടുംബസമിതി',
   titleEn: 'Mandakathingal',
   titleMl: 'മണ്ടകത്തിങ്ങൽ',
-  subtitleEn: 'Preserving our roots, celebrating our bonds — a community united by heritage and love.',
-  subtitleMl: 'നമ്മുടെ വേരുകൾ സംരക്ഷിക്കുക, നമ്മുടെ ബന്ധങ്ങൾ ആഘോഷിക്കുക — പൈതൃകവും സ്നേഹവും ഒന്നിച്ച ഒരു സമൂഹം.',
-  btn1TextEn: 'Explore Family', btn1TextMl: 'കുടുംബം കാണുക', btn1Link: '/members',
-  btn2TextEn: 'Our Story', btn2TextMl: 'ഞങ്ങളുടെ കഥ', btn2Link: '/our-story',
+  subtitleEn: 'Preserving our roots, celebrating our bonds — a family united across generations by heritage, faith, and love.',
+  subtitleMl: 'നമ്മുടെ വേരുകൾ സംരക്ഷിക്കുന്നു, ബന്ധങ്ങൾ ആഘോഷിക്കുന്നു — പൈതൃകവും വിശ്വാസവും സ്നേഹവും കൊണ്ട് തലമുറകളിലൂടെ ഒന്നിച്ച ഒരു കുടുംബം.',
+  btn1TextEn: 'Explore Our Story', btn1TextMl: 'ഞങ്ങളുടെ കഥ കാണുക', btn1Link: '/our-story',
+  btn2TextEn: 'Events', btn2TextMl: 'പരിപാടികൾ', btn2Link: '/events',
   stat1Num: '150+', stat1LabelEn: 'Family Members', stat1LabelMl: 'കുടുംബാംഗങ്ങൾ',
-  stat2Num: '15+', stat2LabelEn: 'Years United', stat2LabelMl: 'വർഷങ്ങൾ',
+  stat2Num: '15+', stat2LabelEn: 'Years United', stat2LabelMl: 'വർഷങ്ങൾ ഒന്നിച്ച്',
   stat3Num: '50+', stat3LabelEn: 'Events Hosted', stat3LabelMl: 'പരിപാടികൾ',
+}
+
+function parseStatNum(str) {
+  const match = String(str).match(/(\d+)(\D*)/)
+  if (!match) return { num: 0, suffix: '' }
+  return { num: parseInt(match[1], 10), suffix: match[2] || '' }
+}
+
+const CountUp = ({ value }) => {
+  const ref = useRef(null)
+  const { num, suffix } = parseStatNum(value)
+  const [display, setDisplay] = useState(value)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el || num === 0) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          observer.disconnect()
+          const start = performance.now()
+          const dur = 1600
+          function tick(now) {
+            const p = Math.min((now - start) / dur, 1)
+            const eased = 1 - Math.pow(1 - p, 3)
+            setDisplay(Math.round(eased * num) + suffix)
+            if (p < 1) requestAnimationFrame(tick)
+          }
+          requestAnimationFrame(tick)
+        }
+      },
+      { threshold: 0.5 }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [num, suffix])
+
+  return <span className="num" ref={ref}>{display}</span>
 }
 
 const Hero = () => {
@@ -40,65 +79,66 @@ const Hero = () => {
   }, [])
 
   return (
-    <section id="hero" className="hero-modern">
-      {/* Background image with overlay */}
-      <div className="hero-bg">
-        <Image
-          src={data.bgImage || DEFAULTS.bgImage}
-          alt="Hero Background"
-          fill
-          style={{ objectFit: 'cover', objectPosition: 'center' }}
-          priority
-        />
-        <div className="hero-overlay" />
-      </div>
-
-      {/* Decorative elements */}
-      <div className="hero-decor-circle hero-decor-1" />
-      <div className="hero-decor-circle hero-decor-2" />
-
-      {/* Content */}
-      <div className="container hero-container">
-        <div className="hero-content-wrapper">
-          <span className="hero-badge">
-            {isEnglish ? data.badgeEn : data.badgeMl}
+    <section className="hero" id="top">
+      <div className="wrap">
+        <div className="hero-copy">
+          <span className="hero-badge-new reveal">
+            <span className="dot" />
+            {isEnglish
+              ? `${data.badgeEn} · Est. 2009`
+              : `${data.badgeMl} · 2009`}
           </span>
-          <h1 className="hero-title">
+          <h1 className="reveal" data-d="1">
             {isEnglish ? data.titleEn : data.titleMl}
           </h1>
-          <div className="hero-divider" />
-          <p className="hero-subtitle">
+          <p className="hero-sub reveal" data-d="2">
             {isEnglish ? data.subtitleEn : data.subtitleMl}
           </p>
-          <div className="hero-buttons">
-            <a href={data.btn1Link} className="hero-btn hero-btn-primary">
+          <div className="hero-cta reveal" data-d="3">
+            <a className="thbtn thbtn-brass" href={data.btn1Link}>
               {isEnglish ? data.btn1TextEn : data.btn1TextMl}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
             </a>
-            <a href={data.btn2Link} className="hero-btn hero-btn-outline">
+            <a className="thbtn thbtn-ghost thbtn-on-dark" href={data.btn2Link}>
               {isEnglish ? data.btn2TextEn : data.btn2TextMl}
             </a>
+          </div>
+        </div>
+
+        <div className="hero-figure reveal" data-d="2">
+          <div className="frame-ring" />
+          <div className="arch">
+            <Image
+              src={data.bgImage || DEFAULTS.bgImage}
+              alt="Mandakathingal family gathering"
+              fill
+              style={{ objectFit: 'cover' }}
+              priority
+            />
+          </div>
+          <div className="seal">
+            <span className="seal-yr">2009</span>
+            <span className="seal-tx">Since</span>
           </div>
         </div>
       </div>
 
       {/* Stats bar */}
-      <div className="hero-stats">
-        <div className="container">
-          <div className="hero-stats-grid">
-            <div className="hero-stat">
-              <span className="hero-stat-num">{data.stat1Num}</span>
-              <span className="hero-stat-label">{isEnglish ? data.stat1LabelEn : data.stat1LabelMl}</span>
-            </div>
-            <div className="hero-stat-divider" />
-            <div className="hero-stat">
-              <span className="hero-stat-num">{data.stat2Num}</span>
-              <span className="hero-stat-label">{isEnglish ? data.stat2LabelEn : data.stat2LabelMl}</span>
-            </div>
-            <div className="hero-stat-divider" />
-            <div className="hero-stat">
-              <span className="hero-stat-num">{data.stat3Num}</span>
-              <span className="hero-stat-label">{isEnglish ? data.stat3LabelEn : data.stat3LabelMl}</span>
-            </div>
+      <div className="hero-stats-bar">
+        <div className="wrap">
+          <div className="hstat">
+            <CountUp value={data.stat1Num} />
+            <span className="lbl">{isEnglish ? data.stat1LabelEn : data.stat1LabelMl}</span>
+          </div>
+          <div className="hstat">
+            <CountUp value={data.stat2Num} />
+            <span className="lbl">{isEnglish ? data.stat2LabelEn : data.stat2LabelMl}</span>
+          </div>
+          <div className="hstat">
+            <CountUp value={data.stat3Num} />
+            <span className="lbl">{isEnglish ? data.stat3LabelEn : data.stat3LabelMl}</span>
           </div>
         </div>
       </div>
