@@ -11,6 +11,7 @@ import EventNoteIcon from '@mui/icons-material/EventNote';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import EmailIcon from '@mui/icons-material/Email';
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
+import HomeIcon from '@mui/icons-material/Home';
 import CloudIcon from '@mui/icons-material/Cloud';
 import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -70,6 +71,8 @@ const StatCard = ({ icon, label, count, color, onClick }) => (
 const DashboardHome = () => {
   const [stats, setStats] = React.useState({
     families: null,
+    houses: null,
+    lateMembers: null,
     members: null,
     events: null,
     executives: null,
@@ -96,8 +99,15 @@ const DashboardHome = () => {
           getDocs(collection(db, 'gallery')),
         ]);
 
+        // Compute houses count (New Branch + isNewHome) and late members count
+        const allMembers = membersSnap.docs.map(d => d.data());
+        const housesCount = allMembers.filter(m => m.relation === 'New Branch' || m.isNewHome === true).length;
+        const lateCount = allMembers.filter(m => (m.relation === 'Late Parent / Additional Member' && (m.subType === 'late' || !m.subType)) || m.isLate === true).length;
+
         setStats({
           families: familiesSnap.size,
+          houses: housesCount,
+          lateMembers: lateCount,
           members: membersSnap.size,
           events: eventsSnap.size,
           executives: executivesSnap.size,
@@ -179,6 +189,18 @@ const DashboardHome = () => {
           label="Total Families"
           count={stats.families}
           color="rgba(92,61,46,0.1)"
+        />
+        <StatCard
+          icon={<HomeIcon sx={{ color: '#1565C0', fontSize: { xs: 24, sm: 28 } }} />}
+          label="Houses"
+          count={stats.houses}
+          color="rgba(21,101,192,0.1)"
+        />
+        <StatCard
+          icon={<PeopleIcon sx={{ color: '#795548', fontSize: { xs: 24, sm: 28 } }} />}
+          label="Late Members"
+          count={stats.lateMembers}
+          color="rgba(121,85,72,0.1)"
         />
         <StatCard
           icon={<PeopleIcon sx={{ color: '#1565C0', fontSize: { xs: 24, sm: 28 } }} />}

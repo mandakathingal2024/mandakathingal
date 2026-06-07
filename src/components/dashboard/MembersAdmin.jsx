@@ -69,7 +69,7 @@ const MemberFormModal = React.memo(({ open, onClose, editMember, onSubmit, isSav
   const EMPTY = {
     name: '', uniqueText: '', place: '', gender: '',
     memberImgUrl: '', houseImgUrl: '', description: '',
-    relatedTo: '', relation: '', isNewHome: false, subType: '', subTypeLabel: ''
+    relatedTo: '', relation: '', isNewHome: false, isLate: false, subType: '', subTypeLabel: ''
   };
 
   const [member, setMember] = React.useState(EMPTY);
@@ -467,25 +467,46 @@ const MemberFormModal = React.memo(({ open, onClose, editMember, onSubmit, isSav
 
           {/* New Home toggle — only for Son/Daughter relation */}
           {member.relation === 'Son Of / Dauhter Of' && (
-            <Box sx={{ mt: 1.5, p: 1.5, borderRadius: 1.5, backgroundColor: member.isNewHome ? 'rgba(46,125,50,0.06)' : 'rgba(0,0,0,0.02)', border: `1px solid ${member.isNewHome ? 'rgba(46,125,50,0.25)' : '#E0D6CC'}`, transition: 'all 0.2s' }}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={!!member.isNewHome}
-                    onChange={(e) => setMember((prev) => ({ ...prev, isNewHome: e.target.checked }))}
-                    size="small"
-                    sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: '#2E7D32' }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#2E7D32' } }}
-                  />
-                }
-                label={
-                  <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.85rem' }}>Started a new home</Typography>
-                    <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>This member will appear as a separate home in the Members page</Typography>
-                  </Box>
-                }
-                sx={{ m: 0, alignItems: 'flex-start', gap: 0.5 }}
-              />
-            </Box>
+            <>
+              <Box sx={{ mt: 1.5, p: 1.5, borderRadius: 1.5, backgroundColor: member.isNewHome ? 'rgba(46,125,50,0.06)' : 'rgba(0,0,0,0.02)', border: `1px solid ${member.isNewHome ? 'rgba(46,125,50,0.25)' : '#E0D6CC'}`, transition: 'all 0.2s' }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={!!member.isNewHome}
+                      onChange={(e) => setMember((prev) => ({ ...prev, isNewHome: e.target.checked }))}
+                      size="small"
+                      sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: '#2E7D32' }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#2E7D32' } }}
+                    />
+                  }
+                  label={
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.85rem' }}>Started a new home</Typography>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>This member will appear as a separate home in the Members page</Typography>
+                    </Box>
+                  }
+                  sx={{ m: 0, alignItems: 'flex-start', gap: 0.5 }}
+                />
+              </Box>
+              <Box sx={{ mt: 1.5, p: 1.5, borderRadius: 1.5, backgroundColor: member.isLate ? 'rgba(121,85,72,0.06)' : 'rgba(0,0,0,0.02)', border: `1px solid ${member.isLate ? 'rgba(121,85,72,0.25)' : '#E0D6CC'}`, transition: 'all 0.2s' }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={!!member.isLate}
+                      onChange={(e) => setMember((prev) => ({ ...prev, isLate: e.target.checked }))}
+                      size="small"
+                      sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: '#795548' }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#795548' } }}
+                    />
+                  }
+                  label={
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.85rem' }}>Late (Deceased)</Typography>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>This member will appear in the Late Members section on the website</Typography>
+                    </Box>
+                  }
+                  sx={{ m: 0, alignItems: 'flex-start', gap: 0.5 }}
+                />
+              </Box>
+            </>
           )}
         </Box>
 
@@ -621,7 +642,7 @@ const MembersAdmin = () => {
   // Counts for stat tags
   const familyCount = React.useMemo(() => (members || []).filter(m => m.relation === 'New Branch').length, [members]);
   const housesCount = React.useMemo(() => (members || []).filter(m => m.relation === 'New Branch' || m.isNewHome === true).length, [members]);
-  const lateCount = React.useMemo(() => (members || []).filter(m => m.relation === 'Late Parent / Additional Member' && (m.subType === 'late' || !m.subType)).length, [members]);
+  const lateCount = React.useMemo(() => (members || []).filter(m => (m.relation === 'Late Parent / Additional Member' && (m.subType === 'late' || !m.subType)) || m.isLate === true).length, [members]);
   const totalCount = (members || []).length;
 
   // Client-side search + tag filter + sort — memoized so table doesn't re-render on unrelated state changes
@@ -635,7 +656,7 @@ const MembersAdmin = () => {
     } else if (filterTag === 'houses') {
       list = list.filter(m => m.relation === 'New Branch' || m.isNewHome === true);
     } else if (filterTag === 'late') {
-      list = list.filter(m => m.relation === 'Late Parent / Additional Member' && (m.subType === 'late' || !m.subType));
+      list = list.filter(m => (m.relation === 'Late Parent / Additional Member' && (m.subType === 'late' || !m.subType)) || m.isLate === true);
     }
 
     if (search.trim()) {

@@ -122,9 +122,11 @@ export const ViewFamily = ({ id }) => {
 
   const spouses = viewFamilyData?.filter(m => m.relation === 'Wife Of / Husband Of') || []
   const allLateAdditional = viewFamilyData?.filter(m => m.relation === 'Late Parent / Additional Member') || []
-  const lateMembers = allLateAdditional.filter(m => m.subType === 'late' || !m.subType)
+  const lateFromRelation = allLateAdditional.filter(m => m.subType === 'late' || !m.subType)
+  const lateChildren = viewFamilyData?.filter(m => m.relation === 'Son Of / Dauhter Of' && m.isLate === true) || []
+  const lateMembers = [...lateFromRelation, ...lateChildren]
   const additionalMembers = allLateAdditional.filter(m => m.subType === 'additional')
-  const children = viewFamilyData?.filter(m => m.relation === 'Son Of / Dauhter Of') || []
+  const children = viewFamilyData?.filter(m => m.relation === 'Son Of / Dauhter Of' && !m.isLate) || []
 
   return (
     <>
