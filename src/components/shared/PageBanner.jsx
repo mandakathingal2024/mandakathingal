@@ -1,20 +1,20 @@
 'use client'
 import Link from 'next/link'
 
-const PageBanner = ({ title, subtitle }) => {
+const PageBanner = ({ title, crumbs }) => {
   return (
-    <section className="page-banner">
-      <div className="wrap">
-        <nav className="page-banner-crumbs" aria-label="Breadcrumb">
-          <ol>
-            <li><Link href="/">Home</Link></li>
-            <li><span>{title}</span></li>
-          </ol>
-        </nav>
-        <h1 className="page-banner-title">{title}</h1>
-        {subtitle && <p className="page-banner-subtitle">{subtitle}</p>}
-      </div>
-    </section>
+    <nav className="page-crumbs wrap" aria-label="Breadcrumb">
+      <ol>
+        <li><Link href="/">Home</Link></li>
+        {crumbs ? crumbs.map((crumb, i) => (
+          <li key={i}>
+            {crumb.href ? <Link href={crumb.href}>{crumb.label}</Link> : <span>{crumb.label}</span>}
+          </li>
+        )) : (
+          <li><span>{title}</span></li>
+        )}
+      </ol>
+    </nav>
   )
 }
 

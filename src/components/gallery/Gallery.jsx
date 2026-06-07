@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react'
 import { useStateContext } from '../../../context/stateContext'
 import { GallerySkeleton } from '../Skeleton'
+import PageBanner from '../shared/PageBanner'
 
 const Gallery = () => {
   const [isLoading, setIsLoading] = useState(true)
@@ -27,6 +28,7 @@ const Gallery = () => {
 
   return (
     <>
+      <PageBanner title={isEnglish ? 'Gallery' : 'ഗാലറി'} />
       <section className="th-section">
         <div className="wrap">
           <div className="th-gallery-grid">

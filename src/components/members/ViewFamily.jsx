@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { collection, query, where, getDocs } from 'firebase/firestore'
 import { db } from '../../../context/firebaseConfig'
 import { ViewFamilySkeleton } from '../Skeleton'
+import PageBanner from '../shared/PageBanner'
 
 function getInitials(name) {
   if (!name) return '?'
@@ -132,6 +133,13 @@ export const ViewFamily = ({ id }) => {
 
   return (
     <>
+      <PageBanner crumbs={[
+        { label: 'Members', href: '/members' },
+        ...breadcrumbChain.map((crumb, i) => ({
+          label: crumb.name,
+          href: i < breadcrumbChain.length - 1 ? `/members/${crumb.id}` : undefined
+        }))
+      ]} />
       {/* Family hero section */}
       <section className="th-section">
         <div className="wrap">

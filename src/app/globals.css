@@ -613,6 +613,34 @@ html.anim .reveal[data-d="4"] { transition-delay: .32s; }
 .inner-page { padding-top: 96px; }
 @media (max-width: 560px) { .inner-page { padding-top: 76px; } }
 
+/* ---------- Breadcrumb navigation ---------- */
+.page-crumbs {
+  padding-top: 12px;
+  padding-bottom: 4px;
+}
+.page-crumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink-faint);
+}
+.page-crumbs li { display: flex; align-items: center; gap: 6px; }
+.page-crumbs li + li::before {
+  content: "/";
+  color: var(--paper-3);
+}
+.page-crumbs a {
+  color: var(--ink-faint);
+  transition: color .2s ease;
+}
+.page-crumbs a:hover { color: var(--brass); }
+.page-crumbs span { color: var(--brass); }
+
 /* ---------- Inner page content sections ---------- */
 .th-section { padding: clamp(32px, 5vw, 56px) 0; }
 
