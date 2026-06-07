@@ -132,28 +132,6 @@ export const ViewFamily = ({ id }) => {
 
   return (
     <>
-      {/* Page Banner with breadcrumb chain */}
-      <section className="page-banner">
-        <div className="wrap">
-          <nav className="page-banner-crumbs" aria-label="Breadcrumb">
-            <ol>
-              <li><Link href="/">Home</Link></li>
-              <li><Link href="/members">Members</Link></li>
-              {breadcrumbChain.map((crumb, index) => (
-                <li key={crumb.id}>
-                  {index < breadcrumbChain.length - 1 ? (
-                    <Link href={`/members/${crumb.id}`}>{crumb.name}</Link>
-                  ) : (
-                    <span>{crumb.name}</span>
-                  )}
-                </li>
-              ))}
-            </ol>
-          </nav>
-          <h1 className="page-banner-title">{memberObj?.name || 'Family'}</h1>
-        </div>
-      </section>
-
       {/* Family hero section */}
       <section className="th-section">
         <div className="wrap">

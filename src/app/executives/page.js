@@ -7,7 +7,7 @@ export default function ExecutivesPage() {
   return (
     <>
       <Header />
-      <main id="main">
+      <main id="main" className="inner-page">
         <Executive />
       </main>
       <Footer />

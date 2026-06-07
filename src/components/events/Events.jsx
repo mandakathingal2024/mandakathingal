@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from 'react'
 import { useStateContext } from '../../../context/stateContext'
 import { EventsSkeleton } from '../Skeleton'
-import PageBanner from '../shared/PageBanner'
 
 const Events = () => {
   const [isLoading, setIsLoading] = useState(true)
@@ -28,7 +27,6 @@ const Events = () => {
 
   return (
     <>
-      <PageBanner title={isEnglish ? 'Events' : 'പരിപാടികൾ'} />
       <section className="th-section">
         <div className="wrap">
           <div className="th-card-grid">

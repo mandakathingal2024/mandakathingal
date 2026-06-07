@@ -3,7 +3,6 @@ import Image from 'next/image'
 import React, { useEffect, useState } from 'react'
 import { useStateContext } from '../../../context/stateContext'
 import { ExecutivesSkeleton } from '../Skeleton'
-import PageBanner from '../shared/PageBanner'
 
 const Executive = () => {
   const [isLoading, setIsLoading] = useState(true)
@@ -29,7 +28,6 @@ const Executive = () => {
 
   return (
     <>
-      <PageBanner title={isEnglish ? 'Executives' : 'എക്സിക്യൂട്ടീവുകൾ'} />
       <section className="th-section">
         <div className="wrap">
           <div className="th-section-head">

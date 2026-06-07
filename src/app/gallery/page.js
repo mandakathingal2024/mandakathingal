@@ -7,7 +7,7 @@ export default function GalleryPage() {
   return (
     <>
       <Header />
-      <main id="main">
+      <main id="main" className="inner-page">
         <Gallery />
       </main>
       <Footer />

@@ -5,7 +5,6 @@ import { useStateContext } from '../../../context/stateContext'
 import LockIcon from '@mui/icons-material/Lock'
 import GoogleIcon from '@mui/icons-material/Google'
 import { MembersSkeleton } from '../Skeleton'
-import PageBanner from '../shared/PageBanner'
 
 function getInitials(name) {
   if (!name) return '?'
@@ -62,8 +61,6 @@ const Members = () => {
 
   return (
     <>
-      <PageBanner title={isEnglish ? 'Members' : 'അംഗങ്ങൾ'} />
-
       {isGmailLoading ? (
         <section className="members-section grain">
           <div className="wrap" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '40vh' }}>

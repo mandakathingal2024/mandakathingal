@@ -15,12 +15,6 @@ const Skeleton = ({ width = '100%', height = '20px', borderRadius = '8px', style
 // Skeleton for event cards
 export const EventsSkeleton = () => (
   <>
-    <section className="page-banner">
-      <div className="wrap">
-        <Skeleton width="80px" height="14px" style={{ marginBottom: '12px', opacity: 0.5 }} />
-        <Skeleton width="160px" height="32px" />
-      </div>
-    </section>
     <section className="th-section grain">
       <div className="wrap">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
@@ -44,12 +38,6 @@ export const EventsSkeleton = () => (
 // Skeleton for gallery grid
 export const GallerySkeleton = () => (
   <>
-    <section className="page-banner">
-      <div className="wrap">
-        <Skeleton width="80px" height="14px" style={{ marginBottom: '12px', opacity: 0.5 }} />
-        <Skeleton width="140px" height="32px" />
-      </div>
-    </section>
     <section className="th-section grain">
       <div className="wrap">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
@@ -67,12 +55,6 @@ export const GallerySkeleton = () => (
 // Skeleton for executives/team grid
 export const ExecutivesSkeleton = () => (
   <>
-    <section className="page-banner">
-      <div className="wrap">
-        <Skeleton width="80px" height="14px" style={{ marginBottom: '12px', opacity: 0.5 }} />
-        <Skeleton width="180px" height="32px" />
-      </div>
-    </section>
     <section className="th-section grain">
       <div className="wrap">
         <div style={{ display: 'flex', gap: '10px', marginBottom: '32px' }}>
@@ -97,12 +79,6 @@ export const ExecutivesSkeleton = () => (
 // Skeleton for members list
 export const MembersSkeleton = () => (
   <>
-    <section className="page-banner">
-      <div className="wrap">
-        <Skeleton width="80px" height="14px" style={{ marginBottom: '12px', opacity: 0.5 }} />
-        <Skeleton width="160px" height="32px" />
-      </div>
-    </section>
     <section className="members-section grain">
       <div className="wrap">
         {/* Search bar */}
@@ -136,16 +112,6 @@ export const MembersSkeleton = () => (
 // Skeleton for view family page
 export const ViewFamilySkeleton = () => (
   <>
-    <section className="page-banner">
-      <div className="wrap">
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-          <Skeleton width="50px" height="14px" style={{ opacity: 0.5 }} />
-          <Skeleton width="70px" height="14px" style={{ opacity: 0.5 }} />
-          <Skeleton width="120px" height="14px" style={{ opacity: 0.5 }} />
-        </div>
-        <Skeleton width="240px" height="32px" />
-      </div>
-    </section>
     <section className="th-section">
       <div className="wrap">
         <div className="vf-hero">

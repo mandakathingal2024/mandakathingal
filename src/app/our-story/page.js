@@ -7,7 +7,7 @@ export default function OurStoryPage() {
   return (
     <>
       <Header />
-      <main id="main">
+      <main id="main" className="inner-page">
         <StoryIntro />
       </main>
       <Footer />

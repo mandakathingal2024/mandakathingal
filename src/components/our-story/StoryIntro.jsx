@@ -1,18 +1,12 @@
 'use client'
 import React from 'react'
 import { useStateContext } from '../../../context/stateContext'
-import PageBanner from '../shared/PageBanner'
 
 const StoryIntro = () => {
   const { isEnglish } = useStateContext()
 
   return (
     <>
-      <PageBanner
-        title={isEnglish ? 'Our Story' : 'ഞങ്ങളുടെ കഥ'}
-        subtitle={isEnglish ? 'The heritage and journey of Mandakathingal family' : 'മണ്ടകത്തിങ്ങൽ കുടുംബത്തിന്റെ പൈതൃകവും യാത്രയും'}
-      />
-
       <section className="th-story-section">
         <div className="wrap">
           <div className="th-story-grid">

@@ -7,7 +7,7 @@ export default function EventsPage() {
   return (
     <>
       <Header />
-      <main id="main">
+      <main id="main" className="inner-page">
         <Events />
       </main>
       <Footer />

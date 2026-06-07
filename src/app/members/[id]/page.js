@@ -7,7 +7,7 @@ export default function MemberDetailPage({ params }) {
   return (
     <>
       <Header />
-      <main id="main">
+      <main id="main" className="inner-page">
         <ViewFamily id={params.id} />
       </main>
       <Footer />
