@@ -99,6 +99,7 @@ const WebsiteContentAdmin = () => {
   });
   const [savingHero, setSavingHero] = React.useState(false);
   const [introData, setIntroData] = React.useState({
+    imageUrl: '',
     titleEn: 'Introduction',
     titleMl: 'ആമുഖം',
     contentEn: '',
@@ -399,6 +400,24 @@ const WebsiteContentAdmin = () => {
           </Box>
         </AccordionSummary>
         <AccordionDetails sx={{ px: { xs: 2, sm: 3 }, pb: 3 }}>
+          {/* Introduction Image */}
+          <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.65rem', letterSpacing: '0.05em' }}>
+            Introduction Image
+          </Typography>
+          <Box sx={{ mb: 2 }}>
+            <UploadImage
+              folderName="website"
+              setMember={(fn) => {
+                const result = fn({});
+                if (result.memberImgUrl !== undefined) updateIntroField('imageUrl', result.memberImgUrl);
+              }}
+              imageType="member"
+              existingUrl={introData.imageUrl}
+            />
+          </Box>
+
+          <Divider sx={{ borderColor: '#F0E8E0', mb: 2 }} />
+
           {/* Title */}
           <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.65rem', letterSpacing: '0.05em' }}>
             Section Title
