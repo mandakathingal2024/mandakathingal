@@ -1,19 +1,8 @@
-import { Inter, Playfair_Display } from "next/font/google";
+import { Playfair_Display } from "next/font/google";
 import "./globals.css";
-import "./assets/vendor/bootstrap/css/bootstrap.min.css"
-import "./assets/vendor/bootstrap-icons/bootstrap-icons.css"
-import "./assets/vendor/boxicons/css/boxicons.min.css"
-import "./assets/vendor/glightbox/css/glightbox.min.css"
-import "./assets/vendor/remixicon/remixicon.css"
-import "./assets/vendor/swiper/swiper-bundle.min.css"
-import "./assets/css/style.css"
 import Script from "next/script";
 import { StateContext } from "../../context/stateContext";
 
-
-
-
-const inter = Inter({ subsets: ["latin"] });
 const playfair = Playfair_Display({ subsets: ["latin"], weight: ["700", "800", "900"], variable: '--font-playfair' });
 export const metadata = {
   title: "Mandakathingal Family",
@@ -27,8 +16,14 @@ export default function RootLayout({ children }) {
       <head>
         <link rel="icon" href="/m.png" type="image/png" />
         <link rel="apple-touch-icon" href="/m.png" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Hanken+Grotesk:wght@400;500;600;700&family=Noto+Serif+Malayalam:wght@500;600;700&family=Noto+Sans+Malayalam:wght@400;500;600&display=swap"
+          rel="stylesheet"
+        />
       </head>
-      <body className={`${inter.className} ${playfair.variable}`}>
+      <body className={playfair.variable}>
         <Script id="sw-cleanup" strategy="afterInteractive">{`
           if('serviceWorker' in navigator && !window.location.pathname.startsWith('/mkadminhamza')){
             navigator.serviceWorker.getRegistrations().then(function(registrations){
@@ -38,12 +33,6 @@ export default function RootLayout({ children }) {
         `}</Script>
         <StateContext>
           {children}
-        <Script src="/js/bootstrap/js/bootstrap.bundle.min.js"></Script>
-        <Script src="/js/glightbox/js/glightbox.min.js"></Script>
-        <Script src="/js/isotope-layout/isotope.pkgd.min.js"></Script>
-        <Script src="/js/swiper/swiper-bundle.min.js"></Script>
-        <Script src="/js/php-email-form/validate.js"></Script>
-        <Script src="/js/main.js"/>
         </StateContext>
       </body>
     </html>
