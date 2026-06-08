@@ -221,19 +221,15 @@ export const StateContext =({children})=>{
         }
     }
     async function addMember(obj) {
-      try {
-        const uniqueId = uuidv4();
-        const data = { ...obj, id: uniqueId, createdAt: { _serverTimestamp: true } };
+      const uniqueId = uuidv4();
+      const data = { ...obj, id: uniqueId, createdAt: { _serverTimestamp: true } };
 
-        // Auto-assign sharedMemberId for Late Parent / Additional Member
-        if (obj.relation === 'Late Parent / Additional Member' && !obj.sharedMemberId) {
-          data.sharedMemberId = uuidv4();
-        }
-
-        await adminWrite('add', 'members', data);
-      } catch (error) {
-        console.error("Error adding document: ", error);
+      // Auto-assign sharedMemberId for Late Parent / Additional Member
+      if (obj.relation === 'Late Parent / Additional Member' && !obj.sharedMemberId) {
+        data.sharedMemberId = uuidv4();
       }
+
+      await adminWrite('add', 'members', data);
     }
     async function addGallery(obj) {
       try {
@@ -614,11 +610,7 @@ export const StateContext =({children})=>{
       //   }
       // }
       async function updateMember(updatedData) {
-        try {
-          await adminWrite('update', 'members', updatedData, updatedData.id);
-        } catch (error) {
-          console.error('Error updating document:', error);
-        }
+        await adminWrite('update', 'members', updatedData, updatedData.id);
       }
 
       async function updateDocument(collectionName, updatedData) {

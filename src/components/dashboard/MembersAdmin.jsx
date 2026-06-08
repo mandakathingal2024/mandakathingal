@@ -934,6 +934,7 @@ const MembersAdmin = () => {
       await fetchAllMembers();
     } catch (err) {
       console.error(err);
+      setToast({ open: true, message: `Error: ${err.message || 'Failed to save member'}`, severity: 'error' });
     } finally {
       setIsSaving(false);
     }
@@ -1078,6 +1079,7 @@ const MembersAdmin = () => {
       <SuccessToast
         open={toast.open}
         message={toast.message}
+        severity={toast.severity}
         onClose={handleToastClose}
       />
     </Container>
