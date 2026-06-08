@@ -52,6 +52,23 @@ const Members = () => {
     fetchData()
   }, [isGmailAuthenticated])
 
+  // Late members count (deduplicated by sharedMemberId)
+  const lateMembers = useMemo(() => {
+    if (!members) return []
+    const late = members.filter(m =>
+      (m.relation === 'Late Parent / Additional Member' && (m.subType === 'late' || !m.subType)) || m.isLate === true
+    )
+    // Deduplicate by sharedMemberId
+    const seen = new Set()
+    return late.filter(m => {
+      if (m.sharedMemberId) {
+        if (seen.has(m.sharedMemberId)) return false
+        seen.add(m.sharedMemberId)
+      }
+      return true
+    })
+  }, [members])
+
   const dataSource = useMemo(() => {
     if (filter === 'all') {
       // Deduplicate shared late members — they should appear once
@@ -61,8 +78,11 @@ const Members = () => {
       const combined = [...(newBranchData || []), ...(newHomeData || [])]
       return combined.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
     }
+    if (filter === 'late') {
+      return lateMembers.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+    }
     return newBranchData || []
-  }, [filter, newBranchData, newHomeData, members, getDeduplicatedMembers])
+  }, [filter, newBranchData, newHomeData, members, lateMembers, getDeduplicatedMembers])
 
   const filteredMembers = useMemo(() => {
     if (!dataSource.length) return []
@@ -138,6 +158,14 @@ const Members = () => {
               >
                 {isEnglish ? 'All Homes' : 'എല്ലാ വീടുകളും'}
                 <span className="cnt">{(newBranchData?.length || 0) + (newHomeData?.length || 0)}</span>
+              </button>
+              <button
+                className={`tab${filter === 'late' ? ' on' : ''}`}
+                onClick={() => setFilter('late')}
+                type="button"
+              >
+                {isEnglish ? 'Late Members' : 'മരണപ്പെട്ടവർ'}
+                <span className="cnt">{lateMembers?.length || 0}</span>
               </button>
               <button
                 className={`tab${filter === 'all' ? ' on' : ''}`}
