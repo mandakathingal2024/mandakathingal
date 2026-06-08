@@ -120,7 +120,7 @@ export async function POST(request) {
     }
   } catch (error) {
     console.error('Admin Firestore error:', error);
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Server error' }, { status: 500 });
   }
 }
 
