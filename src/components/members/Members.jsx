@@ -52,65 +52,23 @@ const Members = () => {
     fetchData()
   }, [isGmailAuthenticated])
 
-  // Build a lookup: memberId → member data (for finding branch names)
-  const memberMap = useMemo(() => {
-    if (!members) return {}
-    const map = {}
-    members.forEach((m) => { map[m.id] = m })
-    return map
-  }, [members])
-
-  // All late member entries (before dedup)
-  const allLateMembersRaw = useMemo(() => {
+  // Late members — deduplicated by sharedMemberId or by normalized name
+  const lateMembers = useMemo(() => {
     if (!members) return []
-    return members.filter(m =>
+    const late = members.filter(m =>
       (m.relation === 'Late Parent / Additional Member' && (m.subType === 'late' || !m.subType)) || m.isLate === true
     )
+    // Deduplicate: by sharedMemberId if available, otherwise by normalized name
+    const seen = new Set()
+    return late.filter(m => {
+      const key = m.sharedMemberId
+        ? `shared:${m.sharedMemberId}`
+        : `name:${(m.name || '').trim().toLowerCase()}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
   }, [members])
-
-  // Group late members: by sharedMemberId if available, otherwise by normalized name
-  // This ensures same-name late members added under different branches are treated as one person
-  const { lateMembers, lateMemberBranches } = useMemo(() => {
-    if (!allLateMembersRaw.length) return { lateMembers: [], lateMemberBranches: {} }
-
-    // Build grouping key for each late member
-    const getGroupKey = (m) => {
-      if (m.sharedMemberId) return `shared:${m.sharedMemberId}`
-      // Group by normalized name (trim, lowercase) so "Kunhipathumma (Late)" matches across branches
-      const normalized = (m.name || '').trim().toLowerCase()
-      return `name:${normalized}`
-    }
-
-    // Group all late entries
-    const groups = {} // groupKey → [member, member, ...]
-    allLateMembersRaw.forEach((m) => {
-      const key = getGroupKey(m)
-      if (!groups[key]) groups[key] = []
-      groups[key].push(m)
-    })
-
-    // Build deduplicated list (one per group) and branches map
-    const deduped = []
-    const branchMap = {} // representativeId → [{ id, name, place }]
-
-    Object.values(groups).forEach((group) => {
-      // Use first entry as the representative
-      const representative = group[0]
-      deduped.push(representative)
-
-      // Collect all branches this late member appears under
-      const branches = []
-      group.forEach((m) => {
-        const parent = m.relatedTo ? memberMap[m.relatedTo] : null
-        if (parent && !branches.some(b => b.id === parent.id)) {
-          branches.push({ id: parent.id, name: parent.name, place: parent.place })
-        }
-      })
-      branchMap[representative.id] = branches
-    })
-
-    return { lateMembers: deduped, lateMemberBranches: branchMap }
-  }, [allLateMembersRaw, memberMap])
 
   const dataSource = useMemo(() => {
     if (filter === 'all') {
@@ -253,41 +211,6 @@ const Members = () => {
                       <div className="fam-card-body">
                         <h4 className="fam-card-name">{member.name}</h4>
                         {member.place && <p className="fam-card-place">{member.place}</p>}
-
-                        {/* Show associated branches for late members */}
-                        {filter === 'late' && lateMemberBranches[member.id]?.length > 0 && (
-                          <div style={{
-                            marginTop: '8px', padding: '8px 12px', borderRadius: '8px',
-                            background: 'rgba(92,61,46,0.05)', border: '1px solid rgba(92,61,46,0.12)',
-                          }}>
-                            <p style={{
-                              fontSize: '11px', fontWeight: 600, color: 'var(--ink-faint)',
-                              textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 6px',
-                            }}>
-                              {isEnglish ? 'Family of' : 'കുടുംബം'}
-                            </p>
-                            {lateMemberBranches[member.id].map((branch) => (
-                              <a
-                                key={branch.id}
-                                href={`/members/${branch.id}`}
-                                style={{
-                                  display: 'flex', alignItems: 'center', gap: '6px',
-                                  padding: '4px 0', textDecoration: 'none', color: 'inherit',
-                                  fontSize: '13px',
-                                }}
-                              >
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--brass)" strokeWidth="2" style={{ flexShrink: 0 }}>
-                                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
-                                </svg>
-                                <span style={{ fontWeight: 600, color: 'var(--palm-deep)' }}>{branch.name}</span>
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ink-faint)" strokeWidth="2" style={{ marginLeft: 'auto', flexShrink: 0 }}>
-                                  <path d="M5 12h14M13 6l6 6-6 6" />
-                                </svg>
-                              </a>
-                            ))}
-                          </div>
-                        )}
-
                         <a href={`/members/${member.relatedTo || member.id}`} className="fam-card-btn">
                           {isEnglish ? 'View Family' : 'കുടുംബം കാണുക'}
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
