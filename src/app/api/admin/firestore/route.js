@@ -1,17 +1,7 @@
 import { NextResponse } from 'next/server';
-import { initializeApp, getApps } from 'firebase-admin/app';
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { FieldValue } from 'firebase-admin/firestore';
 import { getSessionFromRequest } from '../../../../lib/auth';
-
-// Initialize Firebase Admin (reuse if already initialized)
-function getAdminDb() {
-  if (getApps().length === 0) {
-    initializeApp({
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    });
-  }
-  return getFirestore();
-}
+import { getAdminDb } from '../../../../lib/firebaseAdmin';
 
 // Allowed collections for admin writes
 const ALLOWED_COLLECTIONS = [

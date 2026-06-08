@@ -1,18 +1,7 @@
 'use server'
-import { initializeApp, getApps } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
 import bcrypt from 'bcryptjs';
 import { createSessionToken, buildSessionCookie } from '../../../lib/auth';
-
-// Initialize Firebase Admin (reuse if already initialized)
-function getAdminDb() {
-  if (getApps().length === 0) {
-    initializeApp({
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    });
-  }
-  return getFirestore();
-}
+import { getAdminDb } from '../../../lib/firebaseAdmin';
 
 // Simple in-memory rate limiter (resets on serverless cold start)
 const loginAttempts = new Map();
@@ -129,6 +118,6 @@ export async function POST(request) {
     return new Response(JSON.stringify({ isAuthenticated: false }), { status: 200 });
   } catch (error) {
     console.error('Authentication error:', error);
-    return new Response(JSON.stringify({ isAuthenticated: false }), { status: 200 });
+    return new Response(JSON.stringify({ isAuthenticated: false, error: error.message }), { status: 200 });
   }
 }

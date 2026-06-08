@@ -1,17 +1,6 @@
-import { initializeApp, getApps } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
 import bcrypt from 'bcryptjs';
 import { getSessionFromRequest } from '../../../../lib/auth';
-
-// Initialize Firebase Admin (reuse if already initialized)
-function getAdminDb() {
-  if (getApps().length === 0) {
-    initializeApp({
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    });
-  }
-  return getFirestore();
-}
+import { getAdminDb } from '../../../../lib/firebaseAdmin';
 
 export async function POST(request) {
   const session = getSessionFromRequest(request);
