@@ -223,7 +223,14 @@ export const StateContext =({children})=>{
     async function addMember(obj) {
       try {
         const uniqueId = uuidv4();
-        await adminWrite('add', 'members', { ...obj, id: uniqueId, createdAt: { _serverTimestamp: true } });
+        const data = { ...obj, id: uniqueId, createdAt: { _serverTimestamp: true } };
+
+        // Auto-assign sharedMemberId for Late Parent / Additional Member
+        if (obj.relation === 'Late Parent / Additional Member' && !obj.sharedMemberId) {
+          data.sharedMemberId = uuidv4();
+        }
+
+        await adminWrite('add', 'members', data);
       } catch (error) {
         console.error("Error adding document: ", error);
       }
@@ -317,6 +324,56 @@ export const StateContext =({children})=>{
         })
       } catch (error) {
         console.error('Error logging activity:', error)
+      }
+    }
+
+    // Search for existing late/additional members that can be linked (shared across branches)
+    // Uses already-loaded members array to avoid needing extra Firestore composite indexes
+    function searchSharedLateMembers(inputString) {
+      if (!inputString || !inputString.trim() || !members) return []
+      const q = inputString.trim().toLowerCase()
+      const lateMembers = members.filter(
+        (m) => m.relation === 'Late Parent / Additional Member' &&
+               (m.name || '').toLowerCase().includes(q)
+      )
+      // Deduplicate: show only one entry per sharedMemberId
+      const results = []
+      const seenShared = new Set()
+      lateMembers.forEach((m) => {
+        const key = m.sharedMemberId || m.id
+        if (!seenShared.has(key)) {
+          seenShared.add(key)
+          results.push(m)
+        }
+      })
+      return results
+    }
+
+    // Get all branches that share a late member (by sharedMemberId)
+    // Uses Firestore queries since the `members` state may only contain a single family's data
+    async function getSharedMemberBranches(sharedMemberId) {
+      if (!sharedMemberId) return []
+      try {
+        const membersRef = collection(db, 'members')
+        const q = query(membersRef, where('sharedMemberId', '==', sharedMemberId))
+        const snap = await getDocs(q)
+        const sharedEntries = snap.docs.map((d) => d.data())
+
+        // For each shared entry, find who they are "relatedTo" (the branch head)
+        const branchIds = [...new Set(sharedEntries.map((e) => e.relatedTo).filter(Boolean))]
+        if (branchIds.length === 0) return []
+
+        // Fetch branch heads in parallel
+        const branchPromises = branchIds.map(async (branchId) => {
+          const bq = query(membersRef, where('id', '==', branchId))
+          const bSnap = await getDocs(bq)
+          return bSnap.empty ? null : bSnap.docs[0].data()
+        })
+        const branches = (await Promise.all(branchPromises)).filter(Boolean)
+        return branches
+      } catch (error) {
+        console.error('Error fetching shared member branches:', error)
+        return []
       }
     }
 
@@ -662,6 +719,24 @@ export const StateContext =({children})=>{
         }
       },[user])
 
+    // Deduplicate members by sharedMemberId — shared late members count as one
+    function getDeduplicatedMembers(membersList) {
+      if (!membersList) return []
+      const unique = []
+      const seenShared = new Set()
+      membersList.forEach((m) => {
+        if (m.sharedMemberId) {
+          if (!seenShared.has(m.sharedMemberId)) {
+            seenShared.add(m.sharedMemberId)
+            unique.push(m)
+          }
+        } else {
+          unique.push(m)
+        }
+      })
+      return unique
+    }
+
     // Memoize context value so consumers only re-render when actual data changes,
     // not on every StateContext render caused by unrelated state updates
     const contextValue = React.useMemo(() => ({
@@ -669,14 +744,15 @@ export const StateContext =({children})=>{
         authenticateUser, isAuthenticated, isAuthLoading,
         pageValue, setPageValue,
         addMember, handleLogOut,
-        searchMembersByName, getMembersWithNewBranchRelation,
+        searchMembersByName, searchSharedLateMembers, getSharedMemberBranches,
+        getMembersWithNewBranchRelation,
         fetchAllMembers, setNewBranchData, newBranchData, newHomeData,
         getMembersByRelatedTo, viewFamilyData, setViewFamilyData,
         memberObj, setMemberObj, getMemberById,
         addGallery, addEvent, fetchAllEvents, setEvents, events,
         fetchAllGallery, setGallery, gallery,
         addExecutive, fetchAllExecutives, executives, setExecutives,
-        deleteDocument, members, setMembers, updateMember, updateDocument,
+        deleteDocument, members, setMembers, updateMember, updateDocument, getDeduplicatedMembers,
         addGmail, googleSignIn, googleSignOut,
         user, isGmailAuthenticated, setIsGmailAuthenticated,
         isAuthorised, setIsAuthorised, deniedEmail,

@@ -65,8 +65,152 @@ const MemberImage = ({ src, name, width, height, style }) => {
   )
 }
 
+// Shared late member tree — shows which branches share a late parent
+const SharedMemberTree = ({ member, getSharedMemberBranches, isEnglish }) => {
+  const [branches, setBranches] = useState([])
+  const [isOpen, setIsOpen] = useState(false)
+
+  useEffect(() => {
+    if (member.sharedMemberId) {
+      const fetchBranches = async () => {
+        const found = await getSharedMemberBranches(member.sharedMemberId)
+        // Only show tree if shared across more than 1 branch
+        if (found.length > 1) {
+          setBranches(found)
+        }
+      }
+      fetchBranches()
+    }
+  }, [member.sharedMemberId, getSharedMemberBranches])
+
+  if (branches.length <= 1) return null
+
+  return (
+    <div className="shared-tree-wrap" style={{ marginTop: '8px' }}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="shared-tree-toggle"
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: '6px',
+          padding: '4px 12px', borderRadius: '99px', border: '1px solid rgba(25,118,210,0.3)',
+          background: 'rgba(25,118,210,0.06)', color: '#1565C0',
+          fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+          transition: 'all 0.2s',
+        }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+        </svg>
+        {isEnglish
+          ? `Shared across ${branches.length} families`
+          : `${branches.length} കുടുംബങ്ങളിൽ പങ്കിട്ടു`}
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+          style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="shared-tree" style={{
+          marginTop: '12px', padding: '16px', borderRadius: '12px',
+          background: 'rgba(25,118,210,0.04)', border: '1px solid rgba(25,118,210,0.15)',
+        }}>
+          {/* Tree: late member at top, branches below */}
+          <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              padding: '8px 16px', borderRadius: '8px',
+              background: 'var(--paper)', border: '1px solid var(--paper-3)',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+            }}>
+              <div style={{
+                width: '32px', height: '32px', borderRadius: '50%', overflow: 'hidden',
+                border: '2px solid var(--brass-light)', flexShrink: 0,
+              }}>
+                {hasValidImage(member.memberImgUrl) ? (
+                  <Image src={member.memberImgUrl} width={32} height={32} alt={member.name}
+                    style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
+                ) : (
+                  <div className="fam-card-initials" style={{ width: '100%', height: '100%', fontSize: '12px' }}>
+                    {getInitials(member.name)}
+                  </div>
+                )}
+              </div>
+              <span style={{ fontFamily: 'var(--serif)', fontWeight: 600, fontSize: '15px' }}>
+                {member.name}
+              </span>
+            </div>
+          </div>
+
+          {/* Connector line */}
+          <div style={{
+            width: '2px', height: '20px', background: 'rgba(25,118,210,0.25)',
+            margin: '0 auto',
+          }} />
+
+          {/* Horizontal line */}
+          <div style={{
+            height: '2px', background: 'rgba(25,118,210,0.25)',
+            margin: '0 auto', width: `${Math.min(branches.length * 120, 100)}%`,
+            maxWidth: '100%',
+          }} />
+
+          {/* Branch cards */}
+          <div style={{
+            display: 'flex', justifyContent: 'center', gap: '12px',
+            flexWrap: 'wrap', marginTop: '0',
+          }}>
+            {branches.map((branch) => (
+              <a
+                key={branch.id}
+                href={`/members/${branch.id}`}
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
+                  padding: '12px 16px', borderRadius: '8px',
+                  background: 'var(--paper)', border: '1px solid var(--paper-3)',
+                  textDecoration: 'none', color: 'inherit',
+                  transition: 'all 0.2s', minWidth: '100px',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+                }}
+              >
+                {/* Vertical connector */}
+                <div style={{
+                  width: '2px', height: '12px', background: 'rgba(25,118,210,0.25)',
+                  marginTop: '-12px',
+                }} />
+                <div style={{
+                  width: '36px', height: '36px', borderRadius: '50%', overflow: 'hidden',
+                  border: '2px solid var(--paper-3)', flexShrink: 0,
+                }}>
+                  {hasValidImage(branch.memberImgUrl) ? (
+                    <Image src={branch.memberImgUrl} width={36} height={36} alt={branch.name}
+                      style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
+                  ) : (
+                    <div className="fam-card-initials" style={{ width: '100%', height: '100%', fontSize: '13px' }}>
+                      {getInitials(branch.name)}
+                    </div>
+                  )}
+                </div>
+                <span style={{ fontSize: '13px', fontWeight: 600, textAlign: 'center' }}>
+                  {branch.name}
+                </span>
+                {branch.place && (
+                  <span style={{ fontSize: '11px', color: 'var(--ink-faint)', textAlign: 'center' }}>
+                    {branch.place}
+                  </span>
+                )}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export const ViewFamily = ({ id }) => {
-  const { viewFamilyData, getMembersByRelatedTo, memberObj, getMemberById, isGmailAuthenticated, isGmailLoading, googleSignIn, isAuthorised, deniedEmail, isEnglish } = useStateContext()
+  const { viewFamilyData, getMembersByRelatedTo, memberObj, getMemberById, getSharedMemberBranches, isGmailAuthenticated, isGmailLoading, googleSignIn, isAuthorised, deniedEmail, isEnglish } = useStateContext()
   const [isLoading, setIsLoading] = useState(true)
   const [breadcrumbChain, setBreadcrumbChain] = useState([])
   const router = useRouter()
@@ -283,6 +427,14 @@ export const ViewFamily = ({ id }) => {
                       <h4 className="fam-card-name">{member.name}</h4>
                       {member.place && <p className="fam-card-place">{member.place}</p>}
                       {member.description && <p className="fam-card-place">{member.description}</p>}
+                      {/* Show shared tree if this late member exists across multiple branches */}
+                      {member.sharedMemberId && (
+                        <SharedMemberTree
+                          member={member}
+                          getSharedMemberBranches={getSharedMemberBranches}
+                          isEnglish={isEnglish}
+                        />
+                      )}
                     </div>
                   </div>
                 ))}

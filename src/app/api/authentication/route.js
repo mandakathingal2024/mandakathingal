@@ -1,24 +1,17 @@
 'use server'
-import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
+import { initializeApp, getApps } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 import bcrypt from 'bcryptjs';
 import { createSessionToken, buildSessionCookie } from '../../../lib/auth';
 
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-};
-
-function getDb() {
-  const apps = getApps();
-  const existing = apps.find((a) => a.name === 'server-auth');
-  if (existing) return getFirestore(existing);
-  const app = initializeApp(firebaseConfig, 'server-auth');
-  return getFirestore(app);
+// Initialize Firebase Admin (reuse if already initialized)
+function getAdminDb() {
+  if (getApps().length === 0) {
+    initializeApp({
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    });
+  }
+  return getFirestore();
 }
 
 // Simple in-memory rate limiter (resets on serverless cold start)
@@ -85,10 +78,9 @@ export async function POST(request) {
   }
 
   try {
-    const db = getDb();
-    const adminsRef = collection(db, 'admins');
-    const q = query(adminsRef, where('username', '==', req.userName));
-    const snapshot = await getDocs(q);
+    const db = getAdminDb();
+    const adminsRef = db.collection('admins');
+    const snapshot = await adminsRef.where('username', '==', req.userName).get();
 
     if (!snapshot.empty) {
       const adminDoc = snapshot.docs[0];

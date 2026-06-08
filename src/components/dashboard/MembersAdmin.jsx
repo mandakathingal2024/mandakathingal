@@ -28,6 +28,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import ConfirmDialog from './ConfirmDialog';
 import SuccessToast from './SuccessToast';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import LinkIcon from '@mui/icons-material/Link';
 import SortIcon from '@mui/icons-material/Sort';
 import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
@@ -65,11 +66,12 @@ const shakeKeyframes = `
 
 // Separate form modal component — isolates form state from the table
 // so typing in the form does NOT re-render the entire members table
-const MemberFormModal = React.memo(({ open, onClose, editMember, onSubmit, isSaving, searchMembersByName, members }) => {
+const MemberFormModal = React.memo(({ open, onClose, editMember, onSubmit, isSaving, searchMembersByName, searchSharedLateMembers, members }) => {
   const EMPTY = {
     name: '', uniqueText: '', place: '', gender: '',
     memberImgUrl: '', houseImgUrl: '', description: '',
-    relatedTo: '', relation: '', isNewHome: false, isLate: false, subType: '', subTypeLabel: ''
+    relatedTo: '', relation: '', isNewHome: false, isLate: false, subType: '', subTypeLabel: '',
+    sharedMemberId: ''
   };
 
   const [member, setMember] = React.useState(EMPTY);
@@ -78,6 +80,13 @@ const MemberFormModal = React.memo(({ open, onClose, editMember, onSubmit, isSav
   const [searchText, setSearchText] = React.useState('');
   const [isNewBranch, setIsNewBranch] = React.useState(true);
   const [fieldErrors, setFieldErrors] = React.useState({});
+
+  // Shared late member linking state
+  const [isLinking, setIsLinking] = React.useState(false);
+  const [linkSearch, setLinkSearch] = React.useState('');
+  const [linkSuggestions, setLinkSuggestions] = React.useState([]);
+  const [showLinkSuggestions, setShowLinkSuggestions] = React.useState(false);
+  const [linkedMember, setLinkedMember] = React.useState(null);
   const isEdit = !!editMember;
 
   // Refs for scrolling to invalid fields
@@ -87,6 +96,7 @@ const MemberFormModal = React.memo(({ open, onClose, editMember, onSubmit, isSav
   const relatedToRef = React.useRef(null);
   const formBodyRef = React.useRef(null);
   const suggestionsRef = React.useRef(null);
+  const linkSuggestionsRef = React.useRef(null);
 
   // Inject shake keyframes once
   React.useEffect(() => {
@@ -119,6 +129,12 @@ const MemberFormModal = React.memo(({ open, onClose, editMember, onSubmit, isSav
       setSuggestions([]);
       setShowSuggestions(false);
       setFieldErrors({});
+      // Reset linking state
+      setIsLinking(false);
+      setLinkSearch('');
+      setLinkSuggestions([]);
+      setShowLinkSuggestions(false);
+      setLinkedMember(editMember?.sharedMemberId ? { name: editMember.name, sharedMemberId: editMember.sharedMemberId } : null);
     }
   }, [open, editMember, members]);
 
@@ -134,6 +150,18 @@ const MemberFormModal = React.memo(({ open, onClose, editMember, onSubmit, isSav
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showSuggestions]);
+
+  // Close link suggestions dropdown when clicking outside
+  React.useEffect(() => {
+    if (!showLinkSuggestions) return;
+    const handleClickOutside = (e) => {
+      if (linkSuggestionsRef.current && !linkSuggestionsRef.current.contains(e.target)) {
+        setShowLinkSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showLinkSuggestions]);
 
   const handleChange = React.useCallback((event) => {
     const { name, value } = event.target;
@@ -221,6 +249,45 @@ const MemberFormModal = React.memo(({ open, onClose, editMember, onSubmit, isSav
       delete next.relatedTo;
       return next;
     });
+  }, []);
+
+  // Link search handlers for shared late members
+  const handleLinkSearch = React.useCallback((value) => {
+    setLinkSearch(value);
+    if (value.trim()) {
+      const results = searchSharedLateMembers(value);
+      setLinkSuggestions(results || []);
+      setShowLinkSuggestions(true);
+    } else {
+      setLinkSuggestions([]);
+      setShowLinkSuggestions(false);
+    }
+  }, [searchSharedLateMembers]);
+
+  const handleSelectLinkedMember = React.useCallback((selected) => {
+    // Auto-fill member data from the existing shared late member
+    setMember((prev) => ({
+      ...prev,
+      name: selected.name,
+      uniqueText: selected.uniqueText || '',
+      place: selected.place || '',
+      gender: selected.gender || prev.gender,
+      memberImgUrl: selected.memberImgUrl || '',
+      description: selected.description || '',
+      sharedMemberId: selected.sharedMemberId || selected.id,
+      subType: selected.subType || 'late',
+      subTypeLabel: selected.subTypeLabel || '',
+    }));
+    setLinkedMember(selected);
+    setLinkSearch('');
+    setShowLinkSuggestions(false);
+    setLinkSuggestions([]);
+  }, []);
+
+  const handleUnlinkMember = React.useCallback(() => {
+    setLinkedMember(null);
+    setMember((prev) => ({ ...prev, sharedMemberId: '' }));
+    setLinkSearch('');
   }, []);
 
   const errorSx = (field) => fieldErrors[field] ? {
@@ -326,15 +393,17 @@ const MemberFormModal = React.memo(({ open, onClose, editMember, onSubmit, isSav
                   const val = e.target.value;
                   setIsNewBranch(val === 'New Branch');
                   if (val === 'New Branch') {
-                    setMember((prev) => ({ ...prev, relatedTo: '', isNewHome: false, subType: '' }));
+                    setMember((prev) => ({ ...prev, relatedTo: '', isNewHome: false, subType: '', sharedMemberId: '' }));
                     setSearchText('');
                     setSuggestions([]);
                     setShowSuggestions(false);
                   } else if (val === 'Late Parent / Additional Member') {
                     setMember((prev) => ({ ...prev, isNewHome: false, subType: prev.subType || 'late' }));
                   } else {
-                    setMember((prev) => ({ ...prev, isNewHome: val === 'Son Of / Dauhter Of' ? prev.isNewHome : false, subType: '' }));
+                    setMember((prev) => ({ ...prev, isNewHome: val === 'Son Of / Dauhter Of' ? prev.isNewHome : false, subType: '', sharedMemberId: '' }));
                   }
+                  // Reset linking state when changing relation
+                  setIsLinking(false); setLinkSearch(''); setLinkSuggestions([]); setShowLinkSuggestions(false); setLinkedMember(null);
                   setFieldErrors((prev) => { const n = { ...prev }; delete n.relation; return n; });
                 }}
               >
@@ -374,6 +443,129 @@ const MemberFormModal = React.memo(({ open, onClose, editMember, onSubmit, isSav
                 sx={{ mb: 2 }}
                 helperText="If given, this label will appear as a heading on the website"
                 />
+
+              {/* Link to existing shared late member */}
+              <Box sx={{
+                mt: 0.5, mb: 2, p: 2, borderRadius: 2,
+                backgroundColor: linkedMember ? 'rgba(25,118,210,0.06)' : (isLinking ? 'rgba(25,118,210,0.03)' : 'rgba(0,0,0,0.02)'),
+                border: `1px solid ${linkedMember ? 'rgba(25,118,210,0.3)' : '#E0D6CC'}`,
+                transition: 'all 0.2s',
+              }}>
+                {linkedMember ? (
+                  /* Linked member indicator */
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <LinkIcon sx={{ fontSize: 20, color: '#1976D2' }} />
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.85rem', color: '#1976D2' }}>
+                        Linked to: {linkedMember.name}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>
+                        This member is shared across multiple branches (counted once)
+                      </Typography>
+                    </Box>
+                    <IconButton size="small" onClick={handleUnlinkMember} sx={{ color: 'text.secondary' }}>
+                      <CloseIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </Box>
+                ) : isLinking ? (
+                  /* Link search mode */
+                  <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.8rem', color: '#1976D2' }}>
+                        Search existing late member to link
+                      </Typography>
+                      <Button size="small" onClick={() => { setIsLinking(false); setLinkSearch(''); setLinkSuggestions([]); setShowLinkSuggestions(false); }}
+                        sx={{ fontSize: '0.7rem', textTransform: 'none', minWidth: 0, color: 'text.secondary' }}>
+                        Cancel
+                      </Button>
+                    </Box>
+                    <Box sx={{ position: 'relative' }}>
+                      <TextField
+                        fullWidth size="small"
+                        placeholder="Type name to search existing late members..."
+                        value={linkSearch}
+                        onChange={(e) => handleLinkSearch(e.target.value)}
+                        onFocus={() => { if (linkSuggestions.length > 0) setShowLinkSuggestions(true); }}
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <SearchIcon sx={{ fontSize: 18, color: '#1976D2' }} />
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                      {showLinkSuggestions && linkSuggestions.length > 0 && (
+                        <Paper
+                          ref={linkSuggestionsRef}
+                          elevation={8}
+                          sx={{
+                            position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
+                            maxHeight: 200, overflow: 'auto', mt: 0.5, borderRadius: 1.5,
+                            border: '1px solid #E0D6CC',
+                          }}
+                        >
+                          {linkSuggestions.map((s) => (
+                            <Box
+                              key={s.id}
+                              onClick={() => handleSelectLinkedMember(s)}
+                              sx={{
+                                px: 2, py: 1.2, cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', gap: 1.5,
+                                '&:hover': { backgroundColor: '#EBF5FF' },
+                                borderBottom: '1px solid #F5F0EB',
+                                '&:last-child': { borderBottom: 'none' },
+                              }}
+                            >
+                              <Box sx={{ width: 32, height: 32, borderRadius: '50%', overflow: 'hidden', border: '1px solid #E0D6CC', flexShrink: 0 }}>
+                                <Image
+                                  src={s.memberImgUrl || '/default-avatar.svg'}
+                                  width={32} height={32} alt={s.name}
+                                  style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                                />
+                              </Box>
+                              <Box sx={{ minWidth: 0 }}>
+                                <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.3 }}>{s.name}</Typography>
+                                {s.uniqueText && (
+                                  <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>{s.uniqueText}</Typography>
+                                )}
+                              </Box>
+                              <LinkIcon sx={{ fontSize: 16, color: '#1976D2', ml: 'auto', opacity: 0.5 }} />
+                            </Box>
+                          ))}
+                        </Paper>
+                      )}
+                      {showLinkSuggestions && linkSearch.trim() && linkSuggestions.length === 0 && (
+                        <Paper
+                          ref={linkSuggestionsRef}
+                          elevation={8}
+                          sx={{
+                            position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
+                            mt: 0.5, borderRadius: 1.5, border: '1px solid #E0D6CC', p: 2, textAlign: 'center',
+                          }}
+                        >
+                          <Typography variant="body2" color="text.secondary">No existing late members found</Typography>
+                        </Paper>
+                      )}
+                    </Box>
+                  </Box>
+                ) : (
+                  /* Toggle to start linking */
+                  <Box
+                    onClick={() => setIsLinking(true)}
+                    sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer' }}
+                  >
+                    <LinkIcon sx={{ fontSize: 20, color: '#1976D2', opacity: 0.6 }} />
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.85rem' }}>
+                        Already added under another branch?
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>
+                        Link to an existing late member to share them across branches (counted as one)
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+              </Box>
             </>
           )}
 
@@ -548,7 +740,14 @@ const MemberRow = React.memo(({ row, index, onEdit, onDelete, onViewFamily, canE
       </Box>
     </TableCell>
     <TableCell sx={{ px: { xs: 1, sm: 2 } }}>
-      <Typography variant="body2" sx={{ fontWeight: 500, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>{row.name}</Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        <Typography variant="body2" sx={{ fontWeight: 500, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>{row.name}</Typography>
+        {row.sharedMemberId && (
+          <Tooltip title="Shared across multiple branches">
+            <LinkIcon sx={{ fontSize: 14, color: '#1976D2', opacity: 0.7 }} />
+          </Tooltip>
+        )}
+      </Box>
       <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'block', md: 'none' }, fontSize: '0.7rem' }}>
         {row.uniqueText}
       </Typography>
@@ -633,19 +832,30 @@ const MembersAdmin = () => {
   const [filterTag, setFilterTag] = React.useState(null); // 'family' | 'houses' | 'late' | null
 
   const {
-    addMember, searchMembersByName, fetchAllMembers,
+    addMember, searchMembersByName, searchSharedLateMembers, fetchAllMembers,
     members, getMembersByRelatedTo, deleteDocument, updateMember,
-    hasPermission, logActivity
+    hasPermission, logActivity, getDeduplicatedMembers
   } = useStateContext();
 
   const canEdit = hasPermission('edit');
   const canDelete = hasPermission('delete');
 
-  // Counts for stat tags
+  // Counts for stat tags — shared late members are deduplicated
   const familyCount = React.useMemo(() => (members || []).filter(m => m.relation === 'New Branch').length, [members]);
   const housesCount = React.useMemo(() => (members || []).filter(m => m.relation === 'New Branch' || m.isNewHome === true).length, [members]);
-  const lateCount = React.useMemo(() => (members || []).filter(m => (m.relation === 'Late Parent / Additional Member' && (m.subType === 'late' || !m.subType)) || m.isLate === true).length, [members]);
-  const totalCount = (members || []).length;
+  const lateCount = React.useMemo(() => {
+    const lateMems = (members || []).filter(m => (m.relation === 'Late Parent / Additional Member' && (m.subType === 'late' || !m.subType)) || m.isLate === true);
+    // Deduplicate by sharedMemberId
+    const seen = new Set();
+    return lateMems.filter(m => {
+      if (m.sharedMemberId) {
+        if (seen.has(m.sharedMemberId)) return false;
+        seen.add(m.sharedMemberId);
+      }
+      return true;
+    }).length;
+  }, [members]);
+  const totalCount = React.useMemo(() => getDeduplicatedMembers(members).length, [members, getDeduplicatedMembers]);
 
   // Client-side search + tag filter + sort — memoized so table doesn't re-render on unrelated state changes
   const sortedMembers = React.useMemo(() => {
@@ -814,6 +1024,7 @@ const MembersAdmin = () => {
         onSubmit={handleFormSubmit}
         isSaving={isSaving}
         searchMembersByName={searchMembersByName}
+        searchSharedLateMembers={searchSharedLateMembers}
         members={members}
       />
 

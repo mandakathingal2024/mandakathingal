@@ -28,7 +28,7 @@ function getInitials(name) {
 
 const Members = () => {
   const [isLoading, setIsLoading] = useState(true)
-  const { getMembersWithNewBranchRelation, newBranchData, newHomeData, members, isGmailAuthenticated, googleSignIn, googleSignOut, isAuthorised, deniedEmail, isGmailLoading, isEnglish } = useStateContext()
+  const { getMembersWithNewBranchRelation, newBranchData, newHomeData, members, getDeduplicatedMembers, isGmailAuthenticated, googleSignIn, googleSignOut, isAuthorised, deniedEmail, isGmailLoading, isEnglish } = useStateContext()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('branch')
   const [error, setError] = useState(null)
@@ -54,14 +54,15 @@ const Members = () => {
 
   const dataSource = useMemo(() => {
     if (filter === 'all') {
-      return (members || []).sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+      // Deduplicate shared late members — they should appear once
+      return getDeduplicatedMembers(members || []).sort((a, b) => (a.name || '').localeCompare(b.name || ''))
     }
     if (filter === 'home') {
       const combined = [...(newBranchData || []), ...(newHomeData || [])]
       return combined.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
     }
     return newBranchData || []
-  }, [filter, newBranchData, newHomeData, members])
+  }, [filter, newBranchData, newHomeData, members, getDeduplicatedMembers])
 
   const filteredMembers = useMemo(() => {
     if (!dataSource.length) return []
@@ -144,7 +145,7 @@ const Members = () => {
                 type="button"
               >
                 {isEnglish ? 'All Members' : 'എല്ലാ അംഗങ്ങളും'}
-                <span className="cnt">{members?.length || 0}</span>
+                <span className="cnt">{getDeduplicatedMembers(members)?.length || 0}</span>
               </button>
             </div>
 
