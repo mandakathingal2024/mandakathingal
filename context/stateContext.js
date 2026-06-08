@@ -413,8 +413,9 @@ export const StateContext =({children})=>{
 // Assuming you have initialized your Firestore instance as 'db'
 
       async function getMembersWithNewBranchRelation(forceRefresh = false) {
-        // Skip re-fetching if data already loaded (saves Firestore reads)
-        if (!forceRefresh && members && members.length > 0) {
+        // Skip re-fetching only if full data is already loaded
+        // Check both members AND newBranchData to ensure we have the complete dataset
+        if (!forceRefresh && members && members.length > 0 && newBranchData && newBranchData.length > 0) {
           return { branches: newBranchData, newHomes: newHomeData };
         }
 
@@ -462,13 +463,14 @@ export const StateContext =({children})=>{
           const membersCollection = collection(db, "members");
           const q = query(membersCollection, where("relatedTo", "==", id));
           const querySnapshot = await getDocs(q);
-      
+
           const membersData = [];
           querySnapshot.forEach((doc) => {
             membersData.push(doc.data());
           });
           setViewFamilyData(membersData)
-          setMembers(membersData)
+          // NOTE: Do NOT setMembers here — it corrupts the full members list
+          // used by the Members page. viewFamilyData is the correct state for family view.
           return membersData;
         } catch (error) {
           console.error("Error fetching members:", error);
