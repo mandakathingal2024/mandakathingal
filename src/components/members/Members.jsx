@@ -26,67 +26,72 @@ function getInitials(name) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
-// Shows all associated branch links for a shared late member
-const LateMemberBranches = ({ member, getSharedMemberBranches, isEnglish }) => {
-  const [branches, setBranches] = useState([])
-  const [loading, setLoading] = useState(true)
+// View Family for a late member. If they are linked to multiple branches,
+// the button expands to list each branch (resolved from the members list).
+const LateMemberBranches = ({ member, members, isEnglish }) => {
+  const [isOpen, setIsOpen] = useState(false)
 
-  useEffect(() => {
-    if (member.sharedMemberId) {
-      getSharedMemberBranches(member.sharedMemberId).then((found) => {
-        setBranches(found)
-        setLoading(false)
-      })
-    } else {
-      setLoading(false)
-    }
-  }, [member.sharedMemberId, getSharedMemberBranches])
+  // Resolve each linked branch id to its branch-head member (for the name)
+  const branches = (member.branchIds || [])
+    .map((id) => (members || []).find((m) => m.id === id))
+    .filter(Boolean)
 
-  if (loading) {
+  // Only one branch (or none resolved) — plain View Family link
+  if (branches.length <= 1) {
+    const target = branches[0]?.id || member.relatedTo || member.id
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0' }}>
-        <div style={{
-          width: '20px', height: '20px', border: '2px solid var(--paper-3)',
-          borderTopColor: 'var(--brass)', borderRadius: '50%',
-          animation: 'spin 0.8s linear infinite',
-        }} />
-      </div>
+      <a href={`/members/${target}`} className="fam-card-btn">
+        {isEnglish ? 'View Family' : 'കുടുംബം കാണുക'}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M5 12h14M13 6l6 6-6 6" />
+        </svg>
+      </a>
     )
   }
 
-  // If shared across multiple branches, show all branch links
-  if (branches.length > 1) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        <p style={{ fontSize: '12px', color: 'var(--ink-faint)', margin: '0 0 2px', fontFamily: 'var(--serif)' }}>
-          {isEnglish ? `Family of:` : `കുടുംബം:`}
-        </p>
-        {branches.map((branch) => (
-          <a key={branch.id} href={`/members/${branch.id}`} className="fam-card-btn" style={{ fontSize: '13px' }}>
-            {branch.name}
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M5 12h14M13 6l6 6-6 6" />
-            </svg>
-          </a>
-        ))}
-      </div>
-    )
-  }
-
-  // Fallback: single View Family button
+  // Linked to multiple branches — expandable button listing each one
   return (
-    <a href={`/members/${member.relatedTo || member.id}`} className="fam-card-btn">
-      {isEnglish ? 'View Family' : 'കുടുംബം കാണുക'}
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M5 12h14M13 6l6 6-6 6" />
-      </svg>
-    </a>
+    <div style={{ width: '100%' }}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="fam-card-btn"
+        style={{ width: '100%', cursor: 'pointer', border: 'none', background: 'none', justifyContent: 'center' }}
+      >
+        {isEnglish ? `View Family` : `കുടുംബം കാണുക`}
+        <span style={{ opacity: 0.7, fontSize: '12px', marginLeft: '2px' }}>({branches.length})</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+          style={{ width: '14px', height: '14px', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '8px' }}>
+          {branches.map((branch) => (
+            <a
+              key={branch.id}
+              href={`/members/${branch.id}`}
+              className="fam-card-btn"
+              style={{ fontSize: '13px', justifyContent: 'space-between' }}
+            >
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {branch.name}
+              </span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0 }}>
+                <path d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
 const Members = () => {
   const [isLoading, setIsLoading] = useState(true)
-  const { getMembersWithNewBranchRelation, newBranchData, newHomeData, members, getDeduplicatedMembers, getSharedMemberBranches, isGmailAuthenticated, googleSignIn, googleSignOut, isAuthorised, deniedEmail, isGmailLoading, isEnglish } = useStateContext()
+  const { getMembersWithNewBranchRelation, newBranchData, newHomeData, members, getDeduplicatedMembers, isGmailAuthenticated, googleSignIn, googleSignOut, isAuthorised, deniedEmail, isGmailLoading, isEnglish } = useStateContext()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('branch')
   const [error, setError] = useState(null)
@@ -110,22 +115,35 @@ const Members = () => {
     fetchData()
   }, [isGmailAuthenticated])
 
-  // Late members — deduplicated by sharedMemberId or by normalized name
+  // Late members — grouped by name so the same person appears ONCE,
+  // collecting every branch they are linked to (via relatedTo).
   const lateMembers = useMemo(() => {
     if (!members) return []
     const late = members.filter(m =>
       (m.relation === 'Late Parent / Additional Member' && (m.subType === 'late' || !m.subType)) || m.isLate === true
     )
-    // Deduplicate: by sharedMemberId if available, otherwise by normalized name
-    const seen = new Set()
-    return late.filter(m => {
-      const key = m.sharedMemberId
-        ? `shared:${m.sharedMemberId}`
-        : `name:${(m.name || '').trim().toLowerCase()}`
-      if (seen.has(key)) return false
-      seen.add(key)
-      return true
-    })
+    const hasImg = (url) => url && !['/default-avatar.svg', '/home.png', 'placeholder'].some(s => url.toLowerCase().includes(s))
+
+    const groups = new Map()
+    for (const m of late) {
+      const key = (m.name || '').trim().toLowerCase()
+      if (!key) continue
+      if (!groups.has(key)) {
+        groups.set(key, { member: m, branchIds: new Set() })
+      }
+      const g = groups.get(key)
+      // Prefer the entry that has a real photo for the display card
+      if (!hasImg(g.member.memberImgUrl) && hasImg(m.memberImgUrl)) {
+        g.member = m
+      }
+      // Collect the branch this entry is linked to
+      const branchId = m.relatedTo || m.id
+      if (branchId) g.branchIds.add(branchId)
+    }
+    return Array.from(groups.values()).map(({ member, branchIds }) => ({
+      ...member,
+      branchIds: Array.from(branchIds),
+    }))
   }, [members])
 
   const dataSource = useMemo(() => {
@@ -272,7 +290,7 @@ const Members = () => {
                         {filter === 'late' && isLateMember ? (
                           <LateMemberBranches
                             member={member}
-                            getSharedMemberBranches={getSharedMemberBranches}
+                            members={members}
                             isEnglish={isEnglish}
                           />
                         ) : (
