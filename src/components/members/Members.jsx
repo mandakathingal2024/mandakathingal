@@ -156,9 +156,12 @@ const Members = () => {
                   const initials = getInitials(member.name)
                   const hasImage = member.memberImgUrl && !['/default-avatar.svg', '/home.png', 'placeholder'].some(s => member.memberImgUrl.toLowerCase().includes(s))
 
+                  const isLateMember = member.isLate === true ||
+                    (member.relation === 'Late Parent / Additional Member' && (member.subType === 'late' || !member.subType))
+
                   return (
                     <div key={member.id} className="fam-card">
-                      <div className="fam-card-img">
+                      <div className="fam-card-img" style={{ position: 'relative' }}>
                         {hasImage ? (
                           <Image
                             src={member.memberImgUrl}
@@ -169,6 +172,11 @@ const Members = () => {
                           />
                         ) : (
                           <div className="fam-card-initials">{initials}</div>
+                        )}
+                        {isLateMember && (
+                          <span className="fam-card-tag fam-card-tag-late">
+                            {isEnglish ? 'Late' : 'മരണം'}
+                          </span>
                         )}
                       </div>
                       <div className="fam-card-body">
