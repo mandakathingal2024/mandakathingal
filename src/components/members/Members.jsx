@@ -69,6 +69,41 @@ const Members = () => {
     })
   }, [members])
 
+  // Build a lookup: memberId → member data (for finding branch names)
+  const memberMap = useMemo(() => {
+    if (!members) return {}
+    const map = {}
+    members.forEach((m) => { map[m.id] = m })
+    return map
+  }, [members])
+
+  // For late members: find all branches each late member belongs to
+  // This handles both shared (sharedMemberId) and non-shared late members
+  const lateMemberBranches = useMemo(() => {
+    if (!members) return {}
+    const map = {} // lateMemberId → [{ id, name, place }]
+    const allLate = members.filter(m =>
+      (m.relation === 'Late Parent / Additional Member' && (m.subType === 'late' || !m.subType)) || m.isLate === true
+    )
+    allLate.forEach((m) => {
+      // Find the parent (relatedTo) this late member is under
+      const parent = m.relatedTo ? memberMap[m.relatedTo] : null
+      if (!parent) return
+
+      // If shared, group under the first occurrence's id (the one in lateMembers list)
+      const key = m.sharedMemberId
+        ? lateMembers.find(lm => lm.sharedMemberId === m.sharedMemberId)?.id || m.id
+        : m.id
+
+      if (!map[key]) map[key] = []
+      // Avoid duplicate branches
+      if (!map[key].some(b => b.id === parent.id)) {
+        map[key].push({ id: parent.id, name: parent.name, place: parent.place })
+      }
+    })
+    return map
+  }, [members, memberMap, lateMembers])
+
   const dataSource = useMemo(() => {
     if (filter === 'all') {
       // Deduplicate shared late members — they should appear once
@@ -210,12 +245,49 @@ const Members = () => {
                       <div className="fam-card-body">
                         <h4 className="fam-card-name">{member.name}</h4>
                         {member.place && <p className="fam-card-place">{member.place}</p>}
-                        <a href={`/members/${member.id}`} className="fam-card-btn">
-                          {isEnglish ? 'View Family' : 'കുടുംബം കാണുക'}
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M5 12h14M13 6l6 6-6 6" />
-                          </svg>
-                        </a>
+
+                        {/* Show associated branches for late members */}
+                        {filter === 'late' && lateMemberBranches[member.id]?.length > 0 && (
+                          <div style={{
+                            marginTop: '8px', padding: '8px 12px', borderRadius: '8px',
+                            background: 'rgba(92,61,46,0.05)', border: '1px solid rgba(92,61,46,0.12)',
+                          }}>
+                            <p style={{
+                              fontSize: '11px', fontWeight: 600, color: 'var(--ink-faint)',
+                              textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 6px',
+                            }}>
+                              {isEnglish ? 'Family of' : 'കുടുംബം'}
+                            </p>
+                            {lateMemberBranches[member.id].map((branch) => (
+                              <a
+                                key={branch.id}
+                                href={`/members/${branch.id}`}
+                                style={{
+                                  display: 'flex', alignItems: 'center', gap: '6px',
+                                  padding: '4px 0', textDecoration: 'none', color: 'inherit',
+                                  fontSize: '13px',
+                                }}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--brass)" strokeWidth="2" style={{ flexShrink: 0 }}>
+                                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
+                                </svg>
+                                <span style={{ fontWeight: 600, color: 'var(--palm-deep)' }}>{branch.name}</span>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ink-faint)" strokeWidth="2" style={{ marginLeft: 'auto', flexShrink: 0 }}>
+                                  <path d="M5 12h14M13 6l6 6-6 6" />
+                                </svg>
+                              </a>
+                            ))}
+                          </div>
+                        )}
+
+                        {filter !== 'late' && (
+                          <a href={`/members/${member.id}`} className="fam-card-btn">
+                            {isEnglish ? 'View Family' : 'കുടുംബം കാണുക'}
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M5 12h14M13 6l6 6-6 6" />
+                            </svg>
+                          </a>
+                        )}
                       </div>
                     </div>
                   )
