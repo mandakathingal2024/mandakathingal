@@ -26,9 +26,67 @@ function getInitials(name) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
+// Shows all associated branch links for a shared late member
+const LateMemberBranches = ({ member, getSharedMemberBranches, isEnglish }) => {
+  const [branches, setBranches] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (member.sharedMemberId) {
+      getSharedMemberBranches(member.sharedMemberId).then((found) => {
+        setBranches(found)
+        setLoading(false)
+      })
+    } else {
+      setLoading(false)
+    }
+  }, [member.sharedMemberId, getSharedMemberBranches])
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0' }}>
+        <div style={{
+          width: '20px', height: '20px', border: '2px solid var(--paper-3)',
+          borderTopColor: 'var(--brass)', borderRadius: '50%',
+          animation: 'spin 0.8s linear infinite',
+        }} />
+      </div>
+    )
+  }
+
+  // If shared across multiple branches, show all branch links
+  if (branches.length > 1) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <p style={{ fontSize: '12px', color: 'var(--ink-faint)', margin: '0 0 2px', fontFamily: 'var(--serif)' }}>
+          {isEnglish ? `Family of:` : `കുടുംബം:`}
+        </p>
+        {branches.map((branch) => (
+          <a key={branch.id} href={`/members/${branch.id}`} className="fam-card-btn" style={{ fontSize: '13px' }}>
+            {branch.name}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          </a>
+        ))}
+      </div>
+    )
+  }
+
+  // Fallback: single View Family button
+  return (
+    <a href={`/members/${member.relatedTo || member.id}`} className="fam-card-btn">
+      {isEnglish ? 'View Family' : 'കുടുംബം കാണുക'}
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M5 12h14M13 6l6 6-6 6" />
+      </svg>
+    </a>
+  )
+}
+
 const Members = () => {
   const [isLoading, setIsLoading] = useState(true)
-  const { getMembersWithNewBranchRelation, newBranchData, newHomeData, members, getDeduplicatedMembers, isGmailAuthenticated, googleSignIn, googleSignOut, isAuthorised, deniedEmail, isGmailLoading, isEnglish } = useStateContext()
+  const { getMembersWithNewBranchRelation, newBranchData, newHomeData, members, getDeduplicatedMembers, getSharedMemberBranches, isGmailAuthenticated, googleSignIn, googleSignOut, isAuthorised, deniedEmail, isGmailLoading, isEnglish } = useStateContext()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('branch')
   const [error, setError] = useState(null)
@@ -211,12 +269,20 @@ const Members = () => {
                       <div className="fam-card-body">
                         <h4 className="fam-card-name">{member.name}</h4>
                         {member.place && <p className="fam-card-place">{member.place}</p>}
-                        <a href={`/members/${member.relatedTo || member.id}`} className="fam-card-btn">
-                          {isEnglish ? 'View Family' : 'കുടുംബം കാണുക'}
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M5 12h14M13 6l6 6-6 6" />
-                          </svg>
-                        </a>
+                        {filter === 'late' && isLateMember ? (
+                          <LateMemberBranches
+                            member={member}
+                            getSharedMemberBranches={getSharedMemberBranches}
+                            isEnglish={isEnglish}
+                          />
+                        ) : (
+                          <a href={`/members/${member.relatedTo || member.id}`} className="fam-card-btn">
+                            {isEnglish ? 'View Family' : 'കുടുംബം കാണുക'}
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M5 12h14M13 6l6 6-6 6" />
+                            </svg>
+                          </a>
+                        )}
                       </div>
                     </div>
                   )
