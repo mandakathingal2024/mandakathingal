@@ -44,17 +44,19 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Admins: authenticated reads (needed for admin dashboard)
-    // Writes via Admin SDK only — prevents privilege escalation
+    // Admins: contains password hashes — readable ONLY by actual admins,
+    // identified by the `admin` custom claim on their Firebase token (minted
+    // at admin login). Regular Google sign-in users cannot read this.
+    // Writes via Admin SDK only — prevents privilege escalation.
     match /admins/{docId} {
-      allow read: if request.auth != null;
+      allow read: if request.auth != null && request.auth.token.admin == true;
       allow write: if false;
     }
 
-    // Activity Log: authenticated reads (admin dashboard)
+    // Activity Log: admin-only reads (admin dashboard)
     // Writes via Admin SDK only
     match /activityLog/{docId} {
-      allow read: if request.auth != null;
+      allow read: if request.auth != null && request.auth.token.admin == true;
       allow write: if false;
     }
 

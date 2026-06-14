@@ -9,6 +9,63 @@ const ALLOWED_COLLECTIONS = [
   'websiteContent', 'gmail', 'admins', 'activityLog',
 ];
 
+// Maps each collection to the dashboard "page" it belongs to. A non-superAdmin
+// can only write to a collection if that page is in their visiblePages list.
+const COLLECTION_PAGE = {
+  gallery: 1, members: 2, events: 3, executives: 4,
+  gmail: 5, websiteContent: 6, admins: 7,
+};
+
+// Maps a write action to the permission flag it requires.
+const ACTION_PERMISSION = {
+  add: 'add', set: 'edit', update: 'edit',
+  delete: 'delete', deleteRecursive: 'delete',
+};
+
+/**
+ * Authorize a write based on the admin's role + permissions (carried in the
+ * signed, tamper-proof session token). Returns { ok } or { ok:false, status, error }.
+ */
+function authorizeWrite(session, action, collectionName) {
+  const role = session.role;
+
+  // Super Admins can do everything
+  if (role === 'superAdmin') return { ok: true };
+
+  // activityLog: any authenticated admin may append their own activity entries
+  if (collectionName === 'activityLog') {
+    if (action === 'add') return { ok: true };
+    return { ok: false, status: 403, error: 'Not allowed' };
+  }
+
+  // Admin management is restricted to Super Admins
+  if (collectionName === 'admins') {
+    return { ok: false, status: 403, error: 'Admin management is restricted to Super Admins' };
+  }
+
+  // Legacy token issued before permissions were embedded — force a re-login
+  // so the admin gets a token carrying their permissions.
+  if (!session.permissions) {
+    return { ok: false, status: 401, error: 'Session expired. Please log in again.' };
+  }
+
+  const perms = session.permissions;
+
+  // Section access: the collection's page must be in the admin's visiblePages
+  const page = COLLECTION_PAGE[collectionName];
+  if (page && !(perms.visiblePages || []).includes(page)) {
+    return { ok: false, status: 403, error: 'You do not have access to this section' };
+  }
+
+  // Action permission: add/edit/delete must be granted
+  const permKey = ACTION_PERMISSION[action];
+  if (permKey && !perms[permKey]) {
+    return { ok: false, status: 403, error: `You do not have permission to ${permKey === 'edit' ? 'edit' : permKey} here` };
+  }
+
+  return { ok: true };
+}
+
 /**
  * Server-side proxy for admin Firestore writes.
  * All writes are authenticated via the admin session cookie/token.
@@ -44,6 +101,12 @@ export async function POST(request) {
   // Validate action
   if (!['add', 'set', 'update', 'delete', 'deleteRecursive'].includes(action)) {
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+  }
+
+  // Enforce role/permission for this action + collection
+  const authz = authorizeWrite(session, action, collectionName);
+  if (!authz.ok) {
+    return NextResponse.json({ error: authz.error }, { status: authz.status });
   }
 
   try {

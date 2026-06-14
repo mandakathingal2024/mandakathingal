@@ -62,6 +62,9 @@ export function createSessionToken(admin) {
   return signToken({
     id: admin.id,
     role: admin.role,
+    // Embedded so the server can enforce permissions without a DB lookup.
+    // The token is HMAC-signed, so these cannot be tampered with client-side.
+    permissions: admin.permissions || null,
     sessionVersion: admin.sessionVersion || 0,
     ts: Date.now(),
   });

@@ -53,15 +53,24 @@ async function adminWrite(action, collectionName, data, id) {
 }
 
 // Establish a Firebase Auth session for the logged-in admin by minting a
-// custom token server-side and signing in with it. This satisfies the
-// Firestore rule `request.auth != null` so the dashboard can read protected
-// collections on any device — without requiring a separate Google sign-in.
+// custom token server-side and signing in with it. The token carries an
+// `admin: true` custom claim, which Firestore rules require to read the
+// protected admins/activityLog collections — so the dashboard works on any
+// device without a separate Google sign-in.
 async function ensureFirebaseAdminAuth() {
-  // Already signed in to Firebase — nothing to do
-  if (auth.currentUser) return
   const token = localStorage.getItem('adminToken')
   if (!token) return
   try {
+    // If already signed in WITH the admin claim, nothing to do. A plain Google
+    // session (no admin claim) must still be upgraded to an admin session.
+    if (auth.currentUser) {
+      try {
+        const result = await auth.currentUser.getIdTokenResult()
+        if (result.claims && result.claims.admin === true) return
+      } catch (e) {
+        // Couldn't read claims — fall through and re-establish the session
+      }
+    }
     const res = await fetch('/api/firebase-token', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}` },
