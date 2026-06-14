@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { useStateContext } from '../../../context/stateContext'
 import { ExecutivesSkeleton } from '../Skeleton'
 import PageBanner from '../shared/PageBanner'
+import { cldUrl } from '../../lib/cloudinary'
 
 const Executive = () => {
   const [isLoading, setIsLoading] = useState(true)
@@ -43,7 +44,7 @@ const Executive = () => {
                 <div key={executive.id} className="th-team-card">
                   <div className="th-team-card-img">
                     <Image
-                      src={executive?.executiveImgUrl || '/default-avatar.svg'}
+                      src={cldUrl(executive?.executiveImgUrl || '/default-avatar.svg', { w: 400 })}
                       alt={executive?.name || ''}
                       width={200}
                       height={200}

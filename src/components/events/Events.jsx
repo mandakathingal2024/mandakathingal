@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react'
 import { useStateContext } from '../../../context/stateContext'
 import { EventsSkeleton } from '../Skeleton'
 import PageBanner from '../shared/PageBanner'
+import { cldUrl } from '../../lib/cloudinary'
 
 const Events = () => {
   const [isLoading, setIsLoading] = useState(true)
@@ -36,8 +37,9 @@ const Events = () => {
               <article className="th-card" key={event.id}>
                 <div className="th-card-media">
                   <img
-                    src={event?.eventImgUrl || ''}
+                    src={cldUrl(event?.eventImgUrl || '', { w: 800 })}
                     alt={event?.title || ''}
+                    loading="lazy"
                     onError={(e) => {
                       e.target.style.display = 'none'
                       e.target.parentElement.style.cssText = 'width:100%;height:200px;background:var(--paper-2);display:flex;align-items:center;justify-content:center;color:var(--ink-faint);font-size:14px'

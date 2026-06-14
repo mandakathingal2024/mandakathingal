@@ -18,6 +18,7 @@ const GoogleIcon = ({ style }) => (
 )
 import { MembersSkeleton } from '../Skeleton'
 import PageBanner from '../shared/PageBanner'
+import { cldUrl } from '../../lib/cloudinary'
 
 function getInitials(name) {
   if (!name) return '?'
@@ -269,7 +270,7 @@ const Members = () => {
                       <div className="fam-card-img" style={{ position: 'relative' }}>
                         {hasImage ? (
                           <Image
-                            src={member.memberImgUrl}
+                            src={cldUrl(member.memberImgUrl, { w: 400 })}
                             alt={member.name || 'Member'}
                             width={200}
                             height={220}

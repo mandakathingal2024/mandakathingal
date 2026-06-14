@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { useStateContext } from '../../../context/stateContext'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../../../context/firebaseConfig'
+import { cldUrl } from '../../lib/cloudinary'
 
 function getInitials(name) {
   if (!name) return '?'
@@ -100,7 +101,7 @@ const Leadership = () => {
                 <div className="avatar">
                   {hasImage ? (
                     <Image
-                      src={member.img}
+                      src={cldUrl(member.img, { w: 208 })}
                       alt={name}
                       width={104}
                       height={104}

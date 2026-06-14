@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react'
 import { useStateContext } from '../../../context/stateContext'
 import { GallerySkeleton } from '../Skeleton'
 import PageBanner from '../shared/PageBanner'
+import { cldUrl } from '../../lib/cloudinary'
 
 const Gallery = () => {
   const [isLoading, setIsLoading] = useState(true)
@@ -35,7 +36,7 @@ const Gallery = () => {
             {gallery && gallery.length > 0 ? gallery.map((image) => (
               <div className="th-gallery-item" key={image.id}>
                 <div className="gallery-wrap">
-                  <img src={image.galleryImgUrl} alt={image.description || ''} />
+                  <img src={cldUrl(image.galleryImgUrl, { w: 800 })} alt={image.description || ''} loading="lazy" />
                   <div className="gallery-info">
                     <h4>{image.description}</h4>
                     <div className="gallery-links">

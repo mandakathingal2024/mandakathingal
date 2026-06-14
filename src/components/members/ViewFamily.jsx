@@ -8,6 +8,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore'
 import { db } from '../../../context/firebaseConfig'
 import { ViewFamilySkeleton } from '../Skeleton'
 import PageBanner from '../shared/PageBanner'
+import { cldUrl } from '../../lib/cloudinary'
 
 function getInitials(name) {
   if (!name) return '?'
@@ -31,8 +32,9 @@ const HouseImage = ({ src }) => {
   return (
     <div className="th-story-img" style={{ borderRadius: '12px', display: show ? 'block' : 'none' }}>
       <img
-        src={src}
+        src={cldUrl(src, { w: 900 })}
         alt="House"
+        loading="lazy"
         style={{ borderRadius: '12px', width: '100%', height: 'auto' }}
         onLoad={(e) => {
           // Real house photos are typically large; dummy placeholders are small
@@ -52,7 +54,7 @@ const MemberImage = ({ src, name, width, height, style }) => {
       <Image
         width={width}
         height={height}
-        src={src}
+        src={cldUrl(src, { w: (width || 200) * 2 })}
         alt={name || ''}
         style={{ objectFit: 'cover', objectPosition: 'center top', width: '100%', height: '100%', ...style }}
       />

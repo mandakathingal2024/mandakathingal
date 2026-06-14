@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { useStateContext } from '../../../context/stateContext'
 import { collection, getDocs, query, where, limit } from 'firebase/firestore'
 import { db } from '../../../context/firebaseConfig'
+import { cldUrl } from '../../lib/cloudinary'
 
 const RecentActivities = () => {
   const { isEnglish } = useStateContext()
@@ -52,7 +53,7 @@ const RecentActivities = () => {
             return (
               <div key={activity.id} className="acard">
                 <Image
-                  src={activity.eventImgUrl}
+                  src={cldUrl(activity.eventImgUrl, { w: 600 })}
                   alt={title}
                   fill
                   style={{ objectFit: 'cover' }}

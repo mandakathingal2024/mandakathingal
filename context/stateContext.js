@@ -1,6 +1,6 @@
 'use client'
 import React, {  createContext, useContext,useEffect,useRef,useState } from "react"
-import { db,storage,auth } from "./firebaseConfig"
+import { db,auth } from "./firebaseConfig"
 import { signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signOut, signInWithCustomToken } from "firebase/auth";
 import { doc, setDoc,getDoc, deleteDoc,addDoc,collection, getDocs, query, where, orderBy, startAt, endAt ,updateDoc, serverTimestamp  } from "firebase/firestore";
 // import { ref, deleteObject } from 'firebase/storage';
