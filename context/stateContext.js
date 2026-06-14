@@ -573,28 +573,24 @@ export const StateContext =({children})=>{
       }
 
       async function deleteDocument(collectionName, id) {
-        try {
-          if (collectionName === 'members') {
-            // Use server-side recursive delete for members
-            await adminWrite('deleteRecursive', 'members', null, id);
-            setMembers((members) => members?.filter((member) => member.id !== id));
-          } else {
-            await adminWrite('delete', collectionName, null, id);
-            if (collectionName === 'gallery') {
-              setGallery((gallery) => gallery?.filter((g) => g.id !== id));
-            }
-            if (collectionName === 'events') {
-              setEvents((events) => events?.filter((event) => event.id !== id));
-            }
-            if (collectionName === 'executives') {
-              setExecutives((executives) => executives?.filter((executive) => executive.id !== id));
-            }
-            if (collectionName === 'gmail') {
-              setGmail((gmail) => gmail?.filter((g) => g.id !== id));
-            }
+        if (collectionName === 'members') {
+          // Use server-side recursive delete for members
+          await adminWrite('deleteRecursive', 'members', null, id);
+          setMembers((members) => members?.filter((member) => member.id !== id));
+        } else {
+          await adminWrite('delete', collectionName, null, id);
+          if (collectionName === 'gallery') {
+            setGallery((gallery) => gallery?.filter((g) => g.id !== id));
           }
-        } catch (error) {
-          console.error('Error deleting document:', error);
+          if (collectionName === 'events') {
+            setEvents((events) => events?.filter((event) => event.id !== id));
+          }
+          if (collectionName === 'executives') {
+            setExecutives((executives) => executives?.filter((executive) => executive.id !== id));
+          }
+          if (collectionName === 'gmail') {
+            setGmail((gmail) => gmail?.filter((g) => g.id !== id));
+          }
         }
       }
 

@@ -666,11 +666,18 @@ const AdminManagement = () => {
   const handleDelete = React.useCallback((row) => setDeleteTarget(row), []);
 
   const handleDeleteConfirm = React.useCallback(async () => {
-    await deleteDocument('admins', deleteTarget.id);
-    await logActivity('Deleted', 'Admins', `Deleted admin "${deleteTarget.name}"`);
-    setDeleteTarget(null);
-    await fetchAdmins();
-    setToast({ open: true, message: 'Admin deleted successfully.' });
+    try {
+      // Prefer custom id, fall back to the Firestore doc id (seeded admins lack a custom id)
+      await deleteDocument('admins', deleteTarget.id || deleteTarget.docId);
+      await logActivity('Deleted', 'Admins', `Deleted admin "${deleteTarget.name}"`);
+      setDeleteTarget(null);
+      await fetchAdmins();
+      setToast({ open: true, message: 'Admin deleted successfully.' });
+    } catch (err) {
+      console.error(err);
+      setDeleteTarget(null);
+      setToast({ open: true, message: `Error: ${err.message || 'Failed to delete admin'}`, severity: 'error' });
+    }
   }, [deleteTarget, deleteDocument, logActivity]);
 
   const handleDeleteCancel = React.useCallback(() => setDeleteTarget(null), []);
@@ -723,6 +730,7 @@ const AdminManagement = () => {
       <SuccessToast
         open={toast.open}
         message={toast.message}
+        severity={toast.severity}
         onClose={handleToastClose}
       />
     </Container>

@@ -89,11 +89,21 @@ export async function POST(request) {
         if (!id) {
           return NextResponse.json({ error: 'Missing id' }, { status: 400 });
         }
+        // Try to find the document by its custom 'id' field first
         const snap = await colRef.where('id', '==', id).limit(1).get();
         if (!snap.empty) {
           await snap.docs[0].ref.delete();
+          return NextResponse.json({ success: true });
         }
-        return NextResponse.json({ success: true });
+        // Fall back: treat the id as the Firestore document ID.
+        // Needed for docs seeded manually (e.g. admins) that lack a custom id field.
+        const byDocId = colRef.doc(id);
+        const docSnap = await byDocId.get();
+        if (docSnap.exists) {
+          await byDocId.delete();
+          return NextResponse.json({ success: true });
+        }
+        return NextResponse.json({ error: 'Document not found' }, { status: 404 });
       }
 
       case 'deleteRecursive': {
