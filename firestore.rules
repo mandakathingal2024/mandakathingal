@@ -2,10 +2,14 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Members: only authenticated users can read (Gmail sign-in required)
-    // All writes go through server-side Admin SDK (bypasses rules)
+    // Members: readable only by allow-listed family members (the `member`
+    // custom claim, granted server-side via /api/member-access after the email
+    // is verified against the gmail allow-list) or admins. A plain Google
+    // sign-in is NOT enough — this enforces the allow-list as a real boundary.
+    // All writes go through server-side Admin SDK (bypasses rules).
     match /members/{docId} {
-      allow read: if request.auth != null;
+      allow read: if request.auth != null
+        && (request.auth.token.member == true || request.auth.token.admin == true);
       allow write: if false;
     }
 
@@ -37,10 +41,12 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Gmail access list: authenticated users can read (to check access)
-    // Writes via Admin SDK only
+    // Gmail access list: admin-only reads. The public allow-list check now
+    // happens server-side (/api/member-access via Admin SDK), so regular users
+    // no longer need — or get — read access to the full email list.
+    // Writes via Admin SDK only.
     match /gmail/{docId} {
-      allow read: if request.auth != null;
+      allow read: if request.auth != null && request.auth.token.admin == true;
       allow write: if false;
     }
 

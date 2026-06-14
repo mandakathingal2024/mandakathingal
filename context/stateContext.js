@@ -697,9 +697,40 @@ export const StateContext =({children})=>{
         }
       }
       async function getGmail(gmail) {
+        // Preferred path: server-side allow-list check. This also grants the
+        // `member` custom claim so Firestore rules can gate member reads.
+        const currentUser = auth.currentUser
+        if (currentUser) {
+          try {
+            const idToken = await currentUser.getIdToken()
+            const res = await fetch('/api/member-access', {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${idToken}` },
+            })
+            if (res.ok) {
+              const data = await res.json()
+              if (data.authorized) {
+                // Refresh the token so the new `member` claim is live for reads
+                await currentUser.getIdToken(true)
+                setIsGmailAuthenticated(true)
+                return
+              }
+              // Authoritative "not on the allow-list"
+              setIsAuthorised(false)
+              setDeniedEmail(gmail)
+              return
+            }
+            // Non-OK response (e.g. server error) — fall through to legacy check
+          } catch (e) {
+            // Network/other error — fall through to legacy check below
+          }
+        }
+
+        // Fallback: legacy client-side allow-list read. Keeps members working
+        // if the server endpoint is unavailable (valid while rules still allow
+        // authenticated reads).
         try {
           const membersRef = collection(db, "gmail");
-          // Try exact match first (works with strict Firestore rules)
           const q = query(membersRef, where("gmail", "==", gmail.toLowerCase()));
           const querySnapshot = await getDocs(q);
 
@@ -708,7 +739,6 @@ export const StateContext =({children})=>{
             return querySnapshot.docs[0].data();
           }
 
-          // Fallback: try original case (for old entries stored with mixed case)
           if (gmail !== gmail.toLowerCase()) {
             const q2 = query(membersRef, where("gmail", "==", gmail));
             const querySnapshot2 = await getDocs(q2);
