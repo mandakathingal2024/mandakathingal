@@ -36,6 +36,16 @@ async function adminWrite(action, collectionName, data, id) {
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Request failed' }))
+    // 401 = the admin session token is missing/expired/invalid. Clear it and
+    // send the admin back to the login screen with a clear message, instead of
+    // surfacing a confusing "Unauthorized" error mid-action.
+    if (res.status === 401 && typeof window !== 'undefined') {
+      localStorage.removeItem('adminAuth')
+      localStorage.removeItem('adminUser')
+      localStorage.removeItem('adminToken')
+      localStorage.setItem('logoutMessage', 'Your session expired. Please log in again.')
+      window.location.reload()
+    }
     throw new Error(err.error || 'Admin write failed')
   }
 
