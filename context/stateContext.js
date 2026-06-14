@@ -1,7 +1,7 @@
 'use client'
 import React, {  createContext, useContext,useEffect,useRef,useState } from "react"
 import { db,storage,auth } from "./firebaseConfig"
-import { signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signOut } from "firebase/auth";
+import { signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signOut, signInWithCustomToken } from "firebase/auth";
 import { doc, setDoc,getDoc, deleteDoc,addDoc,collection, getDocs, query, where, orderBy, startAt, endAt ,updateDoc, serverTimestamp  } from "firebase/firestore";
 // import { ref, deleteObject } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
@@ -40,6 +40,31 @@ async function adminWrite(action, collectionName, data, id) {
   }
 
   return res.json()
+}
+
+// Establish a Firebase Auth session for the logged-in admin by minting a
+// custom token server-side and signing in with it. This satisfies the
+// Firestore rule `request.auth != null` so the dashboard can read protected
+// collections on any device — without requiring a separate Google sign-in.
+async function ensureFirebaseAdminAuth() {
+  // Already signed in to Firebase — nothing to do
+  if (auth.currentUser) return
+  const token = localStorage.getItem('adminToken')
+  if (!token) return
+  try {
+    const res = await fetch('/api/firebase-token', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+    })
+    if (!res.ok) return
+    const { token: firebaseToken } = await res.json()
+    if (firebaseToken) {
+      await signInWithCustomToken(auth, firebaseToken)
+    }
+  } catch (e) {
+    // Non-fatal — reads will fail until a valid Firebase session exists
+    console.error('Failed to establish Firebase admin auth:', e)
+  }
 }
 
 export const StateContext =({children})=>{
@@ -84,8 +109,9 @@ export const StateContext =({children})=>{
           setIsAuthenticated(true)
           if (savedPage !== null) setPageValue(Number(savedPage))
 
-          // Verify session against Firestore
-          verifySession(parsed)
+          // Re-establish the Firebase Auth session for this restored admin,
+          // then verify the session against Firestore (which needs that auth)
+          ensureFirebaseAdminAuth().finally(() => verifySession(parsed))
         } catch (e) {
           setIsAuthLoading(false)
         }
@@ -199,6 +225,10 @@ export const StateContext =({children})=>{
                 localStorage.setItem('adminToken', responseData.token)
               }
 
+              // Establish a Firebase Auth session so the dashboard can read
+              // protected collections on this device (no Google sign-in needed)
+              await ensureFirebaseAdminAuth()
+
               // Log login activity
               try {
                 await adminWrite('add', 'activityLog', {
@@ -297,6 +327,16 @@ export const StateContext =({children})=>{
       localStorage.removeItem('adminUser')
       localStorage.removeItem('adminToken')
       localStorage.setItem('logoutMessage', 'You have been logged out successfully.')
+
+      // Sign out the admin's Firebase custom-token session (no email).
+      // Leave a Google session (email present) intact — that's the public members flow.
+      try {
+        if (auth.currentUser && !auth.currentUser.email) {
+          await signOut(auth)
+        }
+      } catch (e) {
+        // Non-fatal
+      }
     }
 
     // Permission helper
@@ -689,7 +729,9 @@ export const StateContext =({children})=>{
       // Persist auth: listen for Firebase auth state on mount
       useEffect(()=>{
         const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-          if(firebaseUser){
+          // Admins sign in via custom token (no email) — that session is only
+          // for Firestore reads, not the public Gmail-gated members flow. Ignore it here.
+          if(firebaseUser && firebaseUser.email){
             setuser({ gmail: firebaseUser.email })
           } else {
             setuser(null)
