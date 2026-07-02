@@ -2,8 +2,7 @@
 import React, { useEffect, useState, useRef } from 'react'
 import Image from 'next/image'
 import { useStateContext } from '../../../context/stateContext'
-import { doc, getDoc } from 'firebase/firestore'
-import { db } from '../../../context/firebaseConfig'
+import { getPublicDoc } from '../../lib/firestoreRest'
 
 const DEFAULTS = {
   bgImage: '/Tharavadu.jpg',
@@ -66,11 +65,8 @@ const Hero = () => {
   useEffect(() => {
     const fetchHero = async () => {
       try {
-        const docRef = doc(db, 'websiteContent', 'heroBanner')
-        const snap = await getDoc(docRef)
-        if (snap.exists()) {
-          setData((prev) => ({ ...prev, ...snap.data() }))
-        }
+        const result = await getPublicDoc('websiteContent', 'heroBanner')
+        if (result) setData((prev) => ({ ...prev, ...result }))
       } catch (err) {
         console.error('Error fetching hero:', err)
       }

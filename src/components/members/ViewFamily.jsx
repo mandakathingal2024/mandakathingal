@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react'
 import { useStateContext } from '../../../context/stateContext'
 import { useRouter } from 'next/navigation'
 import { collection, query, where, getDocs } from 'firebase/firestore'
-import { db } from '../../../context/firebaseConfig'
+import { getDb } from '../../../context/firebaseConfig'
 import { ViewFamilySkeleton } from '../Skeleton'
 import PageBanner from '../shared/PageBanner'
 import { cldUrl } from '../../lib/cloudinary'
@@ -212,7 +212,7 @@ const SharedMemberTree = ({ member, getSharedMemberBranches, isEnglish }) => {
 }
 
 export const ViewFamily = ({ id }) => {
-  const { viewFamilyData, getMembersByRelatedTo, memberObj, getMemberById, getSharedMemberBranches, isGmailAuthenticated, isGmailLoading, googleSignIn, isAuthorised, deniedEmail, isEnglish } = useStateContext()
+  const { viewFamilyData, getMembersByRelatedTo, memberObj, getMemberById, getSharedMemberBranches, initGmailAuth, isGmailAuthenticated, isGmailLoading, googleSignIn, isAuthorised, deniedEmail, isEnglish } = useStateContext()
   const [isLoading, setIsLoading] = useState(true)
   const [breadcrumbChain, setBreadcrumbChain] = useState([])
   const router = useRouter()
@@ -221,6 +221,7 @@ export const ViewFamily = ({ id }) => {
   async function buildBreadcrumbChain(memberId) {
     // Fetch all ancestors in a single batch query instead of N+1 individual queries
     // First, get current member to start the chain
+    const db = await getDb()
     const membersRef = collection(db, 'members')
     const q = query(membersRef, where('id', '==', memberId))
     const snap = await getDocs(q)
@@ -271,6 +272,9 @@ export const ViewFamily = ({ id }) => {
   }
 
   // Only fetch family data AFTER Gmail authentication succeeds
+  // Start the Firebase/Gmail auth listener when this members page mounts
+  useEffect(() => { initGmailAuth() }, [])
+
   useEffect(() => {
     if (!isGmailAuthenticated) {
       setIsLoading(false)

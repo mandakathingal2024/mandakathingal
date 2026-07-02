@@ -1,10 +1,32 @@
 'use client'
 import React, {  createContext, useContext,useEffect,useRef,useState } from "react"
-import { db,auth } from "./firebaseConfig"
-import { signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signOut, signInWithCustomToken } from "firebase/auth";
-import { doc, setDoc,getDoc, deleteDoc,addDoc,collection, getDocs, query, where, orderBy, startAt, endAt ,updateDoc, serverTimestamp  } from "firebase/firestore";
-// import { ref, deleteObject } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
+
+// Firebase is loaded lazily so it stays out of the shared bundle. These
+// module-level holders are populated by loadFirebase() on first use, which
+// lets every existing call site (collection(db,...), signInWithPopup(auth,...))
+// keep working unchanged once loadFirebase() has run.
+let db, auth;
+let collection, getDocs, query, where, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, startAt, endAt;
+let signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signOut, signInWithCustomToken;
+
+let _fbPromise = null;
+function loadFirebase() {
+  if (!_fbPromise) {
+    _fbPromise = (async () => {
+      const [cfg, fs, au] = await Promise.all([
+        import('./firebaseConfig'),
+        import('firebase/firestore'),
+        import('firebase/auth'),
+      ]);
+      db = await cfg.getDb();
+      auth = await cfg.getAuthInstance();
+      ({ collection, getDocs, query, where, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, startAt, endAt } = fs);
+      ({ signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signOut, signInWithCustomToken } = au);
+    })();
+  }
+  return _fbPromise;
+}
 
 
 const Context=createContext()
@@ -61,6 +83,7 @@ async function ensureFirebaseAdminAuth() {
   const token = localStorage.getItem('adminToken')
   if (!token) return
   try {
+    await loadFirebase()
     // If already signed in WITH the admin claim, nothing to do. A plain Google
     // session (no admin claim) must still be upgraded to an admin session.
     if (auth.currentUser) {
@@ -142,6 +165,7 @@ export const StateContext =({children})=>{
     // Verify that the admin session is still valid
     async function verifySession(admin) {
       try {
+        await loadFirebase()
         const adminsRef = collection(db, 'admins')
 
         // Try finding by id first, then username
@@ -350,6 +374,7 @@ export const StateContext =({children})=>{
       // Sign out the admin's Firebase custom-token session (no email).
       // Leave a Google session (email present) intact — that's the public members flow.
       try {
+        await loadFirebase()
         if (auth.currentUser && !auth.currentUser.email) {
           await signOut(auth)
         }
@@ -408,6 +433,7 @@ export const StateContext =({children})=>{
     // Uses Firestore queries since the `members` state may only contain a single family's data
     async function getSharedMemberBranches(sharedMemberId) {
       if (!sharedMemberId) return []
+      await loadFirebase()
       try {
         const membersRef = collection(db, 'members')
         const q = query(membersRef, where('sharedMemberId', '==', sharedMemberId))
@@ -434,6 +460,7 @@ export const StateContext =({children})=>{
 
     async function searchMembersByName(inputString) {
       if(inputString!==''){
+        await loadFirebase()
         const membersCollectionRef = collection(db, "members");
       
         // Create a query to find documents where 'name' starts with the input string
@@ -474,6 +501,7 @@ export const StateContext =({children})=>{
           return { branches: newBranchData, newHomes: newHomeData };
         }
 
+        await loadFirebase()
         const membersCollection = collection(db, 'members');
         const querySnapshot = await getDocs(membersCollection);
 
@@ -499,6 +527,7 @@ export const StateContext =({children})=>{
 
       async function fetchAllMembers() {
         try {
+          await loadFirebase()
           const membersCollection = collection(db, 'members');
           const querySnapshot = await getDocs(membersCollection);
           const membersArray = [];
@@ -515,6 +544,7 @@ export const StateContext =({children})=>{
 
       async function getMembersByRelatedTo(id) {
         try {
+          await loadFirebase()
           const membersCollection = collection(db, "members");
           const q = query(membersCollection, where("relatedTo", "==", id));
           const querySnapshot = await getDocs(q);
@@ -569,6 +599,7 @@ export const StateContext =({children})=>{
   
       async function fetchAllEvents() {
         try {
+          await loadFirebase()
           const eventsCollection = collection(db, 'events');
           const querySnapshot = await getDocs(eventsCollection);
           const eventsData = querySnapshot.docs.map((doc )=> ({
@@ -585,6 +616,7 @@ export const StateContext =({children})=>{
 
       async function fetchAllGallery() {
         try {
+          await loadFirebase()
           const galleryCollection = collection(db, 'gallery');
           const querySnapshot = await getDocs(galleryCollection);
           const galleryData = querySnapshot.docs.map((doc )=> ({
@@ -601,6 +633,7 @@ export const StateContext =({children})=>{
 
       async function fetchAllExecutives() {
         try {
+          await loadFirebase()
           const executivesCollection = collection(db, 'executives');
           const querySnapshot = await getDocs(executivesCollection);
           const executivesData = querySnapshot.docs.map((doc )=> ({
@@ -677,6 +710,7 @@ export const StateContext =({children})=>{
       }
 
       const googleSignIn = async () => {
+        await loadFirebase()
         const provider = new GoogleAuthProvider()
         try {
           // Try popup first (works on most mobile and all desktop browsers)
@@ -697,6 +731,7 @@ export const StateContext =({children})=>{
         }
       }
       async function getGmail(gmail) {
+        await loadFirebase()
         // Preferred path: server-side allow-list check. This also grants the
         // `member` custom claim so Firestore rules can gate member reads.
         const currentUser = auth.currentUser
@@ -757,6 +792,7 @@ export const StateContext =({children})=>{
         }
       }
       const googleSignOut=async()=>{
+          await loadFirebase()
           await signOut(auth)
           setuser(null)
           setIsGmailAuthenticated(false)
@@ -764,23 +800,23 @@ export const StateContext =({children})=>{
           setDeniedEmail(null)
       }
 
-      // Handle mobile redirect result after page reload
-      useEffect(()=>{
+      // Set up the Gmail (members) auth listener ON DEMAND — only when a
+      // members page calls initGmailAuth(). This is what keeps Firebase out of
+      // the public pages that never touch member data.
+      const gmailAuthStarted = useRef(false)
+      const initGmailAuth = React.useCallback(async () => {
+        if (gmailAuthStarted.current) return
+        gmailAuthStarted.current = true
+        await loadFirebase()
+        // Mobile redirect sign-in result (after a page reload)
         getRedirectResult(auth).then((result) => {
-          if(result && result.user){
-            setuser({ gmail: result.user.email })
-          }
-        }).catch(() => {
-          setIsGmailLoading(false)
-        })
-      },[])
-
-      // Persist auth: listen for Firebase auth state on mount
-      useEffect(()=>{
-        const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-          // Admins sign in via custom token (no email) — that session is only
-          // for Firestore reads, not the public Gmail-gated members flow. Ignore it here.
-          if(firebaseUser && firebaseUser.email){
+          if (result && result.user) setuser({ gmail: result.user.email })
+        }).catch(() => setIsGmailLoading(false))
+        // Listen for Firebase auth state changes. Admins sign in via custom
+        // token (no email) — that session is only for reads, not the public
+        // Gmail-gated flow, so it's ignored here.
+        onAuthStateChanged(auth, (firebaseUser) => {
+          if (firebaseUser && firebaseUser.email) {
             setuser({ gmail: firebaseUser.email })
           } else {
             setuser(null)
@@ -788,8 +824,7 @@ export const StateContext =({children})=>{
             setIsGmailLoading(false)
           }
         })
-        return () => unsubscribe()
-      },[])
+      }, [])
 
       useEffect(()=>{
         if(user){
@@ -834,7 +869,7 @@ export const StateContext =({children})=>{
         fetchAllGallery, setGallery, gallery,
         addExecutive, fetchAllExecutives, executives, setExecutives,
         deleteDocument, members, setMembers, updateMember, updateDocument, getDeduplicatedMembers,
-        addGmail, googleSignIn, googleSignOut,
+        addGmail, googleSignIn, googleSignOut, initGmailAuth,
         user, isGmailAuthenticated, setIsGmailAuthenticated,
         isAuthorised, setIsAuthorised, deniedEmail,
         gmail, fetchAllGmail, isGmailLoading,

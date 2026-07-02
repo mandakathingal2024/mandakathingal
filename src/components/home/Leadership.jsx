@@ -2,8 +2,7 @@
 import React, { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { useStateContext } from '../../../context/stateContext'
-import { doc, getDoc } from 'firebase/firestore'
-import { db } from '../../../context/firebaseConfig'
+import { getPublicDoc } from '../../lib/firestoreRest'
 import { cldUrl } from '../../lib/cloudinary'
 
 function getInitials(name) {
@@ -24,14 +23,14 @@ const Leadership = () => {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [commSnap, advSnap, edSnap] = await Promise.all([
-          getDoc(doc(db, 'websiteContent', 'committee')),
-          getDoc(doc(db, 'websiteContent', 'advisoryBoard')),
-          getDoc(doc(db, 'websiteContent', 'editorial')),
+        const [comm, adv, ed] = await Promise.all([
+          getPublicDoc('websiteContent', 'committee'),
+          getPublicDoc('websiteContent', 'advisoryBoard'),
+          getPublicDoc('websiteContent', 'editorial'),
         ])
-        if (commSnap.exists()) setCommittee(commSnap.data())
-        if (advSnap.exists()) setAdvisory(advSnap.data())
-        if (edSnap.exists()) setEditorial(edSnap.data())
+        if (comm) setCommittee(comm)
+        if (adv) setAdvisory(adv)
+        if (ed) setEditorial(ed)
       } catch (err) {
         console.error('Error fetching leadership data:', err)
       } finally {

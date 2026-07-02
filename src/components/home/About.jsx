@@ -2,8 +2,7 @@
 import React, { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { useStateContext } from '../../../context/stateContext'
-import { doc, getDoc } from 'firebase/firestore'
-import { db } from '../../../context/firebaseConfig'
+import { getPublicDoc } from '../../lib/firestoreRest'
 
 const About = () => {
   const { isEnglish } = useStateContext()
@@ -13,11 +12,8 @@ const About = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const docRef = doc(db, 'websiteContent', 'introduction')
-        const snap = await getDoc(docRef)
-        if (snap.exists()) {
-          setData(snap.data())
-        }
+        const result = await getPublicDoc('websiteContent', 'introduction')
+        if (result) setData(result)
       } catch (err) {
         console.error('Error fetching introduction:', err)
       } finally {

@@ -92,7 +92,7 @@ const LateMemberBranches = ({ member, members, isEnglish }) => {
 
 const Members = () => {
   const [isLoading, setIsLoading] = useState(true)
-  const { getMembersWithNewBranchRelation, newBranchData, newHomeData, members, getDeduplicatedMembers, isGmailAuthenticated, googleSignIn, googleSignOut, isAuthorised, deniedEmail, isGmailLoading, isEnglish } = useStateContext()
+  const { getMembersWithNewBranchRelation, newBranchData, newHomeData, members, getDeduplicatedMembers, initGmailAuth, isGmailAuthenticated, googleSignIn, googleSignOut, isAuthorised, deniedEmail, isGmailLoading, isEnglish } = useStateContext()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('branch')
   const [error, setError] = useState(null)
@@ -101,6 +101,10 @@ const Members = () => {
 
   // Reset how many cards are shown whenever the filter or search changes
   useEffect(() => { setVisibleCount(PAGE_SIZE) }, [filter, search])
+
+  // Start the Firebase/Gmail auth listener when this members page mounts
+  // (Firebase is lazy-loaded — public pages never trigger this)
+  useEffect(() => { initGmailAuth() }, [])
 
   // Only fetch member data AFTER Gmail authentication succeeds
   useEffect(() => {

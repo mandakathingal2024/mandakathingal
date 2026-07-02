@@ -36,6 +36,24 @@ function parseFields(fields) {
  * @param {string} name         collection name
  * @param {object} opts         { revalidate?: number } ISR revalidate seconds
  */
+/**
+ * Fetch a single public document by id. Returns its fields (matching the
+ * Firestore SDK's .data() shape) or null. Works both server- and client-side.
+ */
+export async function getPublicDoc(name, id) {
+  if (!PROJECT || !id) return null;
+  const url = `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/(default)/documents/${name}/${id}`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data.fields) return null;
+    return parseFields(data.fields);
+  } catch {
+    return null;
+  }
+}
+
 export async function getPublicCollection(name, { revalidate = 3600 } = {}) {
   if (!PROJECT) return [];
   const url = `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/(default)/documents/${name}?pageSize=300`;

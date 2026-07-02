@@ -2,8 +2,7 @@
 import Image from 'next/image'
 import React, { useEffect, useState } from 'react'
 import { useStateContext } from '../../../context/stateContext'
-import { doc, getDoc } from 'firebase/firestore'
-import { db } from '../../../context/firebaseConfig'
+import { getPublicDoc } from '../../lib/firestoreRest'
 
 const Editorial = () => {
   const { isEnglish } = useStateContext()
@@ -13,11 +12,8 @@ const Editorial = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const docRef = doc(db, 'websiteContent', 'editorial')
-        const snap = await getDoc(docRef)
-        if (snap.exists()) {
-          setData(snap.data())
-        }
+        const result = await getPublicDoc('websiteContent', 'editorial')
+        if (result) setData(result)
       } catch (err) {
         console.error('Error fetching editorial:', err)
       } finally {

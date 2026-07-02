@@ -2,9 +2,17 @@
 import Image from 'next/image'
 import React, { useEffect, useState } from 'react'
 import { useStateContext } from '../../../context/stateContext'
-import { collection, getDocs, query, where, limit } from 'firebase/firestore'
-import { db } from '../../../context/firebaseConfig'
+import { getPublicCollection } from '../../lib/firestoreRest'
 import { cldUrl } from '../../lib/cloudinary'
+
+// createdAt may be a Firestore Timestamp ({seconds}) or a REST ISO string
+const createdSeconds = (x) => {
+  const c = x.createdAt
+  if (!c) return 0
+  if (typeof c === 'object' && c.seconds) return c.seconds
+  const t = Date.parse(c)
+  return isNaN(t) ? 0 : t / 1000
+}
 
 const RecentActivities = () => {
   const { isEnglish } = useStateContext()
@@ -14,12 +22,10 @@ const RecentActivities = () => {
   useEffect(() => {
     const fetchActivities = async () => {
       try {
-        const eventsRef = collection(db, 'events')
-        const q = query(eventsRef, where('displaySection', '==', 'recentActivities'), limit(8))
-        const snap = await getDocs(q)
-        const filtered = snap.docs
-          .map((doc) => ({ id: doc.id, ...doc.data() }))
-          .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
+        const all = await getPublicCollection('events')
+        const filtered = all
+          .filter((e) => e.displaySection === 'recentActivities')
+          .sort((a, b) => createdSeconds(b) - createdSeconds(a))
           .slice(0, 4)
         setActivities(filtered)
       } catch (err) {
