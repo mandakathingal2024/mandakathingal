@@ -5,12 +5,15 @@ import { GallerySkeleton } from '../Skeleton'
 import PageBanner from '../shared/PageBanner'
 import { cldUrl } from '../../lib/cloudinary'
 
-const Gallery = () => {
-  const [isLoading, setIsLoading] = useState(true)
-  const { fetchAllGallery, gallery, isEnglish } = useStateContext()
+const Gallery = ({ initialGallery = null }) => {
+  // Use server pre-rendered data when provided (ISR); else client-fetch.
+  const [isLoading, setIsLoading] = useState(!initialGallery)
+  const { fetchAllGallery, gallery: ctxGallery, isEnglish } = useStateContext()
   const [error, setError] = useState(null)
+  const gallery = initialGallery || ctxGallery
 
   useEffect(() => {
+    if (initialGallery) return // data already provided by the server
     const fetchData = async () => {
       try {
         await fetchAllGallery()

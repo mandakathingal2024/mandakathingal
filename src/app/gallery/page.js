@@ -3,13 +3,18 @@ import { Header } from "@/components/home/header";
 import Footer from "@/components/Footer";
 import ScrollReveal from "@/components/home/ScrollReveal";
 import Script from "next/script";
+import { getPublicCollection } from "@/lib/firestoreRest";
 
-export default function GalleryPage() {
+// Pre-render with ISR: fetch gallery server-side and revalidate hourly.
+export const revalidate = 3600;
+
+export default async function GalleryPage() {
+  const gallery = await getPublicCollection("gallery", { revalidate });
   return (
     <>
       <Header />
       <main id="main" className="inner-page">
-        <Gallery />
+        <Gallery initialGallery={gallery} />
       </main>
       <Footer />
       <ScrollReveal />

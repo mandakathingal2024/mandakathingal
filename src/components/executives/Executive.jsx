@@ -6,12 +6,15 @@ import { ExecutivesSkeleton } from '../Skeleton'
 import PageBanner from '../shared/PageBanner'
 import { cldUrl } from '../../lib/cloudinary'
 
-const Executive = () => {
-  const [isLoading, setIsLoading] = useState(true)
-  const { fetchAllExecutives, executives, isEnglish } = useStateContext()
+const Executive = ({ initialExecutives = null }) => {
+  // Use server pre-rendered data when provided (ISR); else client-fetch.
+  const [isLoading, setIsLoading] = useState(!initialExecutives)
+  const { fetchAllExecutives, executives: ctxExecutives, isEnglish } = useStateContext()
   const [error, setError] = useState(null)
+  const executives = initialExecutives || ctxExecutives
 
   useEffect(() => {
+    if (initialExecutives) return // data already provided by the server
     const fetchData = async () => {
       try {
         await fetchAllExecutives()

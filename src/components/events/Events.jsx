@@ -5,12 +5,16 @@ import { EventsSkeleton } from '../Skeleton'
 import PageBanner from '../shared/PageBanner'
 import { cldUrl } from '../../lib/cloudinary'
 
-const Events = () => {
-  const [isLoading, setIsLoading] = useState(true)
-  const { fetchAllEvents, events, isEnglish } = useStateContext()
+const Events = ({ initialEvents = null }) => {
+  // When the server pre-renders the data (ISR), use it directly — no client
+  // fetch, no skeleton. Otherwise fall back to the client-side context fetch.
+  const [isLoading, setIsLoading] = useState(!initialEvents)
+  const { fetchAllEvents, events: ctxEvents, isEnglish } = useStateContext()
   const [error, setError] = useState(null)
+  const events = initialEvents || ctxEvents
 
   useEffect(() => {
+    if (initialEvents) return // data already provided by the server
     const fetchData = async () => {
       try {
         await fetchAllEvents()
