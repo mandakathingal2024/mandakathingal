@@ -16,12 +16,12 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${playfair.variable} ${cormorant.variable} ${hanken.variable} ${notoSerifMal.variable} ${notoSansMal.variable}`}>
       <head>
         <link rel="icon" href="/m.png" type="image/png" />
         <link rel="apple-touch-icon" href="/m.png" />
       </head>
-      <body className={`${playfair.variable} ${cormorant.variable} ${hanken.variable} ${notoSerifMal.variable} ${notoSansMal.variable}`}>
+      <body>
         <Script id="sw-cleanup" strategy="afterInteractive">{`
           if('serviceWorker' in navigator && !window.location.pathname.startsWith('/mkadminhamza')){
             navigator.serviceWorker.getRegistrations().then(function(registrations){
