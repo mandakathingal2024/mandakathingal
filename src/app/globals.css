@@ -29,10 +29,10 @@
   --maxw: 1240px;
   --gut: clamp(20px, 5vw, 64px);
 
-  --serif: "Cormorant Garamond", "Noto Serif Malayalam", Georgia, serif;
-  --sans:  "Hanken Grotesk", "Noto Sans Malayalam", system-ui, sans-serif;
-  --mal-serif: "Noto Serif Malayalam", "Cormorant Garamond", serif;
-  --mal-sans:  "Noto Sans Malayalam", "Hanken Grotesk", sans-serif;
+  --serif: var(--font-cormorant), var(--font-noto-serif-mal), Georgia, serif;
+  --sans:  var(--font-hanken), var(--font-noto-sans-mal), system-ui, sans-serif;
+  --mal-serif: var(--font-noto-serif-mal), var(--font-cormorant), serif;
+  --mal-sans:  var(--font-noto-sans-mal), var(--font-hanken), sans-serif;
 
   --shadow-card: 0 24px 60px -28px rgba(43,32,23,0.45);
   --shadow-soft: 0 14px 40px -22px rgba(43,32,23,0.35);
