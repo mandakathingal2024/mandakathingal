@@ -96,6 +96,11 @@ const Members = () => {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('branch')
   const [error, setError] = useState(null)
+  const PAGE_SIZE = 60
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+
+  // Reset how many cards are shown whenever the filter or search changes
+  useEffect(() => { setVisibleCount(PAGE_SIZE) }, [filter, search])
 
   // Only fetch member data AFTER Gmail authentication succeeds
   useEffect(() => {
@@ -257,8 +262,9 @@ const Members = () => {
 
             {/* Members grid */}
             {filteredMembers.length > 0 ? (
+              <>
               <div className="fam-grid reveal" data-d="3">
-                {filteredMembers.map((member) => {
+                {filteredMembers.slice(0, visibleCount).map((member) => {
                   const initials = getInitials(member.name)
                   const hasImage = member.memberImgUrl && !['/default-avatar.svg', '/home.png', 'placeholder'].some(s => member.memberImgUrl.toLowerCase().includes(s))
 
@@ -307,6 +313,20 @@ const Members = () => {
                   )
                 })}
               </div>
+              {filteredMembers.length > visibleCount && (
+                <div style={{ textAlign: 'center', marginTop: '32px' }}>
+                  <button
+                    className="thbtn thbtn-brass"
+                    type="button"
+                    onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                  >
+                    {isEnglish
+                      ? `Load more (${filteredMembers.length - visibleCount} more)`
+                      : `കൂടുതൽ കാണിക്കുക (${filteredMembers.length - visibleCount})`}
+                  </button>
+                </div>
+              )}
+              </>
             ) : (
               <div className="empty-state reveal">
                 <div className="empty-state-icon">
