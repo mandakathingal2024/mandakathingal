@@ -3,40 +3,49 @@ import { useEffect } from 'react'
 
 const ScrollReveal = () => {
   useEffect(() => {
-    // Engage the hidden-then-reveal animation only after a paint frame confirms
-    // the page is actually rendering.
+    let scheduled = false
+
+    // Reveal any not-yet-revealed .reveal element that is within view. Re-queries
+    // the DOM each pass so content that mounts LATER (e.g. after async data or
+    // sign-in) is handled — otherwise it would stay stuck at opacity:0.
+    function checkReveal() {
+      scheduled = false
+      const vh = window.innerHeight
+      document.querySelectorAll('.reveal:not(.in)').forEach((el) => {
+        if (el.getBoundingClientRect().top < vh * 0.92) el.classList.add('in')
+      })
+    }
+    function schedule() {
+      if (scheduled) return
+      scheduled = true
+      requestAnimationFrame(checkReveal)
+    }
+
     const raf = requestAnimationFrame(() => {
       document.documentElement.classList.add('anim')
       checkReveal()
     })
 
-    let reveals = Array.from(document.querySelectorAll('.reveal'))
+    window.addEventListener('scroll', schedule, { passive: true })
+    window.addEventListener('resize', schedule)
 
-    function checkReveal() {
-      const vh = window.innerHeight
-      reveals = reveals.filter((el) => {
-        const top = el.getBoundingClientRect().top
-        if (top < vh * 0.92) {
-          el.classList.add('in')
-          return false
-        }
-        return true
-      })
-    }
+    // Catch content that renders after the initial pass (async fetches, auth).
+    const mo = new MutationObserver(schedule)
+    mo.observe(document.body, { childList: true, subtree: true })
 
-    window.addEventListener('scroll', checkReveal, { passive: true })
-    window.addEventListener('resize', checkReveal)
-
-    // Safety fallback: ensure nothing stays hidden
-    const fallback = setTimeout(() => {
-      document.querySelectorAll('.reveal').forEach((el) => el.classList.add('in'))
-    }, 1400)
+    // Safety net: nothing should ever stay hidden. Reveal all remaining a short
+    // while after the last DOM change settles.
+    const fallback = setInterval(() => {
+      const hidden = document.querySelectorAll('.reveal:not(.in)')
+      if (hidden.length) hidden.forEach((el) => el.classList.add('in'))
+    }, 1500)
 
     return () => {
       cancelAnimationFrame(raf)
-      clearTimeout(fallback)
-      window.removeEventListener('scroll', checkReveal)
-      window.removeEventListener('resize', checkReveal)
+      clearInterval(fallback)
+      mo.disconnect()
+      window.removeEventListener('scroll', schedule)
+      window.removeEventListener('resize', schedule)
     }
   }, [])
 

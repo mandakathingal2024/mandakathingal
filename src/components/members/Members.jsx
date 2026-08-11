@@ -209,7 +209,7 @@ const Members = () => {
         <section className="members-section grain">
           <div className="wrap">
             {/* Search bar */}
-            <div className="members-search-wrap reveal" data-d="1">
+            <div className="members-search-wrap">
               <div className="members-search">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -229,7 +229,7 @@ const Members = () => {
             </div>
 
             {/* Filter tabs — same as homepage Leadership tabs */}
-            <div className="tabs reveal" data-d="2">
+            <div className="tabs">
               <button
                 className={`tab${filter === 'branch' ? ' on' : ''}`}
                 onClick={() => setFilter('branch')}
@@ -267,7 +267,7 @@ const Members = () => {
             {/* Members grid */}
             {filteredMembers.length > 0 ? (
               <>
-              <div className="fam-grid reveal" data-d="3">
+              <div className="fam-grid">
                 {filteredMembers.slice(0, visibleCount).map((member) => {
                   const initials = getInitials(member.name)
                   const hasImage = member.memberImgUrl && !['/default-avatar.svg', '/home.png', 'placeholder'].some(s => member.memberImgUrl.toLowerCase().includes(s))
@@ -332,7 +332,7 @@ const Members = () => {
               )}
               </>
             ) : (
-              <div className="empty-state reveal">
+              <div className="empty-state">
                 <div className="empty-state-icon">
                   <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
                 </div>
