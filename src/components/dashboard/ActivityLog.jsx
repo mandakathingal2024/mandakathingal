@@ -38,7 +38,7 @@ const ACTION_COLORS = {
 const ActivityLog = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { adminUser } = useStateContext();
+  const { adminUser, adminRead } = useStateContext();
   const [activities, setActivities] = React.useState([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [search, setSearch] = React.useState('');
@@ -51,10 +51,11 @@ const ActivityLog = () => {
   React.useEffect(() => {
     const fetchActivities = async () => {
       try {
-        const activityRef = collection(db, 'activityLog');
-        const q = query(activityRef, orderBy('createdAt', 'desc'));
-        const snap = await getDocs(q);
-        let data = snap.docs.map((doc) => ({ docId: doc.id, ...doc.data() }));
+        // Read via the server (Admin SDK) so it works on any device/PWA
+        let data = await adminRead('activityLog');
+        // Sort newest first (createdAt is serialized to an ISO string)
+        const ts = (x) => { const t = Date.parse(x.createdAt); return isNaN(t) ? 0 : t; };
+        data.sort((a, b) => ts(b) - ts(a));
 
         // Filter by allowed modules for non-super admins
         if (allowedModules) {

@@ -67,6 +67,51 @@ function authorizeWrite(session, action, collectionName) {
 }
 
 /**
+ * Authorize a read (list). Lets the admin dashboard read data via the server
+ * (Admin SDK) using the HMAC session — no client Firebase session required.
+ */
+function authorizeRead(session, collectionName) {
+  if (session.role === 'superAdmin') return { ok: true };
+
+  // Public-read collections are fine for any admin
+  if (['events', 'gallery', 'executives', 'websiteContent'].includes(collectionName)) {
+    return { ok: true };
+  }
+  // Admin accounts (password hashes) — super admin only
+  if (collectionName === 'admins') {
+    return { ok: false, status: 403, error: 'Admin management is restricted to Super Admins' };
+  }
+  if (!session.permissions) {
+    return { ok: false, status: 401, error: 'Session expired. Please log in again.' };
+  }
+  const perms = session.permissions;
+  if (collectionName === 'activityLog') {
+    return perms.viewActivityLog
+      ? { ok: true }
+      : { ok: false, status: 403, error: 'You do not have access to the activity log' };
+  }
+  const page = COLLECTION_PAGE[collectionName];
+  if (page && !(perms.visiblePages || []).includes(page)) {
+    return { ok: false, status: 403, error: 'You do not have access to this section' };
+  }
+  return { ok: true };
+}
+
+// Convert Firestore Admin Timestamps to ISO strings so the response is
+// JSON-serializable and consistent with the client.
+function serializeValue(v) {
+  if (v == null) return v;
+  if (typeof v.toDate === 'function') return v.toDate().toISOString();
+  if (Array.isArray(v)) return v.map(serializeValue);
+  if (typeof v === 'object') {
+    const o = {};
+    for (const [k, val] of Object.entries(v)) o[k] = serializeValue(val);
+    return o;
+  }
+  return v;
+}
+
+/**
  * Server-side proxy for admin Firestore writes.
  * All writes are authenticated via the admin session cookie/token.
  * This allows Firestore rules to deny direct client-side writes.
@@ -99,12 +144,14 @@ export async function POST(request) {
   }
 
   // Validate action
-  if (!['add', 'set', 'update', 'delete', 'deleteRecursive'].includes(action)) {
+  if (!['add', 'set', 'update', 'delete', 'deleteRecursive', 'list'].includes(action)) {
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   }
 
   // Enforce role/permission for this action + collection
-  const authz = authorizeWrite(session, action, collectionName);
+  const authz = action === 'list'
+    ? authorizeRead(session, collectionName)
+    : authorizeWrite(session, action, collectionName);
   if (!authz.ok) {
     return NextResponse.json({ error: authz.error }, { status: authz.status });
   }
@@ -114,6 +161,15 @@ export async function POST(request) {
     const colRef = db.collection(collectionName);
 
     switch (action) {
+      case 'list': {
+        const snap = await colRef.get();
+        // id defaults to the Firestore doc id but a custom `id` field (if any)
+        // overrides it via the spread — matching the client's shape. docId always
+        // carries the Firestore document id (used by admin delete flows).
+        const docs = snap.docs.map((d) => ({ id: d.id, docId: d.id, ...serializeValue(d.data()) }));
+        return NextResponse.json({ success: true, docs });
+      }
+
       case 'add': {
         if (!data || typeof data !== 'object') {
           return NextResponse.json({ error: 'Missing data' }, { status: 400 });

@@ -609,7 +609,7 @@ AdminsTable.displayName = 'AdminsTable';
 /*  AdminManagement - parent component (table, delete, toast)          */
 /* ------------------------------------------------------------------ */
 const AdminManagement = () => {
-  const { adminUser, setAdminUser, logActivity, updateDocument, deleteDocument } = useStateContext();
+  const { adminUser, setAdminUser, logActivity, updateDocument, deleteDocument, adminRead } = useStateContext();
   const [admins, setAdmins] = React.useState([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [open, setOpen] = React.useState(false);
@@ -620,9 +620,8 @@ const AdminManagement = () => {
 
   const fetchAdmins = async () => {
     try {
-      const adminsRef = collection(db, 'admins');
-      const snap = await getDocs(adminsRef);
-      const data = snap.docs.map((doc) => ({ docId: doc.id, ...doc.data() }));
+      // Read via the server (Admin SDK) so it works on any device/PWA
+      const data = await adminRead('admins');
       setAdmins(data);
     } catch (err) {
       console.error('Error fetching admins:', err);

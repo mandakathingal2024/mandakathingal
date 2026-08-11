@@ -18,8 +18,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import LinearProgress from '@mui/material/LinearProgress';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '../../../context/firebaseConfig';
+import { useStateContext } from '../../../context/stateContext';
 
 const StatCard = ({ icon, label, count, color, onClick }) => (
   <Grid item xs={6} sm={4} md={4}>
@@ -69,6 +68,7 @@ const StatCard = ({ icon, label, count, color, onClick }) => (
 );
 
 const DashboardHome = () => {
+  const { adminRead } = useStateContext();
   const [stats, setStats] = React.useState({
     families: null,
     houses: null,
@@ -90,29 +90,28 @@ const DashboardHome = () => {
   React.useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [familiesSnap, membersSnap, eventsSnap, executivesSnap, gmailSnap, gallerySnap] = await Promise.all([
-          getDocs(query(collection(db, 'members'), where('relation', '==', 'New Branch'))),
-          getDocs(collection(db, 'members')),
-          getDocs(collection(db, 'events')),
-          getDocs(collection(db, 'executives')),
-          getDocs(collection(db, 'gmail')),
-          getDocs(collection(db, 'gallery')),
+        // Read via the server (Admin SDK) so it works on any device/PWA
+        const [allMembers, events, executives, gmailList, gallery] = await Promise.all([
+          adminRead('members'),
+          adminRead('events'),
+          adminRead('executives'),
+          adminRead('gmail'),
+          adminRead('gallery'),
         ]);
 
-        // Compute houses count (New Branch + isNewHome) and late members count
-        const allMembers = membersSnap.docs.map(d => d.data());
+        const familiesCount = allMembers.filter(m => m.relation === 'New Branch').length;
         const housesCount = allMembers.filter(m => m.relation === 'New Branch' || m.isNewHome === true).length;
         const lateCount = allMembers.filter(m => (m.relation === 'Late Parent / Additional Member' && (m.subType === 'late' || !m.subType)) || m.isLate === true).length;
 
         setStats({
-          families: familiesSnap.size,
+          families: familiesCount,
           houses: housesCount,
           lateMembers: lateCount,
-          members: membersSnap.size,
-          events: eventsSnap.size,
-          executives: executivesSnap.size,
-          gmailAccounts: gmailSnap.size,
-          galleryImages: gallerySnap.size,
+          members: allMembers.length,
+          events: events.length,
+          executives: executives.length,
+          gmailAccounts: gmailList.length,
+          galleryImages: gallery.length,
         });
       } catch (error) {
         console.error('Error fetching stats:', error);

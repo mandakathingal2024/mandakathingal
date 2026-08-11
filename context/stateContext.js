@@ -74,6 +74,38 @@ async function adminWrite(action, collectionName, data, id) {
   return res.json()
 }
 
+// Read a whole collection through the server (Admin SDK), authenticated by the
+// admin HMAC token. Lets the admin dashboard read data on ANY device without a
+// client-side Firebase session (which is unreliable in installed PWAs).
+async function adminRead(collectionName) {
+  const token = localStorage.getItem('adminToken')
+  if (!token) throw new Error('No admin session')
+
+  const res = await fetch('/api/admin/firestore', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ action: 'list', collection: collectionName }),
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Request failed' }))
+    if (res.status === 401 && typeof window !== 'undefined') {
+      localStorage.removeItem('adminAuth')
+      localStorage.removeItem('adminUser')
+      localStorage.removeItem('adminToken')
+      localStorage.setItem('logoutMessage', 'Your session expired. Please log in again.')
+      window.location.reload()
+    }
+    throw new Error(err.error || 'Admin read failed')
+  }
+
+  const { docs } = await res.json()
+  return docs || []
+}
+
 // Establish a Firebase Auth session for the logged-in admin by minting a
 // custom token server-side and signing in with it. The token carries an
 // `admin: true` custom claim, which Firestore rules require to read the
@@ -527,13 +559,9 @@ export const StateContext =({children})=>{
 
       async function fetchAllMembers() {
         try {
-          await loadFirebase()
-          const membersCollection = collection(db, 'members');
-          const querySnapshot = await getDocs(membersCollection);
-          const membersArray = [];
-          querySnapshot.forEach((doc) => {
-            membersArray.push({ id: doc.id, ...doc.data() });
-          });
+          // Read via the server (Admin SDK) so the admin dashboard works on any
+          // device/PWA without needing a client-side Firebase session.
+          const membersArray = await adminRead('members');
           setMembers(membersArray);
           return membersArray;
         } catch (error) {
@@ -650,12 +678,8 @@ export const StateContext =({children})=>{
 
       async function fetchAllGmail() {
         try {
-          const gmailCollection = collection(db, 'gmail');
-          const querySnapshot = await getDocs(gmailCollection);
-          const gmailData = querySnapshot.docs.map((doc )=> ({
-            id: doc.id,
-            ...doc.data(),
-          }));
+          // Read via the server (Admin SDK) so it works on any device/PWA
+          const gmailData = await adminRead('gmail');
           setGmail(gmailData)
           return gmailData;
         } catch (error) {
@@ -874,6 +898,7 @@ export const StateContext =({children})=>{
         isAuthorised, setIsAuthorised, deniedEmail,
         gmail, fetchAllGmail, isGmailLoading,
         adminUser, setAdminUser, hasPermission, logActivity,
+        adminRead,
         logoutMessage, setLogoutMessage
     }), [
         isEnglish, isAuthenticated, isAuthLoading, pageValue,
