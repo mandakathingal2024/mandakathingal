@@ -4,8 +4,6 @@ import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
 import { useStateContext } from '../../../context/stateContext'
 import { useRouter } from 'next/navigation'
-import { collection, query, where, getDocs } from 'firebase/firestore'
-import { getDb } from '../../../context/firebaseConfig'
 import { ViewFamilySkeleton } from '../Skeleton'
 import PageBanner from '../shared/PageBanner'
 import { cldUrl } from '../../lib/cloudinary'
@@ -212,46 +210,27 @@ const SharedMemberTree = ({ member, getSharedMemberBranches, isEnglish }) => {
 }
 
 export const ViewFamily = ({ id }) => {
-  const { viewFamilyData, getMembersByRelatedTo, memberObj, getMemberById, getSharedMemberBranches, initGmailAuth, isGmailAuthenticated, isGmailLoading, googleSignIn, isAuthorised, deniedEmail, isEnglish } = useStateContext()
+  const { viewFamilyData, getMembersByRelatedTo, memberObj, getMemberById, getSharedMemberBranches, ensureMemberDirectory, initGmailAuth, isGmailAuthenticated, isGmailLoading, googleSignIn, isAuthorised, deniedEmail, isEnglish } = useStateContext()
   const [isLoading, setIsLoading] = useState(true)
   const [breadcrumbChain, setBreadcrumbChain] = useState([])
   const router = useRouter()
   const [error, setError] = useState(null)
 
   async function buildBreadcrumbChain(memberId) {
-    // Fetch all ancestors in a single batch query instead of N+1 individual queries
-    // First, get current member to start the chain
-    const db = await getDb()
-    const membersRef = collection(db, 'members')
-    const q = query(membersRef, where('id', '==', memberId))
-    const snap = await getDocs(q)
+    // Use the server-loaded members directory (no client Firestore read / claim)
+    const all = await ensureMemberDirectory()
+    if (!all) return []
 
-    if (snap.empty) return []
+    const memberMap = {}
+    all.forEach((m) => { memberMap[m.id] = m })
 
-    const currentMember = snap.docs[0].data()
+    const currentMember = memberMap[memberId]
+    if (!currentMember) return []
 
     // If no parent, return just this member
     if (!currentMember.relatedTo || currentMember.relation !== 'Son Of / Dauhter Of') {
       return [{ id: currentMember.id, name: currentMember.name }]
     }
-
-    // Collect all ancestor IDs by walking up (we know the relatedTo chain)
-    // But fetch all "Son Of" members in one query to build a lookup map
-    const sonQuery = query(membersRef, where('relation', '==', 'Son Of / Dauhter Of'))
-    const branchQuery = query(membersRef, where('relation', '==', 'New Branch'))
-    const [sonSnap, branchSnap] = await Promise.all([getDocs(sonQuery), getDocs(branchQuery)])
-
-    const memberMap = {}
-    sonSnap.docs.forEach((doc) => {
-      const d = doc.data()
-      memberMap[d.id] = d
-    })
-    branchSnap.docs.forEach((doc) => {
-      const d = doc.data()
-      memberMap[d.id] = d
-    })
-    // Add current member too
-    memberMap[currentMember.id] = currentMember
 
     // Walk up the chain using the map (no more queries)
     const chain = []

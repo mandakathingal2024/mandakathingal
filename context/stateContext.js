@@ -106,6 +106,28 @@ async function adminRead(collectionName) {
   return docs || []
 }
 
+// Cached full members directory for the public members pages (avoids stale
+// React closures and repeat fetches within a session).
+let _memberDir = null
+
+// Load the full members directory from the server. The server verifies the
+// user's Google ID token and checks the gmail allow-list, then returns the
+// members via the Admin SDK — so the public members pages do NOT depend on a
+// client-side Firebase custom claim (fragile in installed PWAs).
+async function loadMemberDirectory() {
+  await loadFirebase()
+  const currentUser = auth.currentUser
+  if (!currentUser) return { authorized: false, members: [] }
+  const idToken = await currentUser.getIdToken()
+  const res = await fetch('/api/members-data', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${idToken}` },
+  })
+  if (!res.ok) return { authorized: false, members: [] }
+  const data = await res.json()
+  return { authorized: !!data.authorized, members: data.members || [] }
+}
+
 // Establish a Firebase Auth session for the logged-in admin by minting a
 // custom token server-side and signing in with it. The token carries an
 // `admin: true` custom claim, which Firestore rules require to read the
@@ -461,86 +483,54 @@ export const StateContext =({children})=>{
       return results
     }
 
+    // Ensure the full members directory is loaded (from the server) and cached.
+    // Returns the members array, or null if the user is not authorized.
+    async function ensureMemberDirectory(forceRefresh = false) {
+      if (!forceRefresh && _memberDir) return _memberDir
+      const dir = await loadMemberDirectory()
+      if (dir.authorized) {
+        _memberDir = dir.members
+        setMembers(dir.members)
+        return dir.members
+      }
+      return null
+    }
+
     // Get all branches that share a late member (by sharedMemberId)
-    // Uses Firestore queries since the `members` state may only contain a single family's data
     async function getSharedMemberBranches(sharedMemberId) {
       if (!sharedMemberId) return []
-      await loadFirebase()
       try {
-        const membersRef = collection(db, 'members')
-        const q = query(membersRef, where('sharedMemberId', '==', sharedMemberId))
-        const snap = await getDocs(q)
-        const sharedEntries = snap.docs.map((d) => d.data())
-
-        // For each shared entry, find who they are "relatedTo" (the branch head)
+        const all = await ensureMemberDirectory()
+        if (!all) return []
+        const sharedEntries = all.filter((m) => m.sharedMemberId === sharedMemberId)
         const branchIds = [...new Set(sharedEntries.map((e) => e.relatedTo).filter(Boolean))]
         if (branchIds.length === 0) return []
-
-        // Fetch branch heads in parallel
-        const branchPromises = branchIds.map(async (branchId) => {
-          const bq = query(membersRef, where('id', '==', branchId))
-          const bSnap = await getDocs(bq)
-          return bSnap.empty ? null : bSnap.docs[0].data()
-        })
-        const branches = (await Promise.all(branchPromises)).filter(Boolean)
-        return branches
+        return branchIds.map((bid) => all.find((m) => m.id === bid)).filter(Boolean)
       } catch (error) {
         console.error('Error fetching shared member branches:', error)
         return []
       }
     }
 
+    // Admin add/edit form: find members by name to pick a "related to" parent.
+    // Filters the members already loaded in the admin dashboard (via the server),
+    // falling back to a server read \u2014 no client Firestore query needed.
     async function searchMembersByName(inputString) {
-      if(inputString!==''){
-        await loadFirebase()
-        const membersCollectionRef = collection(db, "members");
-      
-        // Create a query to find documents where 'name' starts with the input string
-        const q = query(
-          membersCollectionRef,
-          where("name", ">=", inputString),
-          where("name", ">=", inputString.toUpperCase()),
-          where("name", "<", inputString + "\uf8ff"), // Use a Unicode character to find all names starting with the input
-          orderBy("name") // Order by name for better results
-        );
-        // const caseInsensitiveRegex = new RegExp(`^${inputString.toLowerCase()}.+$`, 'i');
-        // const q = query(membersCollectionRef, where("name", ">=", caseInsensitiveRegex));
-      
-        try {
-          const querySnapshot = await getDocs(q);
-          const foundDocuments = [];
-      
-          querySnapshot.forEach((doc) => {
-            foundDocuments.push(doc.data());
-          });
-          return foundDocuments; // Return the array of found documents
-        } catch (error) {
-          console.error("Error searching members: ", error);
-          return []; // Return an empty array if there's an error
-        }
+      if (!inputString || !inputString.trim()) return [];
+      const q = inputString.trim().toLowerCase();
+      let source = members;
+      if (!source || source.length === 0) {
+        try { source = await adminRead('members'); } catch { source = []; }
       }
-      if(inputString===''){
-         await getMembersWithNewBranchRelation()
-      }
+      return (source || []).filter((m) => (m.name || '').toLowerCase().includes(q));
     }
 
 // Assuming you have initialized your Firestore instance as 'db'
 
       async function getMembersWithNewBranchRelation(forceRefresh = false) {
-        // Skip re-fetching only if full data is already loaded
-        // Check both members AND newBranchData to ensure we have the complete dataset
-        if (!forceRefresh && members && members.length > 0 && newBranchData && newBranchData.length > 0) {
-          return { branches: newBranchData, newHomes: newHomeData };
-        }
-
-        await loadFirebase()
-        const membersCollection = collection(db, 'members');
-        const querySnapshot = await getDocs(membersCollection);
-
-        const allMembers = [];
-        querySnapshot.forEach((doc) => {
-          allMembers.push({ id: doc.id, ...doc.data() });
-        });
+        // Load the directory from the server (allow-list enforced there).
+        const allMembers = await ensureMemberDirectory(forceRefresh);
+        if (!allMembers) return { authorized: false, branches: [], newHomes: [] };
 
         const branches = allMembers.filter((m) => m.relation === 'New Branch');
         const newHomes = allMembers.filter((m) => m.isNewHome === true);
@@ -551,10 +541,11 @@ export const StateContext =({children})=>{
           return { ...head, totalMembers: 1 + familyMembers.length };
         });
 
-        setNewBranchData(withCount(branches));
-        setNewHomeData(withCount(newHomes));
-        setMembers(allMembers);
-        return { branches: withCount(branches), newHomes: withCount(newHomes) };
+        const b = withCount(branches);
+        const h = withCount(newHomes);
+        setNewBranchData(b);
+        setNewHomeData(h);
+        return { authorized: true, branches: b, newHomes: h };
       }
 
       async function fetchAllMembers() {
@@ -572,18 +563,11 @@ export const StateContext =({children})=>{
 
       async function getMembersByRelatedTo(id) {
         try {
-          await loadFirebase()
-          const membersCollection = collection(db, "members");
-          const q = query(membersCollection, where("relatedTo", "==", id));
-          const querySnapshot = await getDocs(q);
-
-          const membersData = [];
-          querySnapshot.forEach((doc) => {
-            membersData.push(doc.data());
-          });
+          // Filter the server-loaded directory (no client Firestore read / claim)
+          const all = await ensureMemberDirectory()
+          if (!all) { setViewFamilyData([]); return [] }
+          const membersData = all.filter((m) => m.relatedTo === id)
           setViewFamilyData(membersData)
-          // NOTE: Do NOT setMembers here — it corrupts the full members list
-          // used by the Members page. viewFamilyData is the correct state for family view.
           return membersData;
         } catch (error) {
           console.error("Error fetching members:", error);
@@ -613,16 +597,14 @@ export const StateContext =({children})=>{
       // }
 
       async function getMemberById(id) {
-        const membersRef = collection(db, "members");
-        const q = query(membersRef, where("id", "==", id));
-        const querySnapshot = await getDocs(q);
-      
-        if (querySnapshot.size > 0) {
-          setMemberObj(querySnapshot.docs[0].data());
-          return querySnapshot.docs[0].data();
-        } else {
-          return null; // Or handle the case where no member is found
+        const all = await ensureMemberDirectory();
+        if (!all) return null;
+        const found = all.find((m) => m.id === id);
+        if (found) {
+          setMemberObj(found);
+          return found;
         }
+        return null;
       }
   
       async function fetchAllEvents() {
@@ -755,58 +737,16 @@ export const StateContext =({children})=>{
         }
       }
       async function getGmail(gmail) {
-        await loadFirebase()
-        // Preferred path: server-side allow-list check. This also grants the
-        // `member` custom claim so Firestore rules can gate member reads.
-        const currentUser = auth.currentUser
-        if (currentUser) {
-          try {
-            const idToken = await currentUser.getIdToken()
-            const res = await fetch('/api/member-access', {
-              method: 'POST',
-              headers: { 'Authorization': `Bearer ${idToken}` },
-            })
-            if (res.ok) {
-              const data = await res.json()
-              if (data.authorized) {
-                // Refresh the token so the new `member` claim is live for reads
-                await currentUser.getIdToken(true)
-                setIsGmailAuthenticated(true)
-                return
-              }
-              // Authoritative "not on the allow-list"
-              setIsAuthorised(false)
-              setDeniedEmail(gmail)
-              return
-            }
-            // Non-OK response (e.g. server error) — fall through to legacy check
-          } catch (e) {
-            // Network/other error — fall through to legacy check below
-          }
-        }
-
-        // Fallback: legacy client-side allow-list read. Keeps members working
-        // if the server endpoint is unavailable (valid while rules still allow
-        // authenticated reads).
+        // Authorize AND load the directory in one server call. The server checks
+        // the allow-list and returns the members via the Admin SDK — no client
+        // Firebase custom claim needed (robust in installed PWAs).
         try {
-          const membersRef = collection(db, "gmail");
-          const q = query(membersRef, where("gmail", "==", gmail.toLowerCase()));
-          const querySnapshot = await getDocs(q);
-
-          if (querySnapshot.size > 0) {
+          const result = await getMembersWithNewBranchRelation(true)
+          if (result.authorized) {
             setIsGmailAuthenticated(true)
-            return querySnapshot.docs[0].data();
+            return
           }
-
-          if (gmail !== gmail.toLowerCase()) {
-            const q2 = query(membersRef, where("gmail", "==", gmail));
-            const querySnapshot2 = await getDocs(q2);
-            if (querySnapshot2.size > 0) {
-              setIsGmailAuthenticated(true)
-              return querySnapshot2.docs[0].data();
-            }
-          }
-
+          // Not on the allow-list
           setIsAuthorised(false)
           setDeniedEmail(gmail)
         } catch (error) {
@@ -818,6 +758,7 @@ export const StateContext =({children})=>{
       const googleSignOut=async()=>{
           await loadFirebase()
           await signOut(auth)
+          _memberDir = null
           setuser(null)
           setIsGmailAuthenticated(false)
           setIsAuthorised(true)
@@ -885,7 +826,7 @@ export const StateContext =({children})=>{
         pageValue, setPageValue,
         addMember, handleLogOut,
         searchMembersByName, searchSharedLateMembers, getSharedMemberBranches,
-        getMembersWithNewBranchRelation,
+        getMembersWithNewBranchRelation, ensureMemberDirectory,
         fetchAllMembers, setNewBranchData, newBranchData, newHomeData,
         getMembersByRelatedTo, viewFamilyData, setViewFamilyData,
         memberObj, setMemberObj, getMemberById,
