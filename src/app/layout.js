@@ -1,6 +1,7 @@
 import { Playfair_Display, Cormorant_Garamond, Hanken_Grotesk, Noto_Serif_Malayalam, Noto_Sans_Malayalam } from "next/font/google";
 import "./globals.css";
 import Script from "next/script";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { StateContext } from "../../context/stateContext";
 
 const playfair = Playfair_Display({ subsets: ["latin"], weight: ["700", "800", "900"], variable: '--font-playfair', display: 'swap' });
@@ -32,6 +33,7 @@ export default function RootLayout({ children }) {
         <StateContext>
           {children}
         </StateContext>
+        <SpeedInsights />
       </body>
     </html>
   );
